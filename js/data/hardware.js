@@ -14,7 +14,7 @@ def('computer',{name:'Computer',level:1,scene:'pc',tip:'The whole desktop system
  fact:'The CPU in this tower contains tens of billions of transistors. ENIAC, a famous computer from 1945, used about 17,500 vacuum tubes and filled a large room.'});
 
 /* ---------------- Level 2: hardware ---------------- */
-def('cpu',{name:'CPU',parent:'computer',level:2,scene:'cpu',model:true,tip:'Central Processing Unit: runs program instructions',
+def('cpu',{name:'CPU',parent:'computer',level:2,scene:'cpu',tip:'Central Processing Unit: runs program instructions',
  short:'The Central Processing Unit: the chip that follows program instructions, billions of times a second.',
  what:'The CPU is the main processor. It is a thin square of silicon (the die) mounted on a package with over a thousand contacts, sitting in the motherboard’s socket under the cooler.',
  does:'It repeats the instruction cycle: fetch an instruction from memory, decode it, execute it (for example, add two numbers) and store the result. Modern CPUs have several cores, and each core runs this cycle on its own.',
@@ -34,7 +34,7 @@ def('motherboard',{name:'Motherboard',parent:'computer',level:2,scene:'board',ti
  fact:'Many traces between the CPU and RAM are deliberately zig-zagged so that every signal in a group arrives at the same instant.',
  rel:[['cpu','Held in the socket'],['ram','Plugs into the DIMM slots'],['psu','Supplies its power']]});
 
-def('ram',{name:'RAM',parent:'computer',level:2,scene:'ram',model:true,tip:'Fast, temporary working memory',
+def('ram',{name:'RAM',parent:'computer',level:2,scene:'ram',tip:'Fast, temporary working memory',
  short:'Random Access Memory: fast, temporary storage for the programs and data in use right now.',
  what:'RAM comes as sticks (DIMMs) covered in DRAM chips. Each chip holds billions of tiny memory cells, each storing one bit as a small electric charge.',
  does:'It holds the instructions and data the CPU is working on. Reading RAM takes tens of nanoseconds, far faster than an SSD, but everything in it is lost when the power turns off.',
@@ -44,7 +44,7 @@ def('ram',{name:'RAM',parent:'computer',level:2,scene:'ram',model:true,tip:'Fast
  fact:'DRAM cells slowly leak their charge, so every cell is read and rewritten (refreshed) about every 64 milliseconds, even when the computer is idle.',
  rel:[['cpu','Its memory controller talks to RAM'],['cache','Faster, smaller memory inside the CPU'],['storage','Where data comes from and goes back to']]});
 
-def('gpu',{name:'GPU',parent:'computer',level:2,scene:'gpu',model:true,tip:'Graphics card: thousands of parallel cores',
+def('gpu',{name:'GPU',parent:'computer',level:2,scene:'gpu',tip:'Graphics card: thousands of parallel cores',
  short:'The Graphics Processing Unit: thousands of small cores working in parallel on images and big calculations.',
  what:'A graphics card is a mini computer on its own circuit board: a large GPU chip, its own fast memory (VRAM), power circuitry and a big cooler. It plugs into a PCIe x16 slot.',
  does:'It draws every frame you see, calculating the colour of millions of pixels many times a second. Because it is built for parallel work, it is also used for AI and scientific computing.',
@@ -64,7 +64,7 @@ def('storage',{name:'Storage',parent:'computer',level:2,scene:'storage',tip:'SSD
  fact:'The first hard drive, IBM’s 350 from 1956, stored about 3.75 MB on fifty 24-inch platters and weighed around a tonne.',
  rel:[['ram','Programs are loaded from storage into RAM'],['pcie','NVMe SSDs use PCIe lanes']]});
 
-def('psu',{name:'Power supply',parent:'computer',level:2,scene:'psu',model:true,tip:'Converts wall power into DC voltages',
+def('psu',{name:'Power supply',parent:'computer',level:2,scene:'psu',tip:'Converts wall power into DC voltages',
  short:'Converts mains electricity from the wall into the steady low DC voltages the parts need.',
  what:'The power supply unit (PSU) is a metal box, usually at the bottom of the case. Inside is a switch-mode converter: rectifier, capacitors, fast switching transistors, a small high-frequency transformer and regulators.',
  does:'It turns 100–240 V AC from the wall into DC: 12 V for the CPU, GPU and fans, plus 5 V and 3.3 V for drives and other chips. It also protects parts from surges, short circuits and overheating.',
@@ -142,13 +142,58 @@ def('vrm',{name:'Voltage regulators',parent:'motherboard',level:3,tip:'VRM: turn
  rel:[['cpu-socket','Delivers power to it'],['psu','Supplies the 12 V input']]});
 def('bios',{name:'BIOS chip',parent:'motherboard',level:3,tip:'Firmware that starts the computer',
  short:'A small flash chip holding the firmware (BIOS/UEFI) that starts the computer.',
- what:'The firmware lives on a small flash memory chip on the motherboard. A coin-cell battery keeps the real-time clock running when the PC is unplugged.',
+ what:'The firmware lives on a small SPI flash memory chip on the motherboard, next to the CMOS battery that keeps its settings alive.',
  does:'At power-on it tests and sets up the hardware, such as training the memory, then finds a boot drive and hands control to the operating system.',
  why:'Without firmware, the CPU would not know how to start. Firmware updates can add support for new CPUs and fix bugs.',
- ex:[['UEFI','Modern replacement for the classic BIOS'],['CR2032 battery','Keeps the clock running'],['BIOS Flashback','Update firmware on some boards without a CPU']],
- specs:[['Chip','SPI flash, typically 16–32 MB'],['Battery','CR2032, 3 V'],['Starts','before the operating system']],
+ ex:[['UEFI','Modern replacement for the classic BIOS'],['BIOS Flashback','Update firmware on some boards without a CPU'],['Dual BIOS','Some boards keep a backup chip in case one update fails']],
+ specs:[['Chip','SPI flash, typically 16–32 MB'],['Starts','before the operating system']],
  fact:'The very first instruction a PC’s CPU runs after power-on comes from this chip, before any RAM has even been set up.',
- rel:[['cpu','Runs its code first'],['spd','Reads memory details from the RAM sticks']]});
+ rel:[['cpu','Runs its code first'],['spd','Reads memory details from the RAM sticks'],['cmos','Keeps its settings alive between reboots']]});
+def('cmos',{name:'CMOS battery',parent:'motherboard',level:3,tip:'Coin-cell battery that keeps the clock and settings alive',
+ short:'A small coin-cell battery that keeps the clock and BIOS settings alive when the PC is unplugged.',
+ what:'A CR2032 lithium coin cell, clipped into a small holder next to the BIOS chip, wired to a tiny always-on memory (CMOS RAM) and the real-time clock.',
+ does:'It trickle-feeds the real-time clock and the BIOS’s saved settings (boot order, fan curves, overclocks) so they survive with the PC unplugged for years.',
+ why:'Without it, the clock would reset and custom BIOS settings would be forgotten every time the PC lost power — pulling this battery is also the classic way to force a stuck BIOS back to its defaults.',
+ ex:[['CR2032','The standard 3 V coin cell used on almost every board'],['Clearing CMOS','Removing the battery for a minute resets the BIOS']],
+ specs:[['Cell','CR2032, 3 V'],['Life','Usually several years'],['Powers','The real-time clock and saved BIOS settings']],
+ fact:'If this battery dies, the PC’s clock will reset to a default date every time it is unplugged — a classic sign it needs replacing.',
+ rel:[['bios','What it keeps powered'],['psu','Takes over once the PC has mains power']]});
+def('rear-io',{name:'Rear I/O panel',parent:'motherboard',level:3,tip:'The row of external ports on the back of the case',
+ short:'The row of ports on the back of the case: USB, network, audio and video, wired straight to the board behind them.',
+ what:'A stack of stamped-metal ports along the motherboard’s back edge, lined up with a matching cutout in the case so they poke through to the outside.',
+ does:'Each port connects straight to the chipset, the CPU or a small controller chip: USB to the chipset’s USB controller, network to an Ethernet chip, audio to a codec chip, and video to the CPU’s own graphics if it has any.',
+ why:'Keeping every external connector in one fixed panel is what lets any case fit any motherboard — the case just needs a rectangular cutout in the right place.',
+ ex:[['USB-A / USB-C','Keyboard, mouse, storage'],['RJ45','Wired Ethernet network'],['3.5 mm jacks','Analogue audio in and out'],['HDMI / DisplayPort','Video from integrated graphics']],
+ specs:[['Common ports','USB, Ethernet, audio, sometimes video'],['Fixed by','The case’s I/O shield cutout'],['Wired to','The chipset and small controller chips']],
+ fact:'This panel is sometimes called the "I/O shield", and using the wrong one (from a different motherboard) is a classic reason USB ports end up not lining up with the case.',
+ rel:[['io','The same idea as the tower’s I/O bracket'],['chipset','Provides many of these ports'],['usb','What most of these ports carry']]});
+def('atx-power',{name:'24-pin ATX connector',parent:'motherboard',level:3,tip:'Main power connector from the power supply',
+ short:'The main power connector from the power supply to the motherboard.',
+ what:'A wide, keyed connector with 24 pins, carrying several different voltages and a couple of control signals from the power supply.',
+ does:'It delivers +12 V, +5 V and +3.3 V to the board, and carries the PS_ON signal that switches the power supply on, and PWR_OK, which confirms the voltages are stable before the CPU starts.',
+ why:'Every chip on the board needs one of these voltages, so a single wide connector, rather than several small ones, keeps the wiring simple and hard to plug in wrong.',
+ ex:[['20+4 pin','Older or budget power supplies split it into two connectors'],['8-pin EPS','A second connector feeds the CPU’s VRM directly'],['Sense pins','Let the power supply fine-tune its +3.3 V output']],
+ specs:[['Pins','24'],['Carries','+12 V, +5 V, +3.3 V, PS_ON, PWR_OK'],['Also needs','An 8-pin EPS connector for the CPU']],
+ fact:'Shorting the PS_ON pin to ground with a paperclip is a classic way to test a power supply outside of a computer.',
+ rel:[['psu','Where the cable comes from'],['vrm','Turns the 12 V into what the CPU actually needs']]});
+def('sata-ports',{name:'SATA ports',parent:'motherboard',level:3,tip:'Connects SATA hard drives and SSDs',
+ short:'L-shaped connectors that link SATA hard drives and SATA SSDs to the board.',
+ what:'A row of small L-shaped connectors, usually near the front-panel edge of the board, each linked to the chipset by its own SATA data line.',
+ does:'It carries data between the board and a SATA drive at up to 6 Gb/s; a separate cable from the power supply provides the drive’s power.',
+ why:'SATA is slower than NVMe over PCIe, but it is cheap, reliable and still the standard way to add a hard drive or a budget SSD.',
+ ex:[['SATA III','6 Gb/s, the current standard'],['2.5-inch SSD','Common budget SATA drive'],['3.5-inch HDD','Desktop and NAS hard drives']],
+ specs:[['Speed','6 Gb/s (SATA III)'],['Ports','Typically 4–8 per board'],['Cable','A separate cable for data, another for power']],
+ fact:'SATA data cables carry no power at all — that is why every SATA drive also needs its own separate power cable from the PSU.',
+ rel:[['storage','What plugs in here'],['hdd','A common SATA device'],['chipset','Usually provides these ports']]});
+def('fan-header',{name:'Fan header',parent:'motherboard',level:3,tip:'Small pin connector that powers a case or CPU fan',
+ short:'A small pin connector that powers and controls a case or CPU fan.',
+ what:'A row of 3 or 4 pins near the CPU socket or along the board’s edge, matched to a fan’s own 3-pin or 4-pin connector.',
+ does:'It supplies +12 V and ground to spin the fan, reads a tachometer pin to report the fan’s speed, and on 4-pin (PWM) headers sends a signal that lets the board vary that speed automatically.',
+ why:'Letting the board control fan speed from temperature sensors keeps the PC quiet when idle and only spins fans up hard when it is actually needed.',
+ ex:[['4-pin PWM','Speed set by a signal, used by most CPU fans'],['3-pin DC','Speed set by varying the voltage instead'],['ARGB header','A separate connector some fans also use for lighting']],
+ specs:[['Pins','3 (DC) or 4 (PWM)'],['Voltage','+12 V'],['Reports','Fan speed, via a tachometer pin']],
+ fact:'A PWM fan header can hold a fan at, say, 40% speed by switching its 12 V supply fully on and off thousands of times a second — too fast to see it flicker.',
+ rel:[['cooling','A common thing plugged in here'],['vrm','Nearby, and also needs its own airflow']]});
 
 /* ---------------- RAM parts ---------------- */
 def('dram',{name:'DRAM chips',parent:'ram',level:3,tip:'The memory chips on the stick',
@@ -227,7 +272,7 @@ def('display-outputs',{name:'Display outputs',parent:'gpu',level:3,tip:'HDMI and
  rel:[['video-out','The motherboard’s video ports'],['io','Other external connectors']]});
 
 /* ---------------- Storage ---------------- */
-def('ssd',{name:'SSD',parent:'storage',level:3,tip:'Solid-state drive: flash memory, no moving parts',
+def('ssd',{name:'SSD',parent:'storage',level:3,scene:'ssd',tip:'Solid-state drive: flash memory, no moving parts',
  short:'Solid-state drive: flash memory chips and a controller, with no moving parts.',
  what:'An SSD stores data in NAND flash chips managed by a controller chip; many also have a small DRAM cache. M.2 NVMe SSDs are small sticks that plug straight into the motherboard.',
  does:'The controller spreads data across many flash chips in parallel, tracks where everything is, and moves data around so cells wear evenly (wear levelling).',
@@ -236,7 +281,7 @@ def('ssd',{name:'SSD',parent:'storage',level:3,tip:'Solid-state drive: flash mem
  specs:[['Interface','NVMe over PCIe (M.2) or SATA'],['Flash type','TLC or QLC NAND'],['Parts','controller, NAND flash, DRAM cache']],
  fact:'Modern flash chips stack over 200 layers of memory cells vertically, like a skyscraper of storage.',
  rel:[['pcie','NVMe drives use PCIe lanes'],['nand-gate','NAND flash is named after it'],['hdd','The mechanical alternative']]});
-def('hdd',{name:'Hard drive',parent:'storage',level:3,tip:'HDD: spinning magnetic platters',
+def('hdd',{name:'Hard drive',parent:'storage',level:3,scene:'hdd',tip:'HDD: spinning magnetic platters',
  short:'Hard disk drive: stores data magnetically on spinning platters.',
  what:'An HDD contains one or more platters coated with magnetic material, spinning at 5,400–7,200 rpm. A read/write head on a moving arm can reach every track.',
  does:'The head magnetises tiny regions of the platter to write bits and senses their direction to read them. The arm must physically move to each track, which takes milliseconds.',
@@ -245,6 +290,91 @@ def('hdd',{name:'Hard drive',parent:'storage',level:3,tip:'HDD: spinning magneti
  specs:[['Speed','5,400 or 7,200 rpm'],['Transfer','about 150–280 MB/s'],['Access time','about 5–10 ms'],['Capacity','up to about 30+ TB']],
  fact:'The head flies only a few nanometres above the spinning platter; a speck of dust would be like a boulder in its path. That is why drives are assembled in clean rooms.',
  rel:[['ssd','The faster, solid-state alternative'],['motherboard','Connects by SATA']]});
+
+/* ---------------- Inside the SSD ---------------- */
+def('m2-connector',{name:'M.2 connector',parent:'ssd',level:4,levelLabel:'Internal components',tip:'The gold-fingered edge that plugs into the motherboard',
+ short:'The gold-plated edge connector that plugs an M.2 SSD straight into the motherboard.',
+ what:'A row of gold-plated contacts along one edge of the SSD stick, matching a slot on the motherboard. Most desktop M.2 slots are wired as an "M key" position, carrying four PCIe lanes.',
+ does:'It carries the PCIe (or, on older drives, SATA) signals, plus 3.3 V power, straight from the motherboard to the SSD, with no cable in between.',
+ why:'Removing the cable a 2.5-inch SSD needs cuts space, weight and one more point of failure, which is why M.2 has become the standard slot for new laptops and motherboards.',
+ ex:[['M key slot','4 PCIe lanes, used by almost all NVMe SSDs'],['B key slot','Up to 2 PCIe lanes or SATA, used by some laptops'],['B+M key','Fits either slot, limited to 2 lanes']],
+ specs:[['Contacts','67 or 75, depending on the key'],['Power','3.3 V'],['Lanes','Up to 4 PCIe lanes (M key)']],
+ fact:'The notches in the connector are called "keys", and they physically stop you from plugging a PCIe-only drive into a SATA-only slot.',
+ rel:[['pcie','Carries PCIe lanes to the SSD'],['ssd-controller','The chip the connector feeds']]});
+def('ssd-controller',{name:'SSD controller',parent:'ssd',level:4,levelLabel:'Internal components',tip:'The chip that manages every flash cell',
+ short:'A small processor that manages every flash chip, keeps track of where data lives, and spreads out wear.',
+ what:'A dedicated chip, often with its own small processor cores, sitting between the host connector and the NAND flash chips. It runs firmware that turns simple read and write commands into everything flash memory actually needs.',
+ does:'It maintains the flash translation layer (a map from the addresses the OS uses to physical flash locations), corrects errors, moves data around so no cell wears out early (wear levelling), and reclaims space from deleted files (garbage collection and TRIM).',
+ why:'Raw NAND flash is unreliable and wears out after a limited number of writes; almost everything that makes an SSD fast and durable happens in the controller’s firmware, not in the flash chips themselves.',
+ ex:[['Phison E18','A popular high-end NVMe controller'],['Samsung Pablo / Elpis','Samsung’s own SSD controllers'],['SM2267 / SM2269','Common budget NVMe controllers']],
+ specs:[['Cores','Usually several small processor cores'],['Job','Flash translation, wear levelling, error correction, garbage collection'],['Also called','SSD processor']],
+ fact:'A controller can rewrite data to a completely different flash cell than the one the OS asked for, and quietly update its internal map, without the OS ever knowing the physical location changed.',
+ rel:[['dram-cache','Stores the controller’s map of the flash'],['nand-flash','What the controller manages'],['cpu','A similar idea: logic managing memory']]});
+def('dram-cache',{name:'DRAM cache',parent:'ssd',level:4,levelLabel:'Internal components',tip:'Fast memory holding the map of where every file lives',
+ short:'A small DRAM chip that caches the controller’s flash-address map for fast lookups.',
+ what:'A single DRAM chip, often around 1 GB of DRAM for every 1 TB of flash, wired to the controller and separate from the NAND flash. Budget "DRAM-less" SSDs skip this chip and borrow a slice of the host PC’s RAM instead (a Host Memory Buffer).',
+ does:'It holds the flash translation layer’s lookup table in fast memory, so the controller does not have to search through flash itself just to find where a file’s data lives.',
+ why:'Without a nearby fast map, every read would need an extra trip into flash just to find the data, which is especially painful for the small, random reads an operating system makes constantly.',
+ ex:[['1 GB DRAM per 1 TB','A typical ratio on mainstream NVMe SSDs'],['DRAM-less SSD','Uses part of the PC’s RAM (HMB) instead']],
+ specs:[['Typical size','512 MB–2 GB, depending on capacity'],['Type','Low-capacity DDR3 or DDR4'],['Holds','The flash translation layer’s address map']],
+ fact:'Losing power mid-write is riskier on SSDs with a volatile DRAM cache, which is why many drives include small backup capacitors to finish flushing it safely.',
+ rel:[['ram','The same idea as system RAM, used internally'],['ssd-controller','The chip that reads and writes this cache']]});
+def('nand-flash',{name:'NAND flash memory',parent:'ssd',level:4,levelLabel:'Internal components',tip:'Rows of memory cells storing data as trapped electric charge',
+ short:'The actual storage medium: rows of memory cells storing data as trapped electric charge, with no moving parts.',
+ what:'Each flash chip contains billions of floating-gate transistors organised into pages (the smallest unit you can write, typically 4–16 KB) and blocks (the smallest unit you can erase, made of many pages). Modern chips are 3D NAND, stacking over 200 layers of cells vertically.',
+ does:'Writing traps or removes electrons on a transistor’s floating gate, shifting its threshold voltage; reading measures that voltage to recover the stored bits. A whole block must be erased before any of its pages can be written again.',
+ why:'Because data is stored as charge rather than a mechanical position, an SSD has no seek time: any cell can be reached about as fast as any other, which is the main reason SSDs feel instant compared with a hard drive.',
+ ex:[['TLC NAND','3 bits per cell; most consumer SSDs'],['QLC NAND','4 bits per cell; cheaper and slower'],['SLC NAND','1 bit per cell; fastest, now mostly used as cache']],
+ specs:[['Cell types','SLC, MLC, TLC, QLC (1–4 bits per cell)'],['Page size','Typically 4–16 KB'],['Erase unit','A block (many pages)'],['Layers','200+ in modern 3D NAND']],
+ fact:'A flash cell can only be erased and rewritten a limited number of times — a few hundred for QLC to tens of thousands for SLC — which is exactly why wear levelling matters.',
+ rel:[['nand-gate','Flash memory is named after the logic gate its cell resembles electrically'],['ssd-controller','Manages every read, write and erase'],['hdd','The magnetic alternative, with no cell wear']]});
+
+/* ---------------- Inside the hard drive ---------------- */
+def('hdd-platter',{name:'Platter',parent:'hdd',level:4,levelLabel:'Internal components',tip:'The spinning magnetic disk that stores the data',
+ short:'A rigid, spinning disk coated with magnetic material, where the actual data lives.',
+ what:'A flat aluminium or glass disk coated with a thin layer of magnetic material, spinning continuously at 5,400–7,200 rpm (some drives reach 10,000–15,000 rpm). Data sits in concentric circular tracks, each split into sectors. Larger drives stack several platters on one spindle.',
+ does:'It holds every bit as a tiny magnetised region pointing one of two directions. The platter itself does no processing; it just spins fast and steady enough for the head to read and write reliably.',
+ why:'Spinning the platter constantly, rather than starting and stopping, is what lets the drive respond to a request in milliseconds instead of seconds — though it still has to wait for the right spot to rotate underneath the head.',
+ ex:[['3.5-inch platter','Desktop and NAS drives, up to about 2–2.5 TB per platter'],['2.5-inch platter','Laptop and portable drives, smaller and lighter'],['Helium-filled drives','Thinner platters packed closer together for more capacity']],
+ specs:[['Speed','5,400–7,200 rpm typical'],['Material','Aluminium or glass substrate with a magnetic coating'],['Layout','Concentric tracks, each divided into sectors']],
+ fact:'A modern platter surface packs over a terabyte per square inch — a magnetic region storing one bit can be smaller than a virus.',
+ rel:[['hdd-head','Reads and writes the platter’s surface'],['hdd-spindle','The motor that spins it'],['nand-flash','The solid-state alternative, with no moving parts']]});
+def('hdd-head',{name:'Read/write head',parent:'hdd',level:4,levelLabel:'Internal components',tip:'Flies nanometres above the platter, sensing and setting magnetism',
+ short:'A tiny electromagnet, flown just above the spinning platter, that reads and writes its magnetic surface.',
+ what:'A read/write head sits at the tip of the actuator arm, one per platter surface. It never touches the platter: air dragged around by the spinning disk holds it aloft only a few nanometres above the surface.',
+ does:'To write, it generates a tiny magnetic field that sets the direction of magnetism in the region passing beneath it. To read, a separate, extremely sensitive sensor detects the direction of magnetism already there.',
+ why:'Flying rather than touching lets the head move quickly across a fast-spinning platter for millions of read and write cycles without wearing the surface away — but it also means a speck of dust or a hard knock can cause a head crash.',
+ ex:[['Magnetoresistive (MR) head','Reads by sensing resistance changes in a magnetic field'],['Thin-film inductive head','Writes by generating a magnetic field through a tiny coil']],
+ specs:[['Flying height','A few nanometres above the platter'],['Count','One head per platter surface'],['Job','Separate read and write elements in one assembly']],
+ fact:'The head’s flying height is so small that, scaled up, it is like flying a jumbo jet one centimetre above the ground, following every bump, at full speed.',
+ rel:[['hdd-platter','What it reads and writes'],['hdd-arm','Carries it to the right track']]});
+def('hdd-arm',{name:'Actuator arm',parent:'hdd',level:4,levelLabel:'Internal components',tip:'Swings the head to the right track in a few milliseconds',
+ short:'A rigid arm that swings the head assembly to the right track, driven by a voice-coil motor.',
+ what:'A comb of rigid arms, one per platter surface, pivoting together on a single axis. A voice-coil motor — a coil of wire in a strong magnetic field, the same principle as a loudspeaker — swings the whole comb in a fast arc.',
+ does:'On command, the voice-coil motor drives the arm to sweep the heads to the target track, then holds them steady while that track passes underneath — a movement called a seek.',
+ why:'Because the arm has to physically move for every seek, hard drives take milliseconds to reach data compared with the microseconds an SSD needs, which is the main reason hard drives feel slower for everyday use.',
+ ex:[['Voice-coil actuator','Used in essentially all modern hard drives'],['Stepper-motor actuator','An older, less precise design, now obsolete']],
+ specs:[['Motor','Voice-coil, driven by the controller board'],['Seek time','About 5–10 ms typical'],['Motion','A fast pivoting arc, not a straight line']],
+ fact:'The same voice-coil principle used to swing the arm also drives the cone of a loudspeaker — a hard drive briefly makes an almost inaudible "click" for the same electromagnetic reason a speaker makes sound.',
+ rel:[['hdd-head','What it positions'],['hdd-controller-board','Sends it the seek commands']]});
+def('hdd-spindle',{name:'Spindle motor',parent:'hdd',level:4,levelLabel:'Internal components',tip:'Keeps every platter spinning at a constant speed',
+ short:'The motor at the centre of the platters, keeping them spinning at a constant speed.',
+ what:'A brushless DC motor built into the hub the platters are mounted on, sitting at the exact centre of rotation.',
+ does:'It spins the whole stack of platters continuously at a fixed speed (5,400 or 7,200 rpm on most drives) the whole time the drive is powered, using a fluid dynamic bearing to stay quiet and stable.',
+ why:'A steady, precise speed is what lets the drive predict exactly when a given sector will pass under the head, and any wobble would risk the head crashing into the platter.',
+ ex:[['5,400 rpm','Common in laptop and low-power drives'],['7,200 rpm','Common in desktop drives'],['10,000–15,000 rpm','Enterprise drives built for speed']],
+ specs:[['Speed','5,400–15,000 rpm depending on the drive'],['Bearing','Fluid dynamic bearing on modern drives'],['Runs','Continuously while the drive is powered']],
+ fact:'A 7,200 rpm platter’s edge moves at over 100 km/h — faster than most cars travel on a motorway — while the head flies a few nanometres above it.',
+ rel:[['hdd-platter','What it spins'],['psu','Supplies the motor’s power']]});
+def('hdd-controller-board',{name:'Controller board',parent:'hdd',level:4,levelLabel:'Internal components',tip:'The PCB underneath, talking SATA and driving the motors',
+ short:'The printed circuit board on the underside of the drive, running its firmware and driving its motors.',
+ what:'A PCB attached to the bottom of the drive, carrying the SATA (or SAS) connector, a small cache DRAM chip, and a controller chip that runs the drive’s firmware.',
+ does:'It translates SATA commands from the PC into instructions for the spindle motor and actuator arm, times exactly when to read or write as each sector passes the head, and manages a small cache of recent data.',
+ why:'It is the layer that makes a hard drive look like a simple block of storage to the PC, hiding all the mechanical timing, error correction and bad-sector remapping that spinning platters actually need.',
+ ex:[['SATA III','Up to 6 Gb/s, the standard PC hard-drive interface'],['SAS','Used in servers, a similar idea with dual ports']],
+ specs:[['Interface','SATA (desktop/laptop) or SAS (servers)'],['Cache','8–256 MB DRAM, a similar role to an SSD’s'],['Job','Firmware, motor control, error correction']],
+ fact:'Every hard drive ships with a list of bad sectors found at the factory, permanently mapped out by the controller board so the drive silently avoids them.',
+ rel:[['hdd-arm','Commands it to seek'],['hdd-spindle','Commands it to spin'],['dram-cache','The SSD equivalent of its cache chip']]});
 
 /* ---------------- PSU ---------------- */
 def('rectifier',{name:'Rectifier',parent:'psu',level:3,tip:'Converts AC into DC',

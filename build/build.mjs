@@ -16,6 +16,7 @@ import { checkChips } from './check-chips.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,10 +67,20 @@ if (chipErrors.length){ console.error('Chip definition errors:\n  ' + chipErrors
 const ICONS = ['favicon.svg','favicon.ico','favicon-16x16.png','favicon-32x32.png','apple-touch-icon.png','android-chrome-192x192.png','android-chrome-512x512.png','maskable-512x512.png','site.webmanifest'];
 const missingIcons = ICONS.filter(f => f !== 'favicon.svg' && !fs.existsSync(path.join(ROOT, f)));
 if (missingIcons.length) console.warn('Missing icon files (browsers will fall back to favicon.svg): ' + missingIcons.join(', '));
+fs.writeFileSync(path.join(ROOT, 'favicon.svg'),
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16654F"/><rect x="14" y="14" width="36" height="36" rx="5" fill="#0D0D0D"/><path d="M24 8v6M32 8v6M40 8v6M24 50v6M32 50v6M40 50v6M8 24h6M8 32h6M8 40h6M50 24h6M50 32h6M50 40h6" stroke="#0D0D0D" stroke-width="3" stroke-linecap="round"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="800" letter-spacing="-.5" font-family="Arial, sans-serif" fill="#E39A12">AS</text></svg>\n`);
 
 const tpl = fs.readFileSync(path.join(ROOT, 'build/template.html'), 'utf8');
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const BASE_KEYWORDS = 'how a computer works, computer architecture, logic gates, interactive learning';
+
+/* A short hash of the icon files' own bytes, appended to every icon/manifest
+   link as ?v=. Browsers cache favicons very aggressively (sometimes for the
+   life of the profile), so without this a changed icon can keep showing the
+   old one indefinitely; this changes automatically whenever an icon file does. */
+const iconHash = crypto.createHash('sha1');
+for (const f of ICONS) { const p = path.join(ROOT, f); if (fs.existsSync(p)) iconHash.update(fs.readFileSync(p)); }
+const ICON_V = iconHash.digest('hex').slice(0, 8);
 
 function render(id){
   const n = N[id], home = id === 'computer', rootRel = home ? '' : '../';
@@ -79,7 +90,7 @@ function render(id){
     ? 'computer components, parts of a computer, computer architecture, how a CPU works, ALU, arithmetic logic unit, logic gates, truth table, full adder, multiplexer, barrel shifter, flip-flop, 7400 series, RAM, cache, GPU, SSD, power supply, motherboard, digital logic, interactive learning'
     : [n.name, ...n.children.map(c => N[c].name), N[n.parent]?.name, BASE_KEYWORDS].filter(Boolean).join(', ');
   const vals = {
-    ROOT: rootRel, SITE, ID: id, LEVEL: String(n.level), HOME: href('computer'),
+    ROOT: rootRel, SITE, ID: id, LEVEL: String(n.level), HOME: href('computer'), V: ICON_V, YEAR: String(new Date().getFullYear()),
     TITLE: esc(call('metaTitle', id)), DESC: esc(call('metaDesc', id)), KEYWORDS: esc(keywords),
     CANONICAL: canonical, OGTYPE: home ? 'website' : 'article',
     JSONLD: JSON.stringify(call('jsonLD', id, SITE)).replace(/</g,'\\u003c'),
@@ -103,7 +114,5 @@ fs.writeFileSync(path.join(ROOT, 'sitemap.xml'),
   ORDER.map(id => `  <url><loc>${call('pageURL', id, SITE)}</loc><lastmod>${today}</lastmod><priority>${id === 'computer' ? '1.0' : (Math.max(0.4, 1 - N[id].level*0.12)).toFixed(1)}</priority></url>`).join('\n') +
   '\n</urlset>\n');
 fs.writeFileSync(path.join(ROOT, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${SITE}sitemap.xml\n`);
-fs.writeFileSync(path.join(ROOT, 'favicon.svg'),
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#16654F"/><rect x="18" y="18" width="28" height="28" rx="4" fill="#EDF0EC"/><path d="M24 10v8M32 10v8M40 10v8M24 46v8M32 46v8M40 46v8M10 24h8M10 32h8M10 40h8M46 24h8M46 32h8M46 40h8" stroke="#EDF0EC" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#E39A12"/></svg>\n`);
 
 console.log(`Built ${ORDER.length} pages for ${SITE}`);

@@ -4,7 +4,7 @@
    Edit the text here, then run: node build/build.mjs
    ========================================================== */
 /* ---------------- Level 3: inside the CPU ---------------- */
-def('control-unit',{name:'Control unit',parent:'cpu',level:3,scene:'control',model:true,tip:'Directs the fetch-decode-execute cycle',
+def('control-unit',{name:'Control unit',parent:'cpu',level:3,scene:'control',tip:'Directs the fetch-decode-execute cycle',
  try:'Press <b>Next step</b> to walk through a tiny program one stage at a time, or <b>Run</b> to watch it loop. Each instruction is fetched, decoded and then executed; watch the zero flag decide whether the jump is taken.',
  short:'The part of the CPU that directs everything else, step by step.',
  what:'The control unit is a large block of logic that reads each decoded instruction and generates control signals telling the rest of the core what to do and when.',
@@ -25,8 +25,8 @@ def('decoder',{name:'Instruction decoder',parent:'cpu',level:3,tip:'Turns instru
  fact:'A simple 2-to-4 decoder is just four AND gates and two NOT gates: it turns a 2-bit code into one of four control lines.',
  rel:[['control-unit','Hands it the decoded instruction'],['registers','Selects which registers are used']]});
 
-def('alu',{name:'ALU',parent:'cpu',level:3,scene:'alu',model:true,tip:'Arithmetic Logic Unit: does the calculations',
- try:'Click the bits of A and B, then pick one of the nine operations on the left. Every unit\u2014the arithmetic unit, the logic unit, the shifter and the comparator\u2014calculates at the same time, and the result multiplexer passes on the one you picked. The flags underneath show whether the result is zero, negative, carried or overflowed. To see a 16-bit ALU working inside a real processor, with all 59 operand operations, open the <b>Intel 8086</b> page.',
+def('alu',{name:'ALU',parent:'cpu',level:3,scene:'alu',tip:'Arithmetic Logic Unit: does the calculations',
+ try:'Use the switch at the top of the diagram to choose a mode. <b>Simple 4-bit ALU</b>: click the bits of A and B and pick one of nine operations; every unit calculates at the same time and the result multiplexer passes on the one you picked. <b>8086 ALU</b>: 8-bit or 16-bit A and B, and tabs on the left with all 59 operations the 8086 performs on its operands, including multiply, divide, decimal adjust, flag instructions and all 16 jump conditions. You can also set the flags going in, see which flags change, and see how many clock cycles the real chip needs. The 8086 mode hides this panel to give the diagram the full width; press <b>Show details</b> to bring it back. To see this same ALU at work inside the whole chip, with its registers, bus interface unit and instruction queue, open the <b>Intel 8086</b> page.',
  short:'The Arithmetic Logic Unit: the calculator inside every CPU core.',
  what:'The ALU is a circuit that performs arithmetic (add, subtract) and logic operations (AND, OR, XOR, NOT) on binary numbers. A modern core has several ALUs working side by side.',
  does:'It takes two numbers (operands) from registers plus an operation code from the control unit, computes the result, usually within one clock cycle, and sets flags such as zero or carry.',
@@ -36,7 +36,7 @@ def('alu',{name:'ALU',parent:'cpu',level:3,scene:'alu',model:true,tip:'Arithmeti
  fact:'Computers subtract by adding: to calculate A − B, the ALU inverts the bits of B, adds 1, and adds the result to A. This is called two’s complement.',
  rel:[['registers','Supply its inputs and store its results'],['control-unit','Chooses the operation'],['cache','Keeps its data close by'],['i8086','Try every 8086 arithmetic and logic instruction']]});
 
-def('registers',{name:'Registers',parent:'cpu',level:3,scene:'registers',model:true,tip:'Tiny, ultra-fast storage slots',
+def('registers',{name:'Registers',parent:'cpu',level:3,scene:'registers',tip:'Tiny, ultra-fast storage slots',
  try:'Set the four D switches, then press <b>Clock</b>. All four flip-flops copy their inputs at the same instant and keep that value until the next clock pulse, even if you change the switches.',
  short:'Tiny, ultra-fast storage slots right next to the ALU.',
  what:'Registers are the smallest and fastest memory in the computer. Each holds one value, for example a 64-bit number, and is built from flip-flops: one per bit.',

@@ -51,10 +51,53 @@ function adderTable(){
   return '<table class="tt"><thead><tr><th>A</th><th>B</th><th>C<sub>in</sub></th><th class="out">Sum</th><th>C<sub>out</sub></th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
+/* Most levels share one name (LEVELS[n.level]), but a node can set its own
+   levelLabel where that generic name would be misleading -- e.g. an SSD or
+   hard drive's internal parts aren't "Digital logic" the way a logic gate
+   or adder is, even though they sit at the same depth in the tree. */
+function levelName(n){ return n.levelLabel || LEVELS[n.level]; }
+function detailsHeadHTML(n){
+  return '<div class="dp-head"><p class="dp-lvl">Level ' + n.level + ': ' + levelName(n) + '</p>' +
+    '<h4 class="dp-title">' + n.name + '</h4></div>';
+}
+function detailsHTML(n){
+  return detailsHeadHTML(n) +
+    '<div class="dp-scroll"><p class="dp-short">' + n.short + '</p>' +
+    '<div class="dp-body"><p>' + n.does + '</p></div>' +
+    '<p class="dp-hint">Right-click for more options</p></div>';
+}
+function detailsFullHTML(n){
+  var h = '<p>' + n.what + '</p><p>' + n.does + '</p><p>' + n.why + '</p>';
+  if (n.specs.length) h += '<dl class="dp-specs">' + n.specs.map(function(s){ return '<dt>' + s[0] + '</dt><dd>' + s[1] + '</dd>'; }).join('') + '</dl>';
+  if (n.fact) h += '<p class="dp-fact"><b>Fun fact.</b> ' + n.fact + '</p>';
+  return h;
+}
+function detailsExamplesHTML(n){
+  if (!n.ex.length) return '<p class="dp-empty">No real-life examples listed.</p>';
+  return '<ul class="ex">' + n.ex.map(function(e){ return '<li><b>' + e[0] + '</b><span>' + e[1] + '</span></li>'; }).join('') + '</ul>';
+}
+/* The right-click action card: concise text plus buttons that reveal one
+   section at a time in the empty .dp-section below them. */
+function actionCardHTML(n){
+  var h = detailsHeadHTML(n) +
+    '<div class="dp-scroll"><p class="dp-short">' + n.short + '</p>' +
+    '<div class="dp-actions"><button type="button" class="dp-act" data-act="full">Details</button>';
+  /* "Inside" only makes sense when going there actually shows something new:
+     a part with its own dedicated diagram (n.scene) -- including every real
+     IC chip, which all have scene:'ic'. A part whose only "child" is a real
+     chip it happens to be built from (e.g. Clock -> the NE555) has no
+     diagram of its own, so the button would just re-focus the same box you
+     already clicked -- not worth offering. */
+  if (n.scene) h += '<button type="button" class="dp-act" data-act="inside">Inside</button>';
+  if (n.ex.length) h += '<button type="button" class="dp-act" data-act="examples">Examples</button>';
+  if (n.id === 'webcam') h += '<button type="button" class="dp-act" data-act="try">Try camera</button>';
+  else if (n.id === 'mic') h += '<button type="button" class="dp-act" data-act="try">Try mic</button>';
+  h += '</div><div class="dp-section"></div></div>';
+  return h;
+}
 function panelHTML(id, href){
-  var n = N[id], own = N[ownerOf(id)], model = own.model && !n.ic;
-  var h = '<p class="p-level">Level ' + n.level + ': ' + LEVELS[n.level] + '</p><h1 class="p-title">' + n.name + '</h1><p class="p-short">' + n.short + '</p>';
-  if (model) h += '<span class="p-badge"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.6v.1"/></svg>Diagram is a simplified educational model</span>';
+  var n = N[id];
+  var h = '<p class="p-level">Level ' + n.level + ': ' + levelName(n) + '</p><h1 class="p-title">' + n.name + '</h1><p class="p-short">' + n.short + '</p>';
   if (n.device) h += '<span class="p-badge"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="var(--' + (n.device === 'input' ? 'accent' : 'out') + ')"/></svg>' + (n.device === 'input' ? 'Input device' : 'Output device') + '</span>';
   h += sec('What is it?', '<p>' + n.what + '</p>');
   h += sec('What does it do?', '<p>' + n.does + '</p>');
@@ -63,8 +106,12 @@ function panelHTML(id, href){
   /* interactive "Try it" sections */
   if (n.gate) h += sec('Try it', '<p class="expr">' + n.expr + '</p><p class="hintline">' + TT + '</p>' + truthTable(n));
   else if (n.scene === 'adder') h += sec('Try it', '<p>' + n.try + '</p>' + adderTable());
-  else if (n.scene === 'mux') h += sec('Try it', '<p class="expr">Y = ' + OL('S') + '·D0 + S·D1</p><p class="hintline">Flip S to choose which input reaches the output.</p>' +
-    '<table class="tt"><thead><tr><th>S</th><th class="out">Y</th></tr></thead><tbody><tr data-row="0"><td>0</td><td class="out">D0</td></tr><tr data-row="1"><td>1</td><td class="out">D1</td></tr></tbody></table>');
+  else if (n.scene === 'mux') h += sec('Try it', '<p class="expr">Y = D<sub>S1S0</sub></p><p class="hintline">Flip S0 and S1 to choose which of the four inputs reaches the output.</p>' +
+    '<table class="tt"><thead><tr><th>S1</th><th>S0</th><th class="out">Y</th></tr></thead><tbody>' +
+    '<tr data-row="00"><td>0</td><td>0</td><td class="out">D0</td></tr>' +
+    '<tr data-row="01"><td>0</td><td>1</td><td class="out">D1</td></tr>' +
+    '<tr data-row="10"><td>1</td><td>0</td><td class="out">D2</td></tr>' +
+    '<tr data-row="11"><td>1</td><td>1</td><td class="out">D3</td></tr></tbody></table>');
   else if (n.scene === 'control') h += sec('Try it', '<p>' + n.try + '</p><div class="live" data-live="control" aria-live="polite">Press <b>Next step</b> to begin.</div>');
   else if (n.try) h += sec('Try it', '<p>' + n.try + '</p>' + (n.scene === 'alu' ? '<div class="live" data-live="alu" aria-live="polite"></div>' : ''));
 
@@ -98,7 +145,6 @@ function panelHTML(id, href){
   var rel = n.rel.filter(function(r){ return N[r[0]]; });
   if (rel.length) h += sec('How it connects', '<ul class="rel">' + rel.map(function(r){ return '<li>' + link(href, r[0], '', '<b>' + N[r[0]].name + '</b><span>' + r[1] + '</span>') + '</li>'; }).join('') + '</ul>');
   if (n.fact) h += '<div class="fact"><h3>Fun fact</h3><p>' + n.fact + '</p></div>';
-  if (model) h += '<p class="p-foot">Diagrams on this level are simplified educational models. Real chips are laid out differently and are far more complex.</p>';
   return h;
 }
 function crumbsHTML(id, href){

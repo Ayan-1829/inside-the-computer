@@ -9,27 +9,46 @@
    coordinates for the labels. Every part except the motherboard can be
    dragged (see DW in common.js). */
 SCENES.pc = () => {
-  const S = .78, TX = 372.8, TY = 103.2, tp = (x,y) => [TX + x*S, TY + y*S];
+  const S = .78, TX = 400, TY = 103.2, tp = (x,y) => [TX + x*S, TY + y*S];
   let s = '', L = '';
-  /* cables from the devices to the tower (hidden once parts are moved) */
-  s += `<g class="bg conn">${['M430 236C500 236 520 215 562 215','M256 104C330 60 520 80 562 205','M510 300C535 300 540 240 562 240',
-     'M400 440C480 440 520 262 562 262','M468 436C510 420 530 285 562 285','M546 530C556 470 548 320 562 312','M420 566C500 566 540 340 562 338']
-     .map(d => `<path class="ln-dash" d="${d}"/>`).join('')}</g>`;
-
-  /* ---- tower ---- */
+  /* ---- tower case (drawn first, in its own group, so the dashed cables
+     below can paint on top of it instead of being hidden behind it) ---- */
   s += `<g transform="translate(${TX} ${TY}) scale(${S})">`;
   s += `<g class="bg">${R(262,668,60,10,3,'m-case')}${R(698,668,60,10,3,'m-case')}
     ${R(240,60,540,612,18,'m-case')}${R(262,82,476,568,8,'m-cavity')}
     ${C(759,112,9,'m-panel')}${R(752,140,14,4,2,'m-accent')}${R(262,520,476,130,6,'m-case')}</g>`;
+  s += `</g>`;
+
+  /* cables from the devices to the tower, each ending at the I/O port (hidden once parts are moved) */
+  s += `<g class="bg conn">${['M430 236C500 236 550 215 609 215','M240 100C330 60 550 80 609 205','M500 300C535 300 550 240 609 240',
+     'M400 440C480 440 550 262 609 262','M468 436C510 420 550 285 609 285','M546 530C556 470 570 300 609 300','M420 566C500 566 570 300 609 300']
+     .map(d => `<path class="ln-dash" d="${d}"/>`).join('')}</g>`;
+
+  /* ---- the rest of the tower's contents, over the case and the cables ---- */
+  s += `<g transform="translate(${TX} ${TY}) scale(${S})">`;
+  /* Traces follow real connections instead of decorative squiggles: the
+     shared bus from the I/O port through RAM to the CPU, and the CPU's
+     link down to the GPU. */
   let traces = '';
-  [[330,300,420,300,420,215],[330,330,560,330,560,145],[540,480,540,440,600,440],[340,470,340,450,500,450],[600,150,600,120,470,120]].forEach(p => traces += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
+  [[308,190,450,190],[500,265,500,378]].forEach(p => traces += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
   s += hot('motherboard',[300,100,330,400], R(300,100,330,400,6,'m-board') + traces, {flat:true});
-  s += `<g class="ov cables"><path class="m-cable" d="M470 560 C 470 500, 640 500, 624 330"/><path class="m-cable" d="M430 560 C 420 520, 380 470, 355 300" style="stroke-width:8"/></g>`;
+  /* One cable per part that actually needs power, routed to where that part
+     sits, rather than two generic curves to nowhere in particular. The
+     motherboard's own 24-pin cable lands at its bottom-right corner. */
+  s += `<g class="ov cables">
+    <path class="m-cable" d="M460 545 C 500 528, 560 512, 610 498" style="stroke-width:7"/>
+    <path class="m-cable" d="M330 545 C 320 480, 370 440, 430 415" style="stroke-width:6"/>
+    <path class="m-cable" d="M482 572 C 510 574, 538 576, 562 579" style="stroke-width:5"/>
+  </g>`;
   let ports = ''; [120,146,172,198].forEach(y => ports += R(273,y,30,18,3,'m-slot')); ports += C(288,232,6,'m-slot') + C(288,250,6,'m-slot');
   s += DW('io', hot('io',[268,110,40,152], R(268,110,40,152,5,'m-metal') + ports));
-  s += DW('cpu', hot('cpu',[420,165,100,100], R(420,165,100,100,8,'m-metal-lt') + R(434,179,72,72,6,'m-metal')));
-  let sticks = ''; [553,569,585,601].forEach(x => sticks += R(x,140,10,200,2,'m-chip') + R(x+2,148,6,184,1,'m-plastic'));
-  s += DW('ram', hot('ram',[550,136,64,208], sticks));
+  /* RAM sits between the I/O port and the CPU, then the cooling fan right
+     beside the CPU -- a clean left-to-right line that also matches the
+     order data actually takes: in from I/O, staged in RAM, processed by
+     the CPU, kept cool right there, then back out through RAM and I/O. */
+  let sticks = ''; [340,356,372,388].forEach(x => sticks += R(x,140,10,200,2,'m-chip') + R(x+2,148,6,184,1,'m-plastic'));
+  s += DW('ram', hot('ram',[336,136,72,208], sticks));
+  s += DW('cpu', hot('cpu',[450,165,100,100], R(450,165,100,100,8,'m-metal-lt') + R(464,179,72,72,6,'m-metal')));
   const fan = (cx,cy,r) => { let b = ''; for (let i=0;i<5;i++) b += `<path transform="rotate(${i*72} ${cx} ${cy})" d="M${cx} ${cy} C ${cx+r*.25} ${cy-r*.6}, ${cx+r*.7} ${cy-r*.6}, ${cx+r*.82} ${cy-r*.28} C ${cx+r*.5} ${cy-r*.26}, ${cx+r*.25} ${cy-r*.1}, ${cx} ${cy}Z"/>`;
     return R(cx-r-4,cy-r-4,2*r+8,2*r+8,10,'m-fan') + `<g class="blades">${b}</g>` + C(cx,cy,r*.24,'m-hub'); };
   s += DW('cooling', hot('cooling',[638,110,96,240], fan(686,160,44) + fan(686,300,44)));
@@ -42,15 +61,28 @@ SCENES.pc = () => {
   s += `</g>`;
 
   /* ---- devices ---- */
-  s += DW('monitor', hot('monitor',[40,110,390,292], R(40,110,390,250,16,'m-chip') + R(54,124,362,212,6,'m-screen') +
-    R(84,146,190,120,6,'m-panel') + R(84,146,190,22,6,'m-block') + R(250,190,140,104,6,'m-panel') + R(54,318,362,18,4,'m-chip') +
-    R(214,360,42,32,4,'m-metal') + R(160,390,150,12,6,'m-metal')));
-  s += DW('webcam', hot('webcam',[214,94,42,20], R(214,94,42,20,10,'m-chip') + C(235,104,5,'m-screen') + C(235,104,2,'m-metal-lt'), {hit:true, pad:6}));
-  s += DW('speakers', hot('speakers',[448,196,62,164], R(448,196,62,164,12,'m-chip') + C(479,236,11,'m-metal2') + C(479,236,4,'m-hub') + C(479,306,24,'m-metal2') + C(479,306,8,'m-hub')));
-  let keys = ''; for (let r=0;r<3;r++) for (let c=0;c<14;c++) keys += R(54+c*24.5,436+r*16,20,12,3,'m-metal-lt');
-  keys += [54,78.5,103].map(x => R(x,484,20,12,3,'m-metal-lt')).join('') + R(128,484,170,12,3,'m-metal-lt') + [303,327.5,352,376.5].map(x => R(x,484,16,12,3,'m-metal-lt')).join('');
-  s += DW('keyboard', hot('keyboard',[40,424,360,82], R(40,424,360,82,12,'m-case') + keys));
-  s += DW('mouse', hot('mouse',[420,424,48,76], R(420,424,48,76,24,'m-case') + `<line class="ln-thin" x1="444" y1="424" x2="444" y2="454"/>` + R(440,434,8,14,4,'m-chip')));
+  const dot3 = (x,y) => `<g class="bg">${C(x,y,3.2,'',`fill="#FF5F57"`)}${C(x+11,y,3.2,'',`fill="#FEBC2E"`)}${C(x+22,y,3.2,'',`fill="#28C840"`)}</g>`;
+  s += DW('monitor', hot('monitor',[30,66,421,315],
+    R(30,66,421,270,16,'m-chip') + R(45,81,391,229,6,'m-screen',`id="monitor-screen"`) +
+    /* tab 1: a welcome message, shifted left so tab 2 covers less of its text */
+    R(58,105,205,130,6,'m-panel') + R(58,105,205,24,6,'m-block') + dot3(71,117) +
+    T(160,152,'Welcome!','t t-sm t-mut t-mid') + T(160,174,'to Inside the Computer','t t-xs t-mut t-mid') +
+    /* tab 2: developer credit, with a clickable link to the portfolio */
+    R(257,152,151,112,6,'m-panel') + R(257,152,151,20,6,'m-block') + dot3(268,162) +
+    C(332,200,17,'m-accent') + T(332,206,'AS','t t-xs t-inv t-mid') +
+    T(332,234,'Ayan Sarkar','t t-xs t-mut t-mid') +
+    `<g class="ctl dev-link" tabindex="0" role="link" aria-label="Open the portfolio site in a new tab">` +
+      T(332,252,'Portfolio ↗','t t-xs t-mid', `style="fill:var(--accent);text-decoration:underline"`) +
+    `</g>` +
+    R(45,291,391,19,4,'m-chip') + R(218,336,45,35,4,'m-metal') + R(160,368,162,13,6,'m-metal')));
+  s += DW('webcam', hot('webcam',[219,50,42,20], R(219,50,42,20,10,'m-chip') + C(240,60,5,'m-screen') + C(240,60,2,'m-metal-lt'), {hit:true, pad:6}));
+  s += DW('mic', hot('mic',[484,84,42,92], R(490,90,30,48,15,'m-chip') +
+    `<line class="ln-thin" x1="505" y1="138" x2="505" y2="160"/>` + R(487,160,36,10,5,'m-metal')));
+  s += DW('speakers', hot('speakers',[469,196,62,164], R(469,196,62,164,12,'m-chip') + C(500,236,11,'m-metal2') + C(500,236,4,'m-hub') + C(500,306,24,'m-metal2') + C(500,306,8,'m-hub')));
+  let keys = ''; for (let r=0;r<3;r++) for (let c=0;c<14;c++) keys += R(44+c*24.5,436+r*16,20,12,3,'m-metal-lt');
+  keys += [44,68.5,93].map(x => R(x,484,20,12,3,'m-metal-lt')).join('') + R(118,484,170,12,3,'m-metal-lt') + [293,317.5,342,366.5].map(x => R(x,484,16,12,3,'m-metal-lt')).join('');
+  s += DW('keyboard', hot('keyboard',[30,424,360,82], R(30,424,360,82,12,'m-case') + keys));
+  s += DW('mouse', hot('mouse',[410,424,48,76], R(410,424,48,76,24,'m-case') + `<line class="ln-thin" x1="434" y1="424" x2="434" y2="454"/>` + R(430,434,8,14,4,'m-chip')));
   s += DW('joystick', hot('joystick',[482,436,64,118], R(482,520,64,34,10,'m-chip') + `<path d="M514 522V470" style="fill:none;stroke:var(--i-chip);stroke-width:9;stroke-linecap:round"/>` +
     R(501,436,26,46,12,'m-chip') + C(514,447,4.5,'m-accent') + C(532,537,5,'m-metal2')));
   s += DW('gamepad', hot('gamepad',[46,540,168,68], P('M78 540H182A26 26 0 0 1 208 566L214 598A14 14 0 0 1 188 604L172 584H88L72 604A14 14 0 0 1 46 598L52 566A26 26 0 0 1 78 540Z','m-chip') +
@@ -58,32 +90,60 @@ SCENES.pc = () => {
   s += DW('printer', hot('printer',[240,512,180,88], R(284,512,92,28,2,'m-panel') + R(270,528,120,14,4,'m-metal') + R(240,540,180,60,10,'m-case') + R(268,556,124,6,3,'m-chip') + R(284,560,92,8,1,'m-panel') + C(398,582,6,'m-accent')));
 
   /* ---- labels (top layer) ---- */
-  L += LB(235,296,'Monitor',{for:'monitor',dot:'out',tone:'inv'}) + LB(264,90,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(479,180,'Speakers',{for:'speakers',dot:'out'}) +
-       LB(220,472,'Keyboard',{for:'keyboard',dot:'in'}) + LB(444,410,'Mouse',{for:'mouse',dot:'in'}) + LB(505,572,'Joystick',{for:'joystick',dot:'in'}) +
+  L += LB(150,276,'Monitor',{for:'monitor',dot:'out',tone:'inv'}) + LB(269,46,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(505,74,'Mic',{for:'mic',dot:'in'}) + LB(500,180,'Speakers',{for:'speakers',dot:'out'}) +
+       LB(210,410,'Keyboard',{for:'keyboard',dot:'in'}) + LB(434,410,'Mouse',{for:'mouse',dot:'in'}) + LB(505,572,'Joystick',{for:'joystick',dot:'in'}) +
        LB(130,626,'Game controller',{for:'gamepad',dot:'in'}) + LB(330,626,'Printer',{for:'printer',dot:'out'});
-  [['io',288,100,'I/O'],['cpu',470,215,'CPU'],['ram',582,122,'RAM',1],['cooling',686,230,'Cooling'],['gpu',380,408,'GPU',1],
+  [['io',288,100,'I/O'],['ram',372,122,'RAM',1],['cpu',500,215,'CPU'],['cooling',686,230,'Cooling'],['gpu',380,408,'GPU',1],
    ['motherboard',470,482,'Motherboard',1],['psu',404,580,'Power supply',1,15],['storage',644,580,'Storage']].forEach(([id,x,y,t,inv,size]) => { const [a,b] = tp(x,y); L += LB(a,b,t,{for:id,size:size||16,tone:inv?'inv':''}); });
   L += `<g class="legend"><circle class="lbl-dot in" cx="604" cy="666" r="6"/>${T(616,672,'Input device','')}<circle class="lbl-dot out" cx="760" cy="666" r="6"/>${T(772,672,'Output device','')}</g>`;
-  return {svg: s + LAYER(L), drag: true};
+  return {svg: s + LAYER(L), drag: true, init: el => {
+    const link = el.querySelector('.dev-link');
+    if (!link) return;
+    const open = () => window.open('https://ayan-1829.github.io/portfolio', '_blank', 'noopener');
+    link.addEventListener('click', e => { e.stopPropagation(); open(); });
+    link.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); open(); } });
+  }};
 };
 
 /* ---------------- Motherboard ---------------- */
 SCENES.board = () => {
-  let tr = ''; [[300,340,400,340,400,420],[610,200,700,200],[520,330,520,380,600,380],[300,560,360,560,360,620],[720,420,720,540],[430,470,600,470]].forEach(p => tr += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
-  let s = `<g class="bg">${R(250,70,480,590,10,'m-board')}${tr}
-    ${R(262,90,50,210,5,'m-metal')}${[100,130,160,190,220].map(y => R(270,y,34,20,3,'m-slot')).join('')}${T(287,320,'Rear I/O','t t-xs t-inv t-mid')}
-    ${R(706,180,16,120,3,'m-slot')}<text class="t t-xs t-inv t-mid" transform="translate(744 240) rotate(-90)">24-pin</text>
-    ${[560,585,610].map(y => R(690,y,28,16,3,'m-slot')).join('')}${T(704,648,'SATA','t t-xs t-inv t-mid')}</g>`;
+  /* Traces follow the same real connections as the whole-computer page:
+     CPU to RAM, CPU to the chipset, and the chipset out to storage --
+     plus extra decorative copper fills in the open areas, like a real board. */
+  let tr = ''; [[520,230,430,230],[680,230,657,230,657,440],[657,530,657,560,684,560]].forEach(p => tr += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
+  let deco = '';
+  [[320,84,410,84],[430,86,510,86],[520,84,600,84,600,96],
+   [270,322,270,382,326,382],[292,342,292,566],
+   [705,216,705,300,662,300],[715,322,715,500,692,500],
+   [538,318,538,400],[664,318,664,398]].forEach(p => deco += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
+  [[300,352],[300,504],[705,262],[705,422],[440,90],[600,90],[538,360],[664,360]].forEach(([x,y]) => deco += C(x,y,2.5,'m-gold'));
+  let s = `<g class="bg">${R(250,70,480,590,10,'m-board')}${tr}${deco}</g>`;
+  s += DW('rear-io', hot('rear-io',[262,90,50,210], R(262,90,50,210,5,'m-metal') + [100,130,160,190,220].map(y => R(270,y,34,20,3,'m-slot')).join('') + T(287,320,'Rear I/O','t t-xs t-inv t-mid')));
   let fins = ''; for (let i=0;i<9;i++) fins += `<line class="ln-thin" x1="334" y1="${122+i*24}" x2="376" y2="${122+i*24}"/>`;
   s += DW('vrm', hot('vrm',[330,110,80,220], R(330,110,50,220,6,'m-metal2') + fins + [130,170,210,250,290].map(y => R(388,y,20,20,3,'m-metal')).join('')));
-  let grid = ''; for (let r=0;r<9;r++) for (let c=0;c<9;c++) grid += C(466+c*11,186+r*11,2,'m-gold');
-  s += DW('cpu-socket', hot('cpu-socket',[430,150,160,160], R(430,150,160,160,10,'m-metal-lt') + R(450,170,120,120,6,'m-metal2') + grid + `<line class="ln" x1="596" y1="160" x2="596" y2="300" style="stroke-width:4"/>`));
-  s += DW('ram-slots', hot('ram-slots',[620,98,80,284], [625,645,665,685].map(x => R(x,100,10,280,2,'m-slot') + R(x-1,94,12,8,2,'m-metal-lt') + R(x-1,378,12,8,2,'m-metal-lt')).join('')));
-  s += DW('pcie', hot('pcie',[286,398,312,124], R(290,400,300,18,3,'m-slot') + R(290,450,60,14,3,'m-slot') + R(380,448,200,22,3,'m-metal-lt') + C(596,459,6,'m-metal') + T(480,465,'M.2','t t-xs t-mid') + R(290,500,300,18,3,'m-slot')));
+  /* RAM slots sit between the VRM and the CPU socket, matching the same
+     left-to-right order used on the whole-computer page. The CPU socket
+     itself sits a little further left, to leave room beside it for the
+     CMOS battery and a fan header. */
+  s += DW('ram-slots', hot('ram-slots',[430,98,80,284], [435,455,475,495].map(x => R(x,100,10,280,2,'m-slot') + R(x-1,94,12,8,2,'m-metal-lt') + R(x-1,378,12,8,2,'m-metal-lt')).join('')));
+  let grid = ''; for (let r=0;r<9;r++) for (let c=0;c<9;c++) grid += C(556+c*11,186+r*11,2,'m-gold');
+  s += DW('cpu-socket', hot('cpu-socket',[520,150,160,160], R(520,150,160,160,10,'m-metal-lt') + R(540,170,120,120,6,'m-metal2') + grid + `<line class="ln" x1="686" y1="160" x2="686" y2="300" style="stroke-width:4"/>`));
+  s += DW('pcie', hot('pcie',[286,415,312,124], R(290,417,300,18,3,'m-slot') + R(290,467,60,14,3,'m-slot') + R(380,465,200,22,3,'m-metal-lt') + C(596,476,6,'m-metal') + T(480,482,'M.2','t t-xs t-mid') + R(290,517,300,18,3,'m-slot')));
   s += DW('chipset', hot('chipset',[612,440,90,90], R(612,440,90,90,8,'m-metal2') + [0,1,2,3,4].map(i => `<line class="ln-thin" x1="${626+i*15}" y1="452" x2="${626+i*15}" y2="518"/>`).join('')));
-  s += DW('bios', hot('bios',[372,566,140,50], C(398,591,22,'m-metal-lt') + T(398,597,'3V','t t-xs t-mid') + R(462,578,40,26,3,'m-chip')));
-  const L = LB(370,354,'VRM',{for:'vrm',tone:'inv'}) + LB(510,334,'CPU socket',{for:'cpu-socket',tone:'inv'}) + LB(660,404,'RAM slots',{for:'ram-slots',tone:'inv'}) +
-    LB(290,544,'PCIe slots',{for:'pcie',anchor:'start',tone:'inv'}) + LB(657,552,'Chipset',{for:'chipset',tone:'inv'}) + LB(442,638,'BIOS / UEFI',{for:'bios',tone:'inv'});
+  /* The battery and the firmware chip are two separate real parts, even
+     though they used to share one label. */
+  s += DW('cmos', hot('cmos',[376,569,44,44], C(398,591,22,'m-metal-lt') + T(398,597,'3V','t t-xs t-mid')));
+  s += DW('bios', hot('bios',[462,578,40,26], R(462,578,40,26,3,'m-chip')));
+  /* Two more essential parts: the 24-pin ATX power connector and the SATA
+     ports, now real, described components instead of plain decoration --
+     plus a fan header, freed up by moving the CPU socket left. */
+  s += DW('atx-power', hot('atx-power',[645,78,75,16], R(645,78,75,16,3,'m-slot') + T(682,102,'24-pin','t t-xs t-inv t-mid')));
+  s += DW('sata-ports', hot('sata-ports',[684,556,34,74], [560,585,610].map(y => R(690,y,28,16,3,'m-slot')).join('') + T(704,648,'SATA','t t-xs t-inv t-mid')));
+  s += DW('fan-header', hot('fan-header',[690,150,36,60], R(694,154,28,52,4,'m-metal2') + [0,1,2,3].map(i => C(708,164+i*12,3,'m-gold')).join('')));
+  const L = LB(370,354,'VRM',{for:'vrm',tone:'inv'}) + LB(600,334,'CPU socket',{for:'cpu-socket',tone:'inv'}) + LB(470,404,'RAM slots',{for:'ram-slots',tone:'inv'}) +
+    LB(290,561,'PCIe slots',{for:'pcie',anchor:'start',tone:'inv'}) + LB(657,552,'Chipset',{for:'chipset',tone:'inv'}) +
+    LB(398,638,'CMOS battery',{for:'cmos',tone:'inv',size:13}) + LB(482,638,'BIOS chip',{for:'bios',tone:'inv',size:13}) +
+    LB(726,138,'Fan header',{for:'fan-header',tone:'inv',size:11,anchor:'end'});
   return {svg: s + LAYER(L), drag: true};
 };
 
@@ -146,6 +206,51 @@ SCENES.storage = () => {
     R(820,470,70,90,10,'m-metal2')+C(855,515,20,'m-metal')+P('M845 505 L742 205 L756 200 L866 500Z','m-metal2')+R(736,192,22,14,3,'m-chip')+
     T(640,480,'Platter','t t-xs t-mut')+T(682,186,'Head','t t-xs t-mut t-end')+T(790,590,'Actuator arm','t t-xs t-mut')+T(730,334,'Spindle','t t-xs t-mut t-mid'),{rx:22});
   s += `<g class="bg">${T(560,640,'About 250 MB/s. The arm must move to each track.','t t-sm t-mut')}</g>`;
+  return {svg:s};
+};
+
+/* ---------------- Inside the SSD ---------------- */
+SCENES.ssd = () => {
+  let s = `<g class="bg">${T(140,120,'M.2 NVMe SSD, top side (simplified)','t t-sm t-mut')}</g>`;
+  s += R(140,220,760,220,10,'m-board');
+  s += `<g class="bg">${C(870,245,10,'m-hole')}</g>`;
+  s += hot('m2-connector',[108,236,40,180],
+    [0,1,2,3,4,5].map(i => R(114,242+i*30,26,16,2,'m-gold')).join('') +
+    `<path class="ln-thin" d="M127 426V465"/>` +
+    T(127,490,'Connector','t t-sm t-mut t-mid'));
+  s += hot('ssd-controller',[210,265,140,140],
+    R(210,265,140,140,8,'m-chip') +
+    `<path class="ln-thin" d="M280 405V465"/>` +
+    T(280,490,'Controller','t t-sm t-mut t-mid'));
+  s += hot('dram-cache',[380,280,100,110],
+    R(380,280,100,110,6,'m-chip') +
+    `<path class="ln-thin" d="M430 390V465"/>` +
+    T(430,490,'DRAM cache','t t-sm t-mut t-mid'));
+  s += hot('nand-flash',[[520,255,170,160],[720,255,170,160]],
+    R(520,255,170,160,8,'m-chip') + R(720,255,170,160,8,'m-chip') +
+    T(605,342,'NAND','t t-sm t-inv t-mid') + T(805,342,'NAND','t t-sm t-inv t-mid') +
+    `<path class="ln-thin" d="M605 415V465M805 415V465"/>` +
+    T(705,490,'NAND flash memory','t t-sm t-mut t-mid'));
+  s += `<g class="bg">${T(140,535,'Up to about 7,000 MB/s. No moving parts.','t t-sm t-mut')}</g>`;
+  return {svg:s};
+};
+
+/* ---------------- Inside the hard drive ---------------- */
+SCENES.hdd = () => {
+  let s = `<g class="bg">${T(90,68,'Hard disk drive, lid removed (simplified)','t t-sm t-mut')}</g>`;
+  s += R(220,90,560,450,18,'m-metal');
+  let tracks = ''; [55,90,125].forEach(r => tracks += C(450,315,r,'ln-thin','style="fill:none"'));
+  s += hot('hdd-platter',[300,165,300,300], C(450,315,150,'m-metal-lt') + tracks);
+  s += hot('hdd-spindle',[425,290,50,50], C(450,315,40,'m-metal') + C(450,315,15,'m-hub'));
+  s += hot('hdd-head',[438,155,24,16], R(438,155,24,16,3,'m-chip'));
+  s += hot('hdd-arm',[630,150,120,400],
+    P('M728 468 L470 172 L484 166 L742 462Z','m-metal2') + R(650,460,80,90,10,'m-metal2') + C(690,505,22,'m-metal'));
+  s += `<g class="bg">${T(310,500,'Platter','t t-sm t-mut')}${T(426,152,'Head','t t-sm t-mut t-end')}${T(742,510,'Actuator arm','t t-sm t-mut')}${T(450,370,'Spindle','t t-sm t-mut t-mid')}</g>`;
+  s += hot('hdd-controller-board',[220,560,560,55],
+    R(220,560,560,55,8,'m-board') + R(244,572,50,30,4,'m-chip') +
+    [0,1,2,3,4,5,6].map(i => R(690+i*10,574,6,26,1,'m-gold')).join('') +
+    T(492,592,'Controller board','t t-sm t-inv t-mid'));
+  s += `<g class="bg">${T(90,650,'About 250 MB/s. The arm must physically move to each track.','t t-sm t-mut')}</g>`;
   return {svg:s};
 };
 

@@ -5,7 +5,7 @@
    INSTR[group] = [[mnemonic(s), what it does, example program], …]
    Every example runs in the emulator (checked by build/test-8086.mjs).
    ========================================================== */
-def('i8086',{name:'Intel 8086',parent:'cpu',level:3,scene:'i8086',model:true,tip:'Run real 8086 instructions and watch the registers',
+def('i8086',{name:'Intel 8086',parent:'cpu',level:3,scene:'i8086',tip:'Run real 8086 instructions and watch the registers',
  short:'A working model of the 1978 Intel 8086, the chip that started the x86 family. Write assembly, step through it, and watch every register and flag change.',
  what:'The 8086 is a 16-bit processor with eight general registers (AX, BX, CX, DX, SI, DI, BP, SP), four segment registers (CS, DS, SS, ES), an instruction pointer (IP) and a flags register. It reaches 1 MB of memory by combining a segment and an offset.',
  does:'It runs instructions in six groups: data transfer, arithmetic, logic, strings, control transfer and processor control. The model here implements every documented 8086 instruction, with the same flag rules and the same machine-code encodings as the real chip.',

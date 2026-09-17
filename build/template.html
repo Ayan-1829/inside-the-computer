@@ -30,12 +30,12 @@
 <meta name="twitter:description" content="{{DESC}}">
 <meta name="twitter:image" content="{{SITE}}og-image.png">
 
-<link rel="icon" href="{{ROOT}}favicon.ico" sizes="48x48">
-<link rel="icon" type="image/svg+xml" href="{{ROOT}}favicon.svg">
-<link rel="icon" type="image/png" sizes="32x32" href="{{ROOT}}favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="{{ROOT}}favicon-16x16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="{{ROOT}}apple-touch-icon.png">
-<link rel="manifest" href="{{ROOT}}site.webmanifest">
+<link rel="icon" href="{{ROOT}}favicon.ico?v={{V}}" sizes="48x48" type="image/x-icon">
+<link rel="icon" type="image/svg+xml" href="{{ROOT}}favicon.svg?v={{V}}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ROOT}}favicon-32x32.png?v={{V}}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ROOT}}favicon-16x16.png?v={{V}}">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ROOT}}apple-touch-icon.png?v={{V}}">
+<link rel="manifest" href="{{ROOT}}site.webmanifest?v={{V}}">
 <link rel="sitemap" type="application/xml" href="{{SITE}}sitemap.xml">
 <script type="application/ld+json" id="ld-page">{{JSONLD}}</script>
 
@@ -63,14 +63,13 @@
     <linearGradient id="g-board" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g-board-a)"/><stop offset="1" style="stop-color:var(--g-board-b)"/></linearGradient>
     <linearGradient id="g-biu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-biu-a)"/><stop offset="1" style="stop-color:var(--g-biu-b)"/></linearGradient>
     <linearGradient id="g-eu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-eu-a)"/><stop offset="1" style="stop-color:var(--g-eu-b)"/></linearGradient>
-    <linearGradient id="g-brand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g-brand-a)"/><stop offset="1" style="stop-color:var(--g-brand-b)"/></linearGradient>
     <radialGradient id="g-led" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFE7A8"/><stop offset=".55" style="stop-color:var(--signal)"/><stop offset="1" stop-color="#C77F00"/></radialGradient>
   </defs>
 </svg>
 <div class="app">
   <header class="topbar">
     <a class="brand" href="{{HOME}}" aria-label="Inside the Computer, go to the start">
-      <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="url(#g-brand)"/><rect x="18" y="18" width="28" height="28" rx="4" fill="var(--bg)"/><path d="M24 10v8M32 10v8M40 10v8M24 46v8M32 46v8M40 46v8M10 24h8M10 32h8M10 40h8M46 24h8M46 32h8M46 40h8" stroke="var(--bg)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="url(#g-led)"/></svg>
+      <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#16654F"/><rect x="14" y="14" width="36" height="36" rx="5" fill="#0D0D0D"/><path d="M24 8v6M32 8v6M40 8v6M24 50v6M32 50v6M40 50v6M8 24h6M8 32h6M8 40h6M50 24h6M50 32h6M50 40h6" stroke="#0D0D0D" stroke-width="3" stroke-linecap="round"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="800" letter-spacing="-.5" font-family="Arial, sans-serif" fill="#E39A12">AS</text></svg>
       <p class="brand-name">Inside the Computer</p>
     </a>
     <div class="spacer"></div>
@@ -94,9 +93,16 @@
     <section class="stage" id="stage" aria-label="Interactive computer visualization">
       <div class="scroller" id="scroller"><div id="layers"></div></div>
       <button class="btn zoom-btn" id="btn-zoom" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4.5 4.5M6 8.5h5M8.5 6v5"/></svg><span>Zoom diagram</span></button>
+      <button class="btn icon fs-btn stage-icon-btn" id="btn-fullscreen" type="button" aria-pressed="false" aria-label="Full screen" aria-controls="stage">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-fs-icon><path d="M7 3H4a1 1 0 0 0-1 1v3M13 3h3a1 1 0 0 1 1 1v3M17 13v3a1 1 0 0 1-1 1h-3M3 13v3a1 1 0 0 0 1 1h3"/></svg></button>
+      <div class="stage-nav" id="stage-nav">
+        <button class="btn icon stage-icon-btn" id="btn-back-fs" type="button" aria-label="Go back">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
+        <button class="btn icon stage-icon-btn" id="btn-home-fs" type="button" aria-label="Go to the whole computer and reset">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.2 10 3.5l7 5.7V16a1 1 0 0 1-1 1h-3.5v-5h-5v5H4a1 1 0 0 1-1-1Z"/></svg></button>
+      </div>
       <p class="nojs">The interactive diagram needs JavaScript. The full explanation is in the panel.</p>
       <div class="stage-tools" id="stage-tools"><button class="btn" id="btn-reset-layout" type="button"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3.5V6h2.5"/></svg><span>Reset positions</span></button></div>
-      <div class="model-badge" id="model-badge"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.6v.1"/></svg>Simplified educational model</div>
       <div class="hint" id="hint" aria-hidden="true">Click a part to zoom in</div>
       <div class="tip" id="tip" role="tooltip"></div>
     </section>
@@ -105,6 +111,7 @@
       <article class="panel-inner" id="panel-inner">{{PANEL}}</article>
     </aside>
   </main>
+  <footer class="foot"><strong class="foot-c">&copy; {{YEAR}}</strong> <strong class="foot-name">Ayan Sarkar</strong>, Lecturer, CSE, Green University of Bangladesh &middot; <a class="foot-link" href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></footer>
 </div>
 
 <dialog id="overview" aria-labelledby="ov-title">
@@ -113,6 +120,22 @@
     <button class="btn icon" id="ov-close" type="button" aria-label="Close overview"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
   </div>
   <nav class="tree" id="tree" aria-label="All components">{{TREE}}</nav>
+  <p class="dlg-foot">Ayan Sarkar, Lecturer, CSE, Green University of Bangladesh &middot; <a href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></p>
+</dialog>
+<dialog id="device-test" aria-labelledby="dt-title" class="dt">
+  <div class="dlg-head">
+    <div><h2 id="dt-title">Try the camera</h2><p id="dt-sub">Nothing is saved or sent anywhere.</p></div>
+    <button class="btn icon" id="dt-close" type="button" aria-label="Close"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+  </div>
+  <div class="dt-body">
+    <video id="dt-video" autoplay playsinline muted hidden></video>
+    <canvas id="dt-canvas" hidden></canvas>
+    <img id="dt-photo" hidden alt="Captured photo preview">
+    <div id="dt-meter" class="dt-meter" hidden><div class="dt-meter-fill" id="dt-meter-fill"></div></div>
+    <audio id="dt-audio" hidden></audio>
+    <p id="dt-status" class="dt-status" role="status"></p>
+  </div>
+  <div class="dt-actions" id="dt-actions"></div>
 </dialog>
 <div class="sr-only" id="announce" aria-live="polite"></div>
 
@@ -131,6 +154,7 @@
 <script src="{{ROOT}}js/scenes/hardware.js"></script>
 <script src="{{ROOT}}js/scenes/cpu.js"></script>
 <script src="{{ROOT}}js/scenes/alu.js"></script>
+<script src="{{ROOT}}js/scenes/alu86.js"></script>
 <script src="{{ROOT}}js/scenes/logic.js"></script>
 <script src="{{ROOT}}js/scenes/chips.js"></script>
 <script src="{{ROOT}}js/scenes/i8086.js"></script>

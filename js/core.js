@@ -17,7 +17,6 @@ var LEVELS = {1:'Computer',2:'Hardware',3:'Component architecture',4:'Digital lo
      specs   – [[label, value], …] key specifications
      rel     – [[id, reason], …]   related parts
      fact    – fun fact
-     model   – true if the drawing is a simplified educational model
      gate    – 'AND' | 'OR' | … for logic-gate pages
      try     – extra "Try it" text for interactive scenes          */
 var N = {};

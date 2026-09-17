@@ -87,3 +87,13 @@ def('webcam',{name:'Webcam',parent:'computer',level:2,device:'input',tip:'Input 
  specs:[['Resolution','720p to 4K'],['Frame rate','30 or 60 frames per second'],['Connection','USB']],
  fact:'Each pixel on a camera sensor sees only one colour through a tiny filter. The full-colour image is rebuilt by software from a mosaic of red, green and blue pixels, called a Bayer filter.',
  rel:[['usb','Plugs into a USB port'],['monitor','Usually sits on top of it']]});
+
+def('mic',{name:'Microphone',parent:'computer',level:2,device:'input',tip:'Input device: turns sound into an electrical signal',
+ short:'Turns sound waves into an electrical signal the computer can record or transmit.',
+ what:'A microphone has a thin diaphragm that vibrates with incoming sound. Most desk mics are condenser or dynamic types, built into a capsule on a small stand.',
+ does:'The diaphragm’s vibration is turned into a tiny electrical signal, which an ADC (analog-to-digital converter) samples into digital audio for calls, recordings and voice assistants.',
+ why:'A clear microphone is what makes video calls, streaming, voice chat and voice commands understandable on the other end.',
+ ex:[['USB desk mic','Popular for streaming and calls'],['Headset mic','Built into a gaming or call headset'],['Laptop mic array','Small mics built into the bezel']],
+ specs:[['Types','Condenser (sensitive) or dynamic (rugged)'],['Connection','USB, 3.5 mm jack, or built-in'],['Pickup pattern','Cardioid (front), omnidirectional, or stereo']],
+ fact:'A condenser microphone needs a small voltage, called phantom power, to charge its capsule — without it, the mic stays silent even though everything else is plugged in correctly.',
+ rel:[['usb','Plugs into a USB port'],['webcam','Often built into the same device'],['speakers','The output equivalent']]});

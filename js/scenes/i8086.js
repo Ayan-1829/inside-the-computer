@@ -128,7 +128,7 @@
      sits under the queue's bottom slot ("1") and above the control unit, so the
      data-bus spur into the chip's internal wiring never crosses a label */
   const ADRY = MEMIF.y - 16, DJY = QUE.y + 6*QUE.dy + 16;
-  const P_SEG2SUM = [[592, SEG.y], [592, SUM.b]];
+  const P_SEG2SUM = [[606, SEG.y], [606, SUM.b]];
   const pAddr  = y => [[592, SUM.t], [592, ADRY], [BUSX.addr, ADRY], [BUSX.addr, y], [RAM.x, y]];
   const pCtrl  = y => [[CU.x + CU.w, 463], [BUSX.ctrl, 463], [BUSX.ctrl, y], [RAM.x, y]];
   const pData2Q = (y, i) => [[RAM.x, y], [BUSX.data, y], [BUSX.data, DJY], [876, DJY], [876, queY(i)], [866, queY(i)]];
@@ -380,17 +380,17 @@
     /* ---------- 1. examples and flow — a visibly separate control strip, kept
        well clear of the chip column with a wide gap, and shaded a touch darker
        (below) since it is the UI around the simulation, not the processor itself ---------- */
-    s += T(16, 40, 'Example program', 'ttl');
-    s += `<foreignObject x="16" y="52" width="310" height="64"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-cur" data-excur tabindex="0" role="button" aria-haspopup="listbox" aria-label="Choose an example program"></div></foreignObject>`;
-    s += T(16, 148, 'Flow of this program', 'ttl') + T(326, 148, '', 'lab t-end', 'data-txt="count"');
-    s += `<foreignObject x="16" y="160" width="310" height="488"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-flow" data-flow=""></div></foreignObject>`;
-    s += btnS(16, 664, 98, 40, 'Play', 'data-a="play" aria-label="Play the whole flow"');
-    s += btnS(122, 664, 98, 40, 'Step', 'data-a="step" aria-label="Show the next move"');
-    s += btnS(228, 664, 98, 40, 'Reset', 'data-a="reset" aria-label="Go back to the first move"');
-    s += T(16, 736, 'Animation speed', 'lab');
-    SPEEDS.forEach(([v, n], i) => { s += btnS(16 + i*79, 746, 73, 36, n, `data-speed="${v}" aria-label="Animation speed: ${n}" style="font-size:15px"`); });
-    s += btnS(16, 798, 151, 40, 'Instruction set', 'data-a="ops" aria-label="Open the opcode reference" style="font-size:17px"');
-    s += btnS(175, 798, 151, 40, 'Write your own', 'data-a="edit" aria-label="Write your own program" style="font-size:17px"');
+    s += T(30, 40, 'Example program', 'ttl');
+    s += `<foreignObject x="30" y="52" width="310" height="64"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-cur" data-excur tabindex="0" role="button" aria-haspopup="listbox" aria-label="Choose an example program"></div></foreignObject>`;
+    s += T(30, 148, 'Flow of this program', 'ttl') + T(340, 148, '', 'lab t-end', 'data-txt="count"');
+    s += `<foreignObject x="30" y="160" width="310" height="488"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-flow" data-flow=""></div></foreignObject>`;
+    s += btnS(30, 664, 98, 40, 'Play', 'data-a="play" aria-label="Play the whole flow"');
+    s += btnS(136, 664, 98, 40, 'Step', 'data-a="step" aria-label="Show the next move"');
+    s += btnS(242, 664, 98, 40, 'Reset', 'data-a="reset" aria-label="Go back to the first move"');
+    s += T(30, 736, 'Animation speed', 'lab');
+    SPEEDS.forEach(([v, n], i) => { s += btnS(30 + i*79, 746, 73, 36, n, `data-speed="${v}" aria-label="Animation speed: ${n}" style="font-size:15px"`); });
+    s += btnS(30, 798, 151, 40, 'Instruction set', 'data-a="ops" aria-label="Open the opcode reference" style="font-size:17px"');
+    s += btnS(189, 798, 151, 40, 'Write your own', 'data-a="edit" aria-label="Write your own program" style="font-size:17px"');
 
     /* ---------- 2. the chip ---------- */
     s += T(CHIP.x, 44, 'Intel 8086', 'ttl') + lbl(CHIP.x + 155, 44, 'inside the chip');
@@ -666,17 +666,23 @@
         $('[data-a="play"]').classList.toggle('dis', !S.story.length);
       };
 
-      /* ---------- playback ---------- */
+      /* ---------- playback ----------
+         The highlight (and every value shown) only appears once the dot has
+         actually arrived -- draw() runs from travel()'s done callback, not
+         before it starts -- and a short pause afterwards, before the next
+         move begins, gives the arrival a moment to register instead of
+         instantly chaining into the next step. */
+      const ARRIVE_PAUSE = 320;
       const stop = () => { playing = false; clearTimeout(timer); if (raf) cancelAnimationFrame(raf); hideDot(); draw(); };
       const show = (i, animate) => {
         S.idx = Math.max(0, Math.min(i, Math.max(0, S.story.length - 1)));
-        draw();
-        if (animate) travel(S.story[S.idx], () => {});
+        if (animate) travel(S.story[S.idx], () => draw());
+        else draw();
       };
       const advance = () => {
         if (S.idx >= S.story.length - 1){ stop(); return; }
-        S.idx++; draw();
-        travel(S.story[S.idx], () => { if (playing) timer = setTimeout(advance, Math.max(110, SPEED_MS[S.speed]*0.3)); });
+        S.idx++;
+        travel(S.story[S.idx], () => { draw(); if (playing) timer = setTimeout(advance, Math.max(110, SPEED_MS[S.speed]*0.3) + ARRIVE_PAUSE); });
       };
 
       /* ---------- the example picker, collapsed to the current pick ---------- */
@@ -701,7 +707,7 @@
           `<svg class="x86-curchev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m5 8 5 5 5-5"/></svg></div>`;
       };
       const openExamples = () => {
-        ov.style.display = '';
+        ov.style.display = ''; grp.appendChild(ov);   /* repaint above the travelling dot/wire */
         ovb.innerHTML = '<div class="ovh"><h3>Choose an example</h3><button type="button" data-ovx aria-label="Close">Close</button></div>' +
           `<div class="x86-exs-ov">${exampleList()}</div>`;
         onPress(ovb.querySelector('[data-ovx]'), closeOv);
@@ -732,7 +738,7 @@
       const ov = $('#x86-ov'), ovb = $('[data-ov]');
       const closeOv = () => { ov.style.display = 'none'; ovb.innerHTML = ''; };
       const openOps = key => {
-        ov.style.display = '';
+        ov.style.display = ''; grp.appendChild(ov);   /* repaint above the travelling dot/wire */
         ovb.innerHTML = '<div class="ovh"><h3>8086 opcode encoding</h3><button type="button" data-ovx aria-label="Close">Close</button></div>' +
           '<div class="orow head"><span>Bytes</span><span>Instruction</span><span>Bit pattern</span></div>' +
           '<div class="olist">' + OPC.map((o, i) => `<button type="button" class="orow" data-op="${i}"><span class="mono">${esc(o.b)}</span><span>${esc(o.m)}</span><span class="mono dim">${esc(o.e)}</span></button>`).join('') + '</div>' +
@@ -746,7 +752,7 @@
         sel(i);
       };
       const openEdit = () => {
-        ov.style.display = '';
+        ov.style.display = ''; grp.appendChild(ov);   /* repaint above the travelling dot/wire */
         ovb.innerHTML = '<div class="ovh"><h3>Write your own program</h3><button type="button" data-ovx aria-label="Close">Close</button></div>' +
           `<textarea class="x86-ta" spellcheck="false" aria-label="Assembly program">${esc(S.src)}</textarea>` +
           '<div class="ovf"><button type="button" class="prim" data-ovrun>Assemble and load</button>' +
@@ -768,7 +774,7 @@
       });
       onPress($('[data-a="step"]'), () => {
         if (playing) stop();
-        if (S.idx < S.story.length - 1){ S.idx++; draw(); travel(S.story[S.idx], () => {}); }
+        if (S.idx < S.story.length - 1){ S.idx++; travel(S.story[S.idx], () => draw()); }
       });
       onPress($('[data-a="reset"]'), () => { stop(); show(0, false); });
       onPress($('[data-a="ops"]'), () => openOps(S.story[S.idx] && S.story[S.idx].ins ? OPKEY(S.story[S.idx].ins.bytes[0][0]) : 'B8'));

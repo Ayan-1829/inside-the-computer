@@ -106,6 +106,111 @@ function insideGates(c){
   return s;
 }
 
+/* ---------- inside: real multiplexer logic (74151, 74157) ----------
+   Static schematics (like a datasheet's own logic diagram), built from
+   real AND/OR/NOT gates rather than labelled blocks. n-input AND gates
+   are drawn with gsym('AND', …) for the body, then n evenly spaced taps
+   along its flat input edge instead of the usual 2 named ones. */
+function gateTaps(gx, gy, s, n){
+  const fr = n === 4 ? [0.14, 0.38, 0.62, 0.86] : n === 3 ? [0.18, 0.5, 0.82] : [0.25, 0.75];
+  return fr.map(f => [gx + 4*s, gy + f*80*s]);
+}
+function pinTag(p, lab, x, y, anchor){
+  return `<g class="pin i" data-pin="${p}"><title>Pin ${p}: ${esc(plainPin(lab))}</title>` +
+    `${T(x, y - 13, p, 't t-xs t-mut t-num', `text-anchor="${anchor}"`)}${T(x, y + 5, pinLabel(lab), 'ipin i', `text-anchor="${anchor}"`)}</g>`;
+}
+function insideMux157(c){
+  const sc = 0.56, sw = 2.1, pinOf = lab => c.labels.indexOf(lab) + 1;
+  const muxes = [['1A','1B','1Y'], ['2A','2B','2Y'], ['3A','3B','3Y'], ['4A','4B','4Y']];
+  const rowY = [120, 310, 500, 690], ax = 470, ox = 700, selX = 330, nselX = 350, nenX = 370;
+  const trunkTop = rowY[0] + 10;
+  const selPin = pinOf('A/B'), enPin = pinOf('~G');
+  let wires = '', syms = '', labels = '';
+  muxes.forEach(([A, B, Y], k) => {
+    const ya = rowY[k], yb = rowY[k] + 90;
+    const gA = gsym('AND', ax, ya, sc, sw), gB = gsym('AND', ax, yb, sc, sw), gY = gsym('OR', ox, ya + 45, sc, sw);
+    const [dA, sA, eA] = gateTaps(ax, ya, sc, 3), [dB, sB, eB] = gateTaps(ax, yb, sc, 3);
+    syms += gA.svg + gB.svg + gY.svg;
+    wires += `M100 ${dA[1]}H${dA[0]} M100 ${dB[1]}H${dB[0]}`;                          /* data in */
+    wires += `M${nselX} ${sA[1]}H${sA[0]} M${selX} ${sB[1]}H${sB[0]}`;                 /* select: A gets sel', B gets sel */
+    wires += `M${nenX} ${eA[1]}H${eA[0]} M${nenX} ${eB[1]}H${eB[0]}`;                  /* enable (active-high internal) on both */
+    wires += `M${gA.o[0]} ${gA.o[1]}H${ox - 40}V${gY.a[1]}H${gY.a[0]}`;
+    wires += `M${gB.o[0]} ${gB.o[1]}H${ox - 40}V${gY.b[1]}H${gY.b[0]}`;
+    wires += `M${gY.o[0]} ${gY.o[1]}H960`;
+    labels += pinTag(pinOf(A), A, 96, dA[1], 'end') + pinTag(pinOf(B), B, 96, dB[1], 'end');
+    labels += pinTag(pinOf(Y), Y, 966, gY.o[1], 'start');
+  });
+  /* the shared select line and enable, each buffered through one inverter, both
+     down below the last mux with the trunks running up only as far as row 1 needs */
+  const notSel = gsym('NOT', 190, 860, sc, sw), notEn = gsym('NOT', 190, 940, sc, sw);
+  syms += notSel.svg + notEn.svg;
+  wires += `M100 ${notSel.i[1]}H${notSel.i[0]} M${notSel.o[0]} ${notSel.o[1]}H${nselX}V${trunkTop}`;
+  wires += `M${selX} ${notSel.i[1]}V${trunkTop}`;
+  wires += `M100 ${notEn.i[1]}H${notEn.i[0]} M${notEn.o[0]} ${notEn.o[1]}H${nenX}V${trunkTop}`;
+  let s = `<g class="bg">${T(500, 1032, 'Static logic diagram: four independent 2-to-1 muxes sharing one select line and one enable.', 't t-sm t-mut t-mid')}</g>`;
+  s += `<path class="ia" d="${wires}"/>${syms}${labels}`;
+  s += pinTag(selPin, 'A/B', 96, notSel.i[1], 'end') + T(60, notSel.i[1] + 20, 'select', 't t-xs t-mut', 'text-anchor="end"');
+  s += pinTag(enPin, '~G', 96, notEn.i[1], 'end') + T(60, notEn.i[1] + 20, 'enable', 't t-xs t-mut', 'text-anchor="end"');
+  return s;
+}
+function insideMux151(c){
+  const sc = 0.5, sw = 2, pinOf = lab => c.labels.indexOf(lab) + 1;
+  const ax = 560, rowStep = 85, topY = 120;
+  const rows = Array.from({length: 8}, (_, i) => topY + i*rowStep);
+  /* Spaced well apart, and each trunk only runs as high as the topmost row
+     that actually taps it (row 0 always needs every "not" line, but the
+     plain A/B/C lines first turn up at rows 1, 2 and 4) -- so the busiest
+     rows near the top aren't crossed by trunks nothing there needs. */
+  const selX = {a:365, na:391, b:417, nb:443, c:469, nc:495}, nenX = 335;
+  const trunkTop = {a: rows[1]-10, na: rows[0]-10, b: rows[2]-10, nb: rows[0]-10, c: rows[4]-10, nc: rows[0]-10};
+  let wires = '', syms = '', labels = '';
+  for (let i = 0; i < 8; i++){
+    const gy = rows[i], g = gsym('AND', ax, gy, sc, sw);
+    const [dt, t1, t2, t3] = gateTaps(ax, gy, sc, 4);
+    syms += g.svg;
+    const aBit = i & 1, bBit = (i >> 1) & 1, cBit = (i >> 2) & 1;
+    const xA = aBit ? selX.a : selX.na, xB = bBit ? selX.b : selX.nb, xC = cBit ? selX.c : selX.nc;
+    wires += `M120 ${dt[1]}H${dt[0]}`;
+    wires += `M${xA} ${t1[1]}H${t1[0]} M${xB} ${t2[1]}H${t2[0]} M${xC} ${t3[1]}H${t3[0]}`;
+    wires += `M${g.o[0]} ${g.o[1]}H${ax + 140}`;
+    labels += pinTag(pinOf('D'+i), 'D'+i, 116, dt[1], 'end');
+  }
+  /* the 8 AND outputs merge into one 8-input OR (drawn as a single wide block, as a real
+     datasheet does, rather than a tree of 2-input ORs), gated by enable, giving Y and ~W */
+  const orX = ax + 140, orT = rows[0] + 20, orB = rows[7] + 60, orMidY = (orT + orB)/2;
+  const orTapY = i => orT + (orB - orT) * (i + 0.5)/8;
+  let orWires = '';
+  for (let i = 0; i < 8; i++) orWires += `M${orX} ${rows[i] + 40*sc}L${orX + 60} ${orTapY(i)}`;
+  const orPath = `M${orX + 60} ${orT}H${orX + 220}L${orX + 260} ${orMidY}L${orX + 220} ${orB}H${orX + 60}Z`;
+  const enG = gsym('AND', orX + 300, orMidY - 30, sc, sw), notW = gsym('NOT', orX + 420, orMidY + 60, sc, sw);
+  const [enD, enE] = gateTaps(orX + 300, orMidY - 30, sc, 2);
+  syms += P(orPath, 'm-acc-soft') + T(orX + 160, orMidY + 6, '&#8805;1', 'sig t-mid') + enG.svg + notW.svg;
+  wires += orWires + `M${orX + 260} ${orMidY}H${enD[0]}`;
+  wires += `M${enG.o[0]} ${enG.o[1]}H${notW.i[0] + 40}V${notW.i[1]}H${notW.i[0]} M${notW.i[0]+40} ${enG.o[1]}V${enG.o[1]}`;
+  wires += `M${enG.o[0]} ${enG.o[1]}H${orX + 480}`;
+  wires += `M${notW.o[0]} ${notW.o[1]}H${orX + 480}`;
+  labels += pinTag(pinOf('Y'), 'Y', orX + 500, enG.o[1], 'start') + pinTag(pinOf('~W'), '~W', orX + 500, notW.o[1], 'start');
+  /* select lines A, B, C: each stacked below the last AND row (not side by side —
+     the inverter bodies are too wide to sit only 16px apart, which is all the
+     trunk lines themselves need), each buffered through one inverter for its complement */
+  const botY = rows[7] + 100, selSrc = [['A', selX.a, selX.na, 0], ['B', selX.b, selX.nb, 1], ['C', selX.c, selX.nc, 2]];
+  selSrc.forEach(([name, xT, xN, k]) => {
+    const ny = botY + k*65, nt = gsym('NOT', 260, ny, sc, sw), topT = trunkTop[name.toLowerCase()], topN = trunkTop['n' + name.toLowerCase()];
+    syms += nt.svg;
+    wires += `M${xT} ${ny + 20*sc}H${xT + 20}V${nt.i[1]}H${nt.i[0]} M${nt.o[0]} ${nt.o[1]}H${xN}V${topN}`;
+    wires += `M${xT} ${topT}V${ny + 20*sc}`;
+    labels += pinTag(pinOf(name), name, 116, ny + 20*sc, 'end');
+    wires += `M120 ${ny + 20*sc}H${xT}`;
+  });
+  const enNot = gsym('NOT', 260, botY + 195, sc, sw);
+  syms += enNot.svg;
+  wires += `M120 ${enNot.i[1]}H${enNot.i[0]} M${enNot.o[0]} ${enNot.o[1]}H${nenX}V${orB + 15}H${enE[0] - 30}V${enE[1]}H${enE[0]}`;   /* routed below the OR block, not through it */
+  labels += pinTag(pinOf('~G'), '~G', 116, enNot.i[1], 'end');
+  let s = `<g class="bg">${T(575, botY + 280, 'Static logic diagram: 8 four-input AND gates feed one 8-input OR, gated by enable.', 't t-sm t-mut t-mid')}</g>`;
+  s += `<path class="ia" d="${wires}"/>${syms}${labels}`;
+  return s;
+}
+
 /* ---------- inside: block diagram ---------- */
 function insideBlocks(c){
   const D = c.inside, T0 = 156, H = 392;
@@ -176,14 +281,15 @@ function insideBlocks(c){
   return `${groups}<path class="ia" d="${lines}"/>${heads}${blocks}${labels}<g class="bg">${T(500,668,'Simplified block diagram of the inside of the chip.','t t-xs t-mut t-mid')}</g>`;
 }
 
+const IC_VB = {'ic-74157':[1080,1080], 'ic-74151':[1300,1120]};
 SCENES.ic = (n) => {
   const c = CHIPS[n.id];
   const pinsSvg = c.to220 ? pinViewTO220(c) : c.labels.length >= 24 ? pinViewV(c) : pinViewH(c);
-  const inside = c.inside === 'gates' ? insideGates(c) : c.inside ? insideBlocks(c) : '';
+  const inside = c.inside === 'gates' ? insideGates(c) : c.inside === 'mux157' ? insideMux157(c) : c.inside === 'mux151' ? insideMux151(c) : c.inside ? insideBlocks(c) : '';
   let s = `<g class="icv" data-view="pins">${pinsSvg}</g>`;
   if (inside) s += `<g class="icv" data-view="inside" style="display:none">${inside}</g>` +
     btnS(372,62,138,40,'Pin diagram','data-show="pins" aria-pressed="true"') + btnS(520,62,168,40,'Inside the chip','data-show="inside" aria-pressed="false"');
-  return {svg:s, init: el => {
+  return {svg:s, vb: IC_VB[n.id], init: el => {
     const key = 'icview:' + n.id, units = chipUnits(c), info = el.querySelector('[data-info]');
     const setInfo = t => { if (!info) return; if (info.dataset.wrap) info.innerHTML = tspans(wrap(t, +info.dataset.wrap), 40, 22); else info.textContent = t; };
     const setView = v => { SIM[key] = v; el.querySelectorAll('.icv').forEach(g => g.style.display = g.dataset.view === v ? '' : 'none');

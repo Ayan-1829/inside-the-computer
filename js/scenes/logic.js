@@ -68,21 +68,74 @@ SCENES.adder = (n) => {
 };
 
 /* ---------------- 2-to-1 multiplexer ---------------- */
+/* A 4-to-1 mux, built the way real chips do it: two 2-to-1 muxes pick between
+   D0/D1 and D2/D3 using S0, then a third 2-to-1 mux picks between those two
+   halves using S1. Every "mux" here is the same two-AND/one-OR/one-NOT cell
+   as a plain 2-to-1 multiplexer, just wired in a small tree. */
+/* Drawn as the standard block symbol (a trapezoid, wide on the input side,
+   narrow on the output side) rather than exploded into gates — the "what"
+   text below still explains that it is built from AND/OR/NOT gates inside. */
 SCENES.mux = (n) => {
-  const a1 = gsym('AND',520,166,1.2,2.5,2), a2 = gsym('AND',520,326,1.2,2.5,2), nt = gsym('NOT',330,512,1.2,2.5,1), o1 = gsym('OR',700,246,1.2,2.5,3);
+  const xL = 280, xR = 580, yT = 90, yB = 540, rh = 180;         /* trapezoid corners */
+  const rowY = [150, 260, 370, 480];                             /* D0..D3 entry rows */
+  const oT = yT + (yB - yT - rh)/2, oB = yB - (yB - yT - rh)/2, oY = (oT + oB)/2;  /* output edge */
+  const selX = [460, 520], selT = sx => oB + (sx - xR)/(xL - xR) * (yB - oB);      /* a, b entry points on the slanted bottom edge */
+  const path = `M${xL} ${yT}L${xR} ${oT}L${xR} ${oB}L${xL} ${yB}Z`;
   let s = '';
-  s += W([[148,190],a1.a],'d0') + W([[148,350],a2.a],'d1');
-  s += W([[148,560],nt.i],'s') + W([[260,560],[260,a2.b[1]],a2.b],'s') + J(260,560,'s');
-  s += W([nt.o,[470,nt.o[1]],[470,a1.b[1]],a1.b],'ns',1);
-  s += W([a1.o,[660,a1.o[1]],[660,o1.a[1]],o1.a],'p',2) + W([a2.o,[660,a2.o[1]],[660,o1.b[1]],o1.b],'q',2) + W([o1.o,[878,o1.o[1]]],'y',3);
-  s += a1.svg + a2.svg + nt.svg + o1.svg;
-  s += `<g class="bg">${T(455,596,'<tspan class="ol">S</tspan>','t t-sm t-mut')}${T(90,656,'','t t-lg','data-txt="msg" data-d="3"')}${T(90,122,'Y = <tspan class="ol">S</tspan>·D0 + S·D1','t t-sm t-mut')}</g>`;
-  s += sw(90,174,'d0','D','0') + sw(90,334,'d1','D','1') + sw(90,544,'s','S');
-  s += led(900,o1.o[1],'y','Output Y',3);
-  s += chipHot('ic-74157',720,566);
-  return {svg:s, init: el => bindSim(el, n.id, {d0:1,d1:0,s:0}, st => {
-    const ns = st.s^1, p = st.d0&ns, q = st.d1&st.s, y = p|q;
-    return {d0:st.d0,d1:st.d1,s:st.s,ns,p,q,y,key:`${st.s}`,msg:`S = ${st.s}, so Y follows D${st.s}`};
-  }, {step: () => GATE_STEP})};
+  s += W([[112,rowY[0]],[xL,rowY[0]]],'d0') + W([[112,rowY[1]],[xL,rowY[1]]],'d1') +
+       W([[112,rowY[2]],[xL,rowY[2]]],'d2') + W([[112,rowY[3]],[xL,rowY[3]]],'d3');
+  const swX = selX.map(x => x - 29);                                              /* switch centred under its entry point */
+  s += W([[selX[0],610],[selX[0],selT(selX[0])]],'s0') + W([[selX[1],610],[selX[1],selT(selX[1])]],'s1');
+  s += W([[xR,oY],[690,oY]],'y');
+  s += `${P(path,'m-acc-soft','data-act="mux"')}${T(430,oY - 8,'&#8805;1','sig t-mid')}${T(430,oY + 16,'MUX','t t-xs t-mut t-mid')}`;
+  rowY.forEach((y,i) => s += T(xL + 16, y + 5, i, 't t-sm t-mut'));
+  s += `<g class="bg">${T(88,110,'Inputs','t t-sm t-mut')}${T((selX[0]+selX[1])/2,578,'Select','t t-sm t-mut t-mid')}
+    ${T(90,656,'','t t-lg','data-txt="msg"')}${T(90,36,'A 4-to-1 mux: two select bits, a, b, choose which of D0–D3 reaches Y.','t t-sm t-mut')}</g>`;
+  s += sw(48,rowY[0]-16,'d0','D','0') + sw(48,rowY[1]-16,'d1','D','1') + sw(48,rowY[2]-16,'d2','D','2') + sw(48,rowY[3]-16,'d3','D','3');
+  s += sw(swX[0],610,'s0','a','',false) + sw(swX[1],610,'s1','b','',false);
+  s += T(selX[0],602,'a','t t-sm t-mid') + T(selX[1],602,'b','t t-sm t-mid');
+  s += led(690,oY,'y','Output Y');
+  s += chipHot('ic-74157',700,90);
+  return {svg:s, vb:[900,700], init: el => bindSim(el, n.id, {d0:1,d1:0,d2:0,d3:1,s0:0,s1:0}, st => {
+    const idx = st.s1*2 + st.s0, y = st['d'+idx];
+    return {d0:st.d0,d1:st.d1,d2:st.d2,d3:st.d3,s0:st.s0,s1:st.s1,y,key:`${st.s1}${st.s0}`,
+      msg:`a b = ${st.s0}${st.s1}, so Y follows D${idx}`};
+  })};
+};
+
+/* The 8086 ALU's own mux: the same trapezoid block, but 8-to-1 (three select
+   bits) and 16 bits wide per path, since it picks the result among the 8086
+   ALU's 8 units (see scenes/alu86.js) rather than 4 single bits. The inputs
+   are demo values — this page is about how the mux itself works, not a live
+   instruction — the real 8086 ALU page shows those units actually computing. */
+const MUX8_DEMO = [0x1333, 0x0204, 0x2468, 0x0BB8, 0x0042, 0x00FF, 0x0001, 0x0046];
+SCENES.mux8 = (n) => {
+  const xL = 280, xR = 650, yT = 70, yB = 760, rh = 260;
+  const rowY = [120, 202, 284, 366, 448, 530, 612, 694];
+  const oT = yT + (yB - yT - rh)/2, oB = yB - (yB - yT - rh)/2, oY = (oT + oB)/2;
+  const selX = [430, 490, 550], selT = sx => oB + (sx - xR)/(xL - xR) * (yB - oB);
+  const path = `M${xL} ${yT}L${xR} ${oT}L${xR} ${oB}L${xL} ${yB}Z`;
+  let s = '';
+  ALU86_UNITS.forEach(([u, name], i) => { const y = rowY[i];
+    s += T(150, y + 5, name, 't t-sm t-end t-mut') + `<path class="bus86" data-s="sel${i}" d="M170 ${y}H${xL}"/>` + T(xL + 16, y + 5, i, 't t-sm t-mut'); });
+  const swX = selX.map(x => x - 29);
+  s += W([[selX[0],820],[selX[0],selT(selX[0])]],'a') + W([[selX[1],820],[selX[1],selT(selX[1])]],'b') + W([[selX[2],820],[selX[2],selT(selX[2])]],'c');
+  s += `<path class="bus86" data-s="y" d="M${xR} ${oY}H770"/>`;
+  s += `${P(path,'m-acc-soft','data-act="mux"')}${T(465,oY - 8,'&#8805;1','sig t-mid')}${T(465,oY + 16,'8-TO-1','t t-xs t-mut t-mid')}`;
+  s += `<g class="bg">${T(150,90,'Inputs · 16 bits each','t t-sm t-mut t-end')}${T((selX[0]+selX[1]+selX[2])/3,798,'Select','t t-sm t-mut t-mid')}${T(770,oY + 30,'Output Y · 16 bits','t t-sm t-mut')}
+    ${T(90,896,'','t t-lg','data-txt="msg"')}${T(90,36,'The 8086 ALU’s mux: three select bits, a, b, c, choose which of 8 unit results (16 bits each) reaches Y.','t t-sm t-mut')}</g>`;
+  s += T(790,oY - 10,'','val t-mid','data-txt="yhex"');
+  s += sw(swX[0],820,'a','a','',false) + sw(swX[1],820,'b','b','',false) + sw(swX[2],820,'c','c','',false);
+  s += T(selX[0],812,'a','t t-sm t-mid') + T(selX[1],812,'b','t t-sm t-mid') + T(selX[2],812,'c','t t-sm t-mid');
+  s += chipHot('ic-74151',770,90);
+  return {svg:s, vb:[980,920], init: el => bindSim(el, n.id, {a:0,b:0,c:0}, st => {
+    const idx = st.c*4 + st.b*2 + st.a, sig = {a:st.a,b:st.b,c:st.c,key:`${st.c}${st.b}${st.a}`};
+    ALU86_UNITS.forEach((u, i) => sig['sel' + i] = i === idx);
+    sig.y = true;
+    const hex = I8086.hex(MUX8_DEMO[idx], 4) + 'h';
+    sig.yhex = hex;
+    sig.msg = `c b a = ${st.c}${st.b}${st.a}, so Y follows ${ALU86_UNITS[idx][1]} (${hex})`;
+    return sig;
+  })};
 };
 

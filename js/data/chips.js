@@ -75,8 +75,7 @@ icDef('ic-7485','comparator',{inside:'a complete 4-bit magnitude comparator',doe
 ['ic-7408','ic-7432','ic-7400','ic-7486','ic-7402','ic-7404'].forEach(id => CHIPS[id].inside = 'gates');
 Object.assign(CHIPS['ic-74283'], {inside:{cols:[[{id:'a',t:'Inputs A1–A4\nand B1–B4'}],[{id:'fa',t:'4 full adders',s:'one per bit',k:'acc'},{id:'cla',t:'Fast carry\nlogic',s:'look-ahead'}],[{id:'s',t:'Sum outputs'},{id:'co',t:'Carry out'}]],
   arrows:[['a','fa'],['fa','s'],['a','cla'],['cla','fa'],['cla','co']], left:[['A1–A4, B1–B4','in','a']], right:[['Σ1–Σ4','out','s'],['C4','out','co']], bottom:[['C0 (carry in)','in','cla']]}});
-Object.assign(CHIPS['ic-74157'], {inside:{cols:[[{id:'in',t:'Inputs',s:'1A–4A, 1B–4B'}],[{id:'m1',t:'2-to-1 mux',s:'× 4',k:'acc'}],[{id:'y',t:'Outputs',s:'1Y–4Y'}]],
-  arrows:[['in','m1'],['m1','y']], left:[['1A–4A, 1B–4B','in','in']], right:[['1Y–4Y','out','y']], bottom:[['A/B select, G enable','in','m1']]}});
+Object.assign(CHIPS['ic-74157'], {inside:'mux157'});
 Object.assign(CHIPS['ic-7474'], {inside:{cols:[[{id:'f1',t:'D flip-flop 1',s:'positive-edge triggered',k:'acc'},{id:'f2',t:'D flip-flop 2',s:'positive-edge triggered',k:'acc'}]],
   arrows:[], left:[['1D, 1CLK, 1PRE, 1CLR','in','f1'],['2D, 2CLK, 2PRE, 2CLR','in','f2']], right:[['1Q, 1Q̄','out','f1'],['2Q, 2Q̄','out','f2']]}});
 Object.assign(CHIPS['ic-7485'], {inside:{cols:[[{id:'in',t:'A3–A0, B3–B0'}],[{id:'eq',t:'Bit compare',s:'4 XNOR gates',k:'acc'},{id:'mag',t:'Magnitude logic',s:'first differing bit wins'}],[{id:'cas',t:'Cascade logic'}]],
@@ -181,8 +180,7 @@ Object.assign(CHIPS, {
      arrows:[['in','mux'],['mode','mux'],['mux','ff'],['ff','mux']], left:[['A–D, SR, SL','in','in']], right:[['QA–QD','out','ff']], bottom:[['S0, S1','in','mode'],['CLK, CLR','in','ff']]}},
  'ic-74151':{part:'74LS151',desc:'8-to-1 data selector',labels:['D3','D2','D1','D0','Y','~W','~G','GND','C','B','A','D7','D6','D5','D4','VCC'],kinds:'iiiiooipiiiiiiip',
    units:[['Data inputs',[4,3,2,1,15,14,13,12]],['Select',[11,10,9]],['Outputs',[5,6]],['Enable',[7]]],
-   inside:{cols:[[{id:'d',t:'D0–D7'}],[{id:'sel',t:'8-to-1 selector',s:'one AND gate per input,\nthen an 8-input OR',k:'acc'},{id:'dec',t:'Select decode',s:'A, B, C'}],[{id:'y',t:'Y and W (= Y̅)'}]],
-     arrows:[['d','sel'],['dec','sel'],['sel','y']], left:[['D0–D7','in','d']], right:[['Y, W','out','y']], bottom:[['A, B, C','in','dec'],['G (enable)','in','sel']]}},
+   inside:'mux151'},
  'ic-7805':{part:'7805',desc:'5 V voltage regulator',labels:['IN','GND','OUT'],kinds:'ipo',power:[],pkg:'TO-220',to220:true,
    units:[['Input',[1]],['Ground',[2]],['Output',[3]]],
    inside:{cols:[[{id:'ref',t:'Voltage\nreference',s:'band-gap'}],[{id:'amp',t:'Error\namplifier',k:'acc'},{id:'prot',t:'Protection',s:'current limit,\nthermal shutdown'}],[{id:'pass',t:'Pass\ntransistor',k:'acc'}]],

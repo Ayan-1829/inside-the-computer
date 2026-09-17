@@ -95,13 +95,23 @@ def('comparator',{name:'Comparator',parent:'alu',level:4,scene:'comparator',tip:
 /* ---------------- Result multiplexer ---------------- */
 def('multiplexer',{name:'Multiplexer',parent:'alu',level:4,scene:'mux',tip:'Picks which unit’s result leaves the ALU',
  short:'A digital switch: it picks one of several inputs and passes it to the output.',
- what:'A multiplexer (mux) has data inputs, select inputs and one output. The select bits choose which input gets through. A 2-to-1 mux can be built from two AND gates, one OR gate and one NOT gate.',
+ what:'A multiplexer (mux) has data inputs, select inputs and one output, usually drawn as the trapezoid block shown here rather than the gates inside it. The select bits choose which input gets through. A 2-to-1 mux can be built from two AND gates, one OR gate and one NOT gate. This one is a 4-to-1 mux: it needs three data inputs to choose between, so inside it is really three of those 2-to-1 muxes in a small tree, two picking with select bit a and a third picking between their answers with select bit b.',
  does:'In the ALU, every unit calculates its answer at the same time. The result mux then passes only the one the operation asked for, based on select lines from the operation decoder.',
  why:'Muxes let one set of wires carry many possible values. They appear everywhere hardware has to make a choice.',
  ex:[['ALU result select','Chooses add, AND, shift … by opcode'],['74LS157','Quad 2-to-1 multiplexer chip'],['74LS151','8-to-1 multiplexer chip']],
- specs:[['2-to-1','1 select line, 2 data inputs'],['4-to-1','2 select lines, 4 data inputs'],['Expression',`Y = ${OL('S')}·D0 + S·D1`]],
+ specs:[['2-to-1','1 select line, 2 data inputs'],['4-to-1','2 select lines, 4 data inputs, built here from three 2-to-1 muxes'],['Expression',`Y = D<sub>S1S0</sub>`]],
  fact:'A 4-to-1 mux whose inputs are wired to fixed 0s and 1s acts as a tiny lookup table that can copy any 2-input gate. FPGAs are built on this idea.',
- rel:[['alu-control','Drives its select lines'],['and-gate','Two of them inside'],['not-gate','Makes the inverted select line']]});
+ rel:[['alu-control','Drives its select lines'],['and-gate','Two of them inside'],['not-gate','Makes the inverted select line'],['alu86-mux','The 8086 ALU’s own wider version']]});
+
+def('alu86-mux',{name:'8086 result multiplexer',parent:'alu',level:4,scene:'mux8',tip:'Picks which of the 8086 ALU’s 8 units drives the 16-bit result',
+ short:'An 8-to-1 multiplexer: the 8086 ALU’s version, picking one of eight 16-bit unit results.',
+ what:'The 8086 ALU groups its work into eight units — the adder, the logic unit, the shifter, multiply/divide, decimal adjust, move, the jump condition test and flag logic — and all eight compute at once, every instruction. This mux is built the same way as the simpler 4-to-1 mux, just with one more layer of 2-to-1 muxes to reach 8 inputs, and every path is 16 bits wide instead of 1, since the 8086 works in 16-bit words.',
+ does:'Three select bits, set by the operation decoder from the opcode, choose 1 of the 8 units. Only that unit’s 16-bit answer reaches the result register; the other seven were computed for nothing.',
+ why:'A real ALU does many different kinds of work but can only write one result back each cycle. Widening the same mux idea to 8 inputs and 16 bits is what lets one output register serve all of them.',
+ ex:[['8086 ALU result select','Chooses the adder, logic unit, shifter … by opcode'],['74LS151','8-to-1 multiplexer chip'],['74LS257','Quad 2-to-1 multiplexer, tri-state output']],
+ specs:[['8-to-1','3 select lines, 8 data inputs'],['Width','16 bits per input, matching the 8086’s word size'],['Expression','Y = D<sub>S2S1S0</sub>']],
+ fact:'Widening a mux from 1 bit to 16 just means running 16 of them side by side, sharing the same select lines — the select logic itself does not get any bigger.',
+ rel:[['multiplexer','The simpler 4-to-1, 1-bit version'],['alu-control','Drives its select lines'],['ic-74151','A real 8-to-1 multiplexer chip']]});
 
 /* ---------------- Operation decoder ---------------- */
 def('alu-control',{name:'Operation decoder',parent:'alu',level:4,tip:'Turns the opcode into ALU control signals',
