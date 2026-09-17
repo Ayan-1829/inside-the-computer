@@ -10,6 +10,8 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.15.0 | 2026-09-18 | — | Site-wide: a dismissible "turn your phone sideways" banner on narrow touch screens held in portrait |
+| 5.14.0 | 2026-09-18 | — | Site-wide: the stale white-chip favicon/app-install icons replaced with the real black-chip-on-green mark, and the logo's "AS" given an actual gold gradient instead of a flat fill |
 | 5.13.0 | 2026-09-18 | — | 8086: the animated dot lands on the exact memory row again — reading its real, current on-screen position (the box scrolled to it first) right before each step's dot sets off, instead of a generic point in the box, which is what the scrollable-list redesign had temporarily lost |
 | 5.12.0 | 2026-09-18 | — | 8086: the RAM panel's four boxes now use one consistent gap for the panel's left/right/top/bottom margins and the space between boxes, instead of a cramped 14px margin next to a much wider 44px gap between the two columns |
 | 5.11.0 | 2026-09-18 | — | 8086: the CS/DS/SS/ES popup and its buttons removed — each RAM-panel box is now a real scrollable list showing every row the program actually touched, in bigger type; fixed a genuine duplicate-animation bug where POP (and any plain register load) sent two dots to the same register; all four segment boxes now share one colour; hover box-shadows added to buttons site-wide |
@@ -54,6 +56,25 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.15.0: Rotate your phone
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> Also for the mobile use only instruct to rotate the phone to use the app smoothly. Instruct this to the mobile browser too.
+
+**Changes**
+- Every diagram on this site is wide, so a phone held upright is a cramped way to use it. A small banner ("This works best in landscape — turn your phone sideways", with a rotating-phone icon) now appears on any narrow, touch (coarse-pointer) screen held in portrait — desktop, laptop, and anything already in landscape never see it at all, since that's a pure CSS media query (`max-width:980px`, `orientation:portrait`, `pointer:coarse`), not a device-name sniff.
+- It's on every page (added once, in the shared template), works identically in a plain mobile browser tab and once installed as an app, and can be dismissed (✕) — dismissing only hides it for the rest of that browsing session, so it comes back next time rather than being silenced forever after the first tap.
+
+### 5.14.0: The real logo, everywhere it should have been
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> then maintain the same logo. installing logo shows white ic. But everyther it should be Black IC on green background and a golden AS on top. Try to add gold effect on the AS. Push this directly to github
+
+**Changes**
+- **Found why the installed icon looked different from the site's own logo**: the header logo (and `favicon.svg`) had already been updated to the current black-chip-on-green design a while back, but the actual icon *files* — `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`, `maskable-512x512.png` — were never regenerated after that change, and were still the old design (a white/off-white chip). Every one of them is now rendered fresh from the current mark, including a maskable variant with the extra safe-zone padding Android's adaptive-icon mask needs.
+- **The "AS" now has a real gold gradient** (light gold at the top fading to a deeper amber at the bottom, with a thin bronze outline for definition at small sizes) instead of a single flat gold fill — applied everywhere the mark appears: the page header, `favicon.svg`, and all the regenerated icon files.
+- Pushed directly to the public repo per request.
 
 ### 5.13.0: The dot finds its row again, even though rows can now scroll
 

@@ -935,6 +935,23 @@ function setTheme(t){
 setTheme(html.dataset.theme || 'light');
 themeBtn.addEventListener('click', () => setTheme(html.dataset.theme === 'dark' ? 'light' : 'dark'));
 
+/* the "turn your phone sideways" banner — shown by CSS alone whenever the
+   viewport is a narrow, coarse-pointer (touch) screen in portrait, on every
+   page including this one. Dismissing it only hides it for the rest of this
+   browsing session (sessionStorage), so it comes back to remind a visitor
+   who returns later or opens a different page in a fresh tab, but doesn't
+   nag on every single part they click through to right now. */
+const rotateHint = $('#rotate-hint'), rotateHintClose = $('#rotate-hint-close');
+if (rotateHint && rotateHintClose){
+  let dismissed = false;
+  try { dismissed = sessionStorage.getItem('itc-rotate-dismissed') === '1'; } catch(_){}
+  if (dismissed) rotateHint.classList.add('dismissed');
+  rotateHintClose.addEventListener('click', () => {
+    rotateHint.classList.add('dismissed');
+    try { sessionStorage.setItem('itc-rotate-dismissed', '1'); } catch(_){}
+  });
+}
+
 /* start */
 go(idFromLocation(), {animate:false, replace:true});
 })();

@@ -30,12 +30,12 @@
 <meta name="twitter:description" content="Moves heat away from hot chips so they can keep running at full speed. The cooling system includes the CPU cooler (a metal heatsink with heat pipes and a…">
 <meta name="twitter:image" content="https://ayan-1829.github.io/inside-the-computer/og-image.png">
 
-<link rel="icon" href="../favicon.ico?v=4d9433ed" sizes="48x48" type="image/x-icon">
-<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=4d9433ed">
-<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png?v=4d9433ed">
-<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png?v=4d9433ed">
-<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=4d9433ed">
-<link rel="manifest" href="../site.webmanifest?v=4d9433ed">
+<link rel="icon" href="../favicon.ico?v=661cf8ee" sizes="48x48" type="image/x-icon">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=661cf8ee">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png?v=661cf8ee">
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png?v=661cf8ee">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=661cf8ee">
+<link rel="manifest" href="../site.webmanifest?v=661cf8ee">
 <link rel="sitemap" type="application/xml" href="https://ayan-1829.github.io/inside-the-computer/sitemap.xml">
 <script type="application/ld+json" id="ld-page">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://ayan-1829.github.io/inside-the-computer/#website","url":"https://ayan-1829.github.io/inside-the-computer/","name":"Inside the Computer","inLanguage":"en"},{"@type":"LearningResource","@id":"https://ayan-1829.github.io/inside-the-computer/parts/cooling.html#resource","url":"https://ayan-1829.github.io/inside-the-computer/parts/cooling.html","name":"Cooling","description":"Moves heat away from hot chips so they can keep running at full speed. The cooling system includes the CPU cooler (a metal heatsink with heat pipes and a…","inLanguage":"en","isAccessibleForFree":true,"learningResourceType":["Interactive resource","Diagram"],"interactivityType":"active","educationalLevel":["High school","Undergraduate"],"audience":{"@type":"EducationalAudience","educationalRole":"student"},"about":{"@type":"Thing","name":"Cooling"},"isPartOf":{"@id":"https://ayan-1829.github.io/inside-the-computer/#website"},"image":"https://ayan-1829.github.io/inside-the-computer/og-image.png","hasPart":[{"@type":"LearningResource","name":"Heatsink","url":"https://ayan-1829.github.io/inside-the-computer/parts/heatsink.html"},{"@type":"LearningResource","name":"Fan","url":"https://ayan-1829.github.io/inside-the-computer/parts/fan.html"},{"@type":"LearningResource","name":"Heat pipes","url":"https://ayan-1829.github.io/inside-the-computer/parts/heat-pipes.html"},{"@type":"LearningResource","name":"Thermal paste","url":"https://ayan-1829.github.io/inside-the-computer/parts/thermal-paste.html"}]},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Computer","item":"https://ayan-1829.github.io/inside-the-computer/"},{"@type":"ListItem","position":2,"name":"Cooling","item":"https://ayan-1829.github.io/inside-the-computer/parts/cooling.html"}]}]}</script>
 
@@ -67,9 +67,14 @@
   </defs>
 </svg>
 <div class="app">
+  <div class="rotate-hint" id="rotate-hint" role="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="16" rx="2"/><path d="M3 8a9 9 0 0 0 1.5 8.5M21 16a9 9 0 0 1-1.5-8.5M4 15.5 3 19l3.5-1M20 8.5 21 5l-3.5 1"/></svg>
+    <p>This works best in landscape — turn your phone sideways.</p>
+    <button type="button" id="rotate-hint-close" aria-label="Dismiss">✕</button>
+  </div>
   <header class="topbar">
     <a class="brand" href="../index.html" aria-label="Inside the Computer, go to the start">
-      <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#16654F"/><rect x="14" y="14" width="36" height="36" rx="5" fill="#0D0D0D"/><path d="M24 8v6M32 8v6M40 8v6M24 50v6M32 50v6M40 50v6M8 24h6M8 32h6M8 40h6M50 24h6M50 32h6M50 40h6" stroke="#0D0D0D" stroke-width="3" stroke-linecap="round"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="800" letter-spacing="-.5" font-family="Arial, sans-serif" fill="#E39A12">AS</text></svg>
+      <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="asGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9A8"/><stop offset=".55" stop-color="#E39A12"/><stop offset="1" stop-color="#9A6510"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="#16654F"/><rect x="14" y="14" width="36" height="36" rx="5" fill="#0D0D0D"/><path d="M24 8v6M32 8v6M40 8v6M24 50v6M32 50v6M40 50v6M8 24h6M8 32h6M8 40h6M50 24h6M50 32h6M50 40h6" stroke="#0D0D0D" stroke-width="3" stroke-linecap="round"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="800" letter-spacing="-.5" font-family="Arial, sans-serif" fill="url(#asGold)" stroke="#6B4300" stroke-width="0.4">AS</text></svg>
       <p class="brand-name">Inside the Computer</p>
     </a>
     <div class="spacer"></div>
