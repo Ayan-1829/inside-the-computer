@@ -394,7 +394,7 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .led-v{font-size:15px;font-weight:700;text-anchor:middle;fill:var(--i-text);pointer-events:none}
 .btn-s rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:all .15s}
 .btn-s text{font-size:16px;font-weight:600;fill:var(--i-text);text-anchor:middle;pointer-events:none}
-.btn-s:hover rect{stroke:var(--accent)}
+.btn-s:hover rect{stroke:var(--accent);filter:drop-shadow(0 4px 12px var(--accent-glow))}
 .btn-s.on rect{fill:url(#g-on);stroke:var(--accent)}
 .btn-s.on text{fill:var(--accent-ink)}
 .btn-s[style] text{font-size:inherit}   /* a button's own font-size (set on the group) wins */
@@ -646,13 +646,13 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
    Everything is namespaced under .s86 so the other diagrams,
    which share class names like .flag, are left alone.
    ========================================================== */
-.s86 .ttl{font-size:23px;font-weight:700;fill:var(--i-text)}
-.s86 .lab{font-size:17.5px;font-weight:600;fill:var(--i-text-mut);letter-spacing:.02em}
-.s86 .sn{font-size:18.5px;font-weight:600;fill:var(--i-text)}
-.s86 .sig{font-size:24px;font-weight:700;fill:var(--i-text)}
-.s86 .val{font-family:var(--font-mono);font-size:18.5px;font-weight:700;fill:var(--i-text)}
+.s86 .ttl{font-size:24px;font-weight:700;fill:var(--i-text)}
+.s86 .lab{font-size:18.5px;font-weight:600;fill:var(--i-text-mut);letter-spacing:.02em}
+.s86 .sn{font-size:19.5px;font-weight:600;fill:var(--i-text)}
+.s86 .sig{font-size:25px;font-weight:700;fill:var(--i-text)}
+.s86 .val{font-family:var(--font-mono);font-size:19px;font-weight:700;fill:var(--i-text)}
 .s86 [data-txt="cu"]{font-size:15.5px}   /* the control unit's own box is too narrow for the general value size */
-.s86 .asm{font-family:var(--font-mono);font-size:17px;font-weight:600;fill:var(--i-text)}
+.s86 .asm{font-family:var(--font-mono);font-size:17.5px;font-weight:600;fill:var(--i-text)}
 .s86 .story{font-size:19.5px;font-weight:500;fill:var(--i-text-mut)}
 .s86 .acc{fill:var(--accent)}
 .s86 .val.t-mut{fill:var(--i-text-mut);font-weight:600}
@@ -691,22 +691,49 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .s86 .flag.on .fn{fill:var(--signal-ink)}
 .s86 .flag.chg rect{stroke:var(--accent);stroke-width:2.6}
 
-/* the rows of RAM */
-.s86 .crow,.s86 .drow{cursor:default}
-.s86 .crow{cursor:pointer}
-.s86 .crow rect,.s86 .drow rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1;transition:fill .22s,stroke .22s}
-.s86 .crow:hover rect{stroke:var(--accent)}
-.s86 .crow.done rect{fill:var(--ram-done)}
-.s86 .crow.cur rect{stroke:var(--accent);stroke-width:2.2}
-.s86 .crow.lit rect,.s86 .drow.lit rect{fill:url(#g-sig);stroke:var(--signal);stroke-width:2.4}
 .s86 .btn-s text{font-size:17.5px}   /* Play/Step/Reset, which carry no inline font-size of their own */
+
+/* one frame per segment, so CS/DS/SS/ES read as four distinct boxes rather
+   than rows loose on the RAM panel's own background -- all four the same
+   colour, so the box reads as "a segment", not as which one it is (that's
+   what the label inside is for) */
+.s86 .seg-box{stroke-width:1.6;opacity:.9;stroke:var(--signal)}
+
+/* each segment box is real HTML (a foreignObject), not fixed SVG rows, so
+   it can hold as many rows as the program actually touched and scroll once
+   there are more than fit -- the same pattern the flow list on the left
+   already uses. Bigger type throughout, since this is meant to be read. */
+.x86-segbox{height:100%;width:100%;box-sizing:border-box;display:flex;flex-direction:column;font-family:var(--font-ui);overflow:hidden}
+.x86-seghead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 12px 4px;flex:none}
+.x86-seghead b{font-size:19px;font-weight:700;color:var(--i-text)}
+.x86-seghead span{font-family:var(--font-mono);font-size:16px;color:var(--i-text-mut)}
+.x86-segcols{display:grid;grid-template-columns:110px 1fr 1fr;padding:2px 12px 6px;flex:none;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--i-text-mut)}
+.x86-segbox[data-segbox="SS"] .x86-segcols,.x86-segbox[data-segbox="ES"] .x86-segcols{grid-template-columns:110px 1fr}
+.x86-segrows{flex:1;overflow-y:auto;min-height:0;border-top:1px solid var(--i-panel-edge)}
+.x86-segempty{padding:14px 12px;font-size:16px;color:var(--i-text-mut)}
+.x86-crow,.x86-srow{display:grid;grid-template-columns:110px 1fr 1fr;align-items:center;gap:8px;padding:0 12px;height:34px;font-family:var(--font-mono);font-size:17px;color:var(--i-text);cursor:default;border-bottom:1px solid var(--i-panel-edge, transparent)}
+.x86-crow{cursor:pointer}
+.x86-segbox[data-segbox="SS"] .x86-srow,.x86-segbox[data-segbox="ES"] .x86-srow{grid-template-columns:110px 1fr}
+.x86-crow .t{font-family:var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x86-crow .n,.x86-srow .n{font-family:var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--i-text-mut)}
+.x86-crow:hover{background:var(--accent-soft)}
+.x86-crow.cur{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.x86-crow.done{color:var(--i-text-mut)}
+.x86-crow.lit,.x86-srow.lit{background:var(--signal-soft);box-shadow:inset 3px 0 0 var(--signal)}
 
 /* the narration box (bottom right) and the control-strip buttons (left) are UI
    around the simulation, not part of the chip itself — shaded a touch darker
    than the chip's own blocks so that reads at a glance */
 .s86 .m-block.meta{fill:var(--meta-bg)}
 .s86 .btn-s rect{fill:var(--meta-bg)}
-.s86 .btn-s.on rect{fill:url(#g-on)}      /* the selected speed button still gets its green fill */
+
+/* the animation-speed slider (a single continuous 0-100 range, not fixed
+   presets — 0 is instant, 100 is the slowest the flow ever plays) */
+.x86-speed{height:34px;display:flex;align-items:center}
+.x86-speed input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:4px;background:var(--meta-bg);border:1px solid var(--line);outline:none;cursor:pointer}
+.x86-speed input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border:1px solid var(--accent);cursor:pointer}
+.x86-speed input[type="range"]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border:1px solid var(--accent);cursor:pointer}
+.x86-speed input[type="range"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 /* ---- the panels drawn with HTML inside foreignObject ---- */
 /* the example picker, collapsed to a single combo box showing only the current pick */
@@ -730,7 +757,7 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-exg button.big em{display:block;font-style:normal;font-size:15.5px;font-weight:500;color:var(--ink-3);margin-top:2px}
 .x86-exg button.big.on em{color:var(--on-accent);opacity:.85}
 
-.x86-flow{height:488px;overflow:auto;font-family:var(--font-ui);background:var(--meta-bg);border:1px solid var(--line);border-radius:12px;padding:4px 10px 8px;box-sizing:border-box}
+.x86-flow{height:100%;overflow:auto;font-family:var(--font-ui);background:var(--meta-bg);border:1px solid var(--line);border-radius:12px;padding:4px 10px 8px;box-sizing:border-box}
 .x86-flow .fg{display:flex;align-items:center;gap:7px;margin:10px 0 4px;font-size:16px;color:var(--ink-3)}
 .x86-flow .fg .fn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
 /* the assembly instruction stands out — bigger, bold, in the accent colour */
@@ -751,9 +778,13 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-ov{height:750px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px;box-shadow:var(--shadow);font-family:var(--font-ui)}
 .x86-ov .ovh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .x86-ov h3{margin:0;font-size:21.5px;font-weight:700}
-.x86-ov .ovh button,.x86-ov .prim{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:6px 14px;font-size:16px;font-weight:600;cursor:pointer}
-.x86-ov .ovh button:hover{border-color:var(--accent);color:var(--accent)}
+.x86-ov .prim{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:6px 14px;font-size:16px;font-weight:600;cursor:pointer}
 .x86-ov .prim{background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border-color:var(--accent);color:var(--on-accent)}
+/* the same cross-sign close button as the rest of the site (the details
+   card, the overview dialog), not the text "Close" this used to be */
+.x86-ov .ovh button{flex:none;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--surface);border-radius:9px;color:var(--ink);cursor:pointer}
+.x86-ov .ovh button svg{width:18px;height:18px}
+.x86-ov .ovh button:hover{border-color:var(--accent);color:var(--accent)}
 .x86-ov .orow{display:grid;grid-template-columns:126px 1fr 200px;gap:16px;width:100%;text-align:left;align-items:center;padding:5px 10px;border:0;border-radius:8px;background:none;color:var(--ink);font-size:17px;cursor:pointer}
 .x86-ov .orow.head{color:var(--ink-3);font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:default}
 .x86-ov .orow:not(.head):hover{background:var(--accent-soft)}
@@ -767,6 +798,24 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-ov .odet p:last-child{margin:0}
 .x86-ov .x86-ta{flex:1;width:100%;resize:none;font-family:var(--font-mono);font-size:16px;line-height:1.6;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .x86-ov .ovf{display:flex;align-items:center;gap:14px;margin-top:12px;font-size:15px;color:var(--ink-3)}
+
+.x86-ov .x86-segref{flex:1;overflow:auto;min-height:0}
+.x86-segtab{width:100%;border-collapse:collapse;font-size:16px;margin-bottom:16px}
+.x86-segtab th,.x86-segtab td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+.x86-segtab th{color:var(--ink-3);font-size:13.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.x86-segtab td:first-child{font-family:var(--font-mono);font-weight:700;color:var(--accent)}
+.x86-segnote{font-size:16px;line-height:1.55;color:var(--ink-2);margin:0 0 12px}
+.x86-segmap{display:flex;flex-direction:column;gap:10px;margin:10px 0 14px}
+.x86-segtrack{display:grid;grid-template-columns:34px 1fr 150px;align-items:center;gap:10px;font-size:14.5px}
+.x86-segtrack b{font-family:var(--font-mono);color:var(--ink)}
+.x86-segtrack em{font-family:var(--font-mono);font-style:normal;color:var(--ink-3);text-align:right}
+.x86-segrail{position:relative;height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.x86-segbar{position:absolute;top:0;bottom:0;min-width:3px;border-radius:7px;background:var(--accent)}
+.x86-segbar.seg-cs{background:var(--bus-a)}
+.x86-segbar.seg-ds{background:var(--bus-d)}
+.x86-segbar.seg-ss{background:var(--bus-c)}
+.x86-segbar.seg-es{background:var(--ram)}
+.x86-segfoot{font-family:var(--font-mono);font-size:14.5px;color:var(--ink-3);margin:4px 0 0}
 
 .x86-exs-ov::-webkit-scrollbar,.x86-flow::-webkit-scrollbar{width:8px}
 .x86-exs-ov::-webkit-scrollbar-thumb,.x86-flow::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}

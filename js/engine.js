@@ -384,6 +384,29 @@ function endDrag(e){
 }
 layersEl.addEventListener('pointerup', endDrag);
 layersEl.addEventListener('pointercancel', endDrag);
+
+/* ---------- touch: press and hold opens the same details a right-click
+   does on a mouse, since a touchscreen has no separate hover or right-click
+   gesture of its own. A short tap still just opens the part, as before. ---------- */
+let pressTimer = null, pressXY = null;
+function cancelPress(){ if (pressTimer){ clearTimeout(pressTimer); pressTimer = null; } }
+layersEl.addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'touch' || !layer || !layer.contains(e.target)) return;
+  if (e.target.closest('.ctl,.bitc,.html-scene')) return;
+  const h = hotAt(e.target);
+  if (!h) return;
+  pressXY = [e.clientX, e.clientY];
+  pressTimer = setTimeout(() => {
+    pressTimer = null;
+    suppressClick = true; setTimeout(() => { suppressClick = false; }, 500);
+    setSelected(h); showActions(h, pressXY[0], pressXY[1]);
+  }, 550);
+});
+layersEl.addEventListener('pointermove', e => {
+  if (pressTimer && pressXY && Math.hypot(e.clientX - pressXY[0], e.clientY - pressXY[1]) > 10) cancelPress();
+});
+layersEl.addEventListener('pointerup', cancelPress);
+layersEl.addEventListener('pointercancel', cancelPress);
 $('#btn-reset-layout').addEventListener('click', () => {
   if (!layer) return;
   layer.querySelectorAll('.dragwrap').forEach(w => setOffset(w, 0, 0, true));

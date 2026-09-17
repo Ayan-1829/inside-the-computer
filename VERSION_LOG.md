@@ -10,6 +10,19 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.13.0 | 2026-09-18 | — | 8086: the animated dot lands on the exact memory row again — reading its real, current on-screen position (the box scrolled to it first) right before each step's dot sets off, instead of a generic point in the box, which is what the scrollable-list redesign had temporarily lost |
+| 5.12.0 | 2026-09-18 | — | 8086: the RAM panel's four boxes now use one consistent gap for the panel's left/right/top/bottom margins and the space between boxes, instead of a cramped 14px margin next to a much wider 44px gap between the two columns |
+| 5.11.0 | 2026-09-18 | — | 8086: the CS/DS/SS/ES popup and its buttons removed — each RAM-panel box is now a real scrollable list showing every row the program actually touched, in bigger type; fixed a genuine duplicate-animation bug where POP (and any plain register load) sent two dots to the same register; all four segment boxes now share one colour; hover box-shadows added to buttons site-wide |
+| 5.10.0 | 2026-09-18 | — | 8086: two real value-updates-too-early bugs found by re-reading buildStory() end to end — a store's destination byte used to flip to its new value two steps before the dot carrying the data arrived, and an instruction changing two registers at once (MUL, XCHG) revealed both immediately even though only one got an animated dot |
+| 5.9.0 | 2026-09-18 | — | 8086: fonts sized up across the diagram; SS/ES boxes widened so their full labels fit; the segment memory popup now shows only the part of the 64 KB a program actually uses (with a bigger font), instead of always dumping all 65,536 bytes; every popup's close button is now the same cross-sign icon the rest of the site already uses, instead of some saying "Close" |
+| 5.7.0 | 2026-09-18 | — | 8086: the stack box's window no longer snaps back to offset 0 the step after a PUSH scrolled it to SP — it now stays put until something scrolls it again; CS/DS/SS/ES are now clickable, opening a full 64 KB hex dump of that segment |
+| 5.6.0 | 2026-09-18 | — | 8086: PUSH/POP direction (stack fills toward lower addresses) now spelled out explicitly, not just "grows downwards"; wider gap between the three bus lines; the four speed-preset buttons replaced with a single slider, slowest setting now well past the old "Slow" preset |
+| 5.5.0 | 2026-09-18 | — | 8086: fixed the real reason the stack box never showed a PUSH/POP (its snapshot only ever covered a segment's first 64 bytes, but SP starts at 0100h); every segment/register value shown now comes from that step's own snapshot instead of the program's already-finished end state; fixed a coordinate bug that put the internal data bus line in the wrong place, and moved it to sit cleanly below the control unit |
+| 5.4.0 | 2026-09-18 | — | 8086: the chip diagram itself enlarged 18%; CS and DS boxes matched to the same width with wider DS column gaps; CS widened so more of the machine code shows before truncating; the bus-line legend no longer runs into the RAM panel |
+| 5.3.0 | 2026-09-18 | — | 8086 layout pass: the four segment labels no longer spill outside the RAM panel, all four boxes are now the same height, DS's name column is left-aligned instead of floating at the right edge, the description box is sized to its own text instead of guessed, the left column is widened and stretched to meet its bottom, and the gaps to the chip on both sides are tightened |
+| 5.2.0 | 2026-09-18 | — | 8086 RAM panel redrawn again: CS and DS as two boxed tables sharing the panel's left edge (SS and ES boxed to their right), each shown as a handful of live rows + "…" + the segment's real top address, instead of a long scrolling list; CS narrowed and its text truncated to fit; DS regained a variable-name column; every dot path now finishes inside the correct box |
+| 5.1.0 | 2026-09-18 | — | 8086: register-destination flow bug fixed (the dot now travels to the register that's really changing, not always AX); a "Segments & memory" reference overlay added; the RAM panel rebuilt as a 2x2 CS/DS/SS/ES grid, each with its own live 64-byte window and correct segment attribution for reads/writes/stack traffic |
+| 5.0.0 | 2026-09-18 | — | v5: touch users can now reach the right-click details card (press and hold); the 8086's three bus lines narrowed, and SS/ES added alongside CS/DS in the RAM view |
 | 4.15.0 | 2026-09-18 | — | Motherboard gets real extra components (24-pin, SATA, CMOS battery, fan header, rear I/O); tower reordered (RAM before CPU, cooling beside it); PSU cables routed to specific parts; more decorative traces |
 | 4.14.0 | 2026-09-18 | — | Bug sweep: "Inside" button no longer shown where there's nothing to see inside; Escape no longer double-fires; the dashed device cables and the captured photo now paint in the right order; storage sub-parts no longer mislabelled "Digital logic" |
 | 4.13.0 | 2026-09-18 | — | Webcam and mic became interactive: right-click "Try it" opens a live camera/mic test, then an animated dot carries the result device → I/O → RAM → CPU → RAM → I/O → screen or speakers, with the current stage highlighted the whole way, computed from the diagram's real geometry so it still works if a part has been dragged |
@@ -42,7 +55,203 @@ Add a new section at the top of "Versions" for each future update.
 
 ## Versions
 
-> **A gap in this log.** Everything from 4.10.0 to 4.15.0 below happened across several prompts on 2026-09-18 that were not written up at the time — they are recorded here after the fact, grouped by topic rather than prompt-by-prompt, once the gap was noticed and pointed out. From 5.0.0 onward this file is kept current with every change again.
+### 5.13.0: The dot finds its row again, even though rows can now scroll
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> the data is not taken to the exact memory location (row) to the segments. But it used to do it correctly. Please adjust the positions.
+
+**Changes**
+- When the CS/DS/SS/ES boxes became scrollable HTML lists (5.11.0), a row no longer has one fixed position the way it did when the boxes were static SVG — so the animated dot was changed to aim at a generic point in the box instead of the specific row, which was a real regression from how it used to land exactly on the byte or instruction involved.
+- Each step that touches a specific row now carries which one (which instruction, for CS, or which byte offset, for DS/SS/ES) and which end of its path that row is. Right before the dot sets off, that row is scrolled into view and its real, current on-screen position is read back and spliced onto the path — so the dot still finds the exact row, even though the row's position can no longer be worked out in advance.
+
+### 5.12.0: One consistent gap around and between the four boxes
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> for the CS, DS, SS, ES, keep side space similar. the CS, DS are too left that is so near the outer box. But there is a gap between CS, SS. Maintain equal distance from top, left, bottom, left.
+
+**Changes**
+- The RAM panel's left/right margins (14px), top/bottom margins (30px/20px), and the gap between the two box columns (44px) were four different numbers, which read as CS and DS sitting jammed against the panel's edge while a noticeably bigger gap opened up between the columns. All of that is now one constant (24), used for every margin and every gap alike.
+
+### 5.11.0: The popup is gone, the boxes scroll on their own, and a real duplicate-dot bug
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> Remove the pop-up showing option for all the memory data in CS, SS, DS, ES in pop-up with much larger text. if more than 6 rows apears, then keep a scrolling option inside the present sectin. Remove the button style on top of each segment.
+>
+> sometimes, flow is having bug (like in stack push pop problem) while poping, the data coming to BX has two flow (repeat)
+>
+> Make all the segment colour yellow (same). hovering over the components should create box shadow to highlight (dark shadow in light mode, light shadow in dark mode) that part a bit.
+>
+> dark shadow in light mode, light shadow in dark mode. Maintain this theme to every components of this website (all pages)
+
+**Changes**
+- **The click-a-segment popup is gone entirely** — no more `.segreg` click on the chip's segment registers, no more button header on each RAM-panel box. In its place, each of the four boxes is now a genuinely scrollable HTML list, showing every row the currently-loaded program has actually touched (not a fixed 6-row window with a "…" and a fake top-of-segment row — that whole device is gone, because it no longer needs to exist). Past 6 rows, the box scrolls on its own, the same way the flow list on the left already did. Text throughout is bigger.
+- **Found the real cause of "the data reaching BX has two flows."** A plain register load from memory — `POP BX`, or `MOV BX,[mem]` — already animates its own dot all the way into the destination register as part of the read itself. But the write-back step that follows was *also* animating a second, separate dot to that same register, because POP changes both the destination register and SP, and the destination register's own delivery wasn't being recognised as already handled. The write-back step now skips whichever register the read step itself already delivered.
+- **All four segment boxes now share one colour** (the same amber/yellow used for a highlighted value elsewhere), instead of a different colour per segment.
+- **Buttons across the whole site (not just this page) now cast a shadow on hover** — `.btn-s`, the shared button style used everywhere a scene draws its own controls, not just here.
+- Since rows can now scroll to anywhere in a long list, a memory access's animated dot no longer aims at one specific row's exact pixel position (which no longer has a fixed one) — it aims at the box itself, and the specific row is found afterwards by highlighting it and scrolling it into view.
+- A verification pass caught one CSS bug from the rewrite: DS's row (address/value/name, three columns) shares a class with SS/ES's row (address/value, two columns), and the two-column rule meant only for the narrower SS/ES boxes was also collapsing DS's name column onto its own overlapping line. Scoped that rule to SS/ES specifically.
+
+### 5.10.0: Two real "updates before the dot arrives" bugs, found by reading buildStory end to end
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> The values in the memory/registers should update when the data carrying dot reaches the destination. There are inconsistancy. Find them everywhere and fix it. Give a deep look to each code.
+
+**Changes**
+- **A store's destination byte was revealing its new value two steps early.** A memory write plays out as three steps — the address going out, the control bus asserting a write, and finally the data itself crossing the data bus into RAM — but the first two were already showing the *post-write* byte the instant their own dot (which only carries an address or a control signal, not the data) arrived. Every store now carries a snapshot with just the bytes about to be written held back at their old value; everything else that instruction already changed (a register write-back, flags) still shows correctly throughout, since those aren't what's being held back.
+- **An instruction that changes two registers in one move revealed both of them on a single step.** `MUL BX` leaves its product in DX and AX together, and `XCHG` swaps two outright — both used to get one "write back" step whose dot only ever travelled to the first register, while the second's new value appeared anyway with nothing having visibly carried it there. Each changed register now gets its own step and its own dot, in turn.
+- **The most far-reaching one, caught by a verification pass on the first two fixes**: the "ALU · execute" step itself revealed the destination register (and any memory it wrote to) immediately — one step before the write-back/store steps whose dots are the ones that actually deliver those values — even though the ALU-execute step's own dot only travels to the "Result" display box. This affected *every* arithmetic instruction, not just the two special cases above. A single `withheld()` helper now threads through the ALU-execute, write-back and store steps, each revealing a little more of the instruction's real effect than the last, while flags (which the ALU-execute step's dot genuinely does deliver) still update at that same step.
+
+### 5.9.0: Bigger type, a fitted popup, and one close button everywhere
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> Make the fonts a bit bigger where is possible. For SS and ES take label a bit left (increase the width a bit) so that the label doesn't cross the box.
+>
+> In pop up memory, only show the memory locations of that particular section (increase the font too)
+>
+> Some tabs has cross sign, some has cross text. Make them consistent to all places (cross-sign)
+
+**Changes**
+- **Font sizes increased** across the chip diagram's labels, register/segment values, assembly/machine-code text and titles.
+- **SS and ES widened** (230→300) rather than shortening their labels again — this restores the fuller "Stack segment · SS = …h" / "Extra segment · ES = …h" wording (shortened in the previous version to fix an overflow) now that the box is wide enough to hold it.
+- **The segment memory popup no longer dumps the whole 64 KB.** It now works out which part of that segment the *currently loaded program* actually reads, writes, or declares — CS from its own instructions, DS from declared bytes plus anything touched, SS/ES from whatever offsets ever showed up in a PUSH/POP/string-instruction step across the whole run — and shows only that (with a little padding for context), instead of thousands of mostly-empty lines. Its font size was also increased.
+- **Every popup in this file now closes with the same "×" icon** the rest of the site already used elsewhere (the details card, the overview dialog) — the five here (example picker, opcode reference, write-your-own, segments-and-memory, and the new per-segment memory view) previously all said "Close" in text instead.
+
+### 5.8.0: Four more examples, all cross-checked, and a button on every segment
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> Add more example codes in the example set. Cross-verify all of them. Did you implement pop-up for every segement? add a button style on the top of each segment.
+
+**Changes**
+- **Four new example programs**, on top of the original eight: a stack frame built with BP (`MOV BP, SP` then `[BP]`, the addressing mode real compilers use for local variables), a string copy done with the actual `MOVSB` instruction rather than a hand-written loop, a shift/rotate example (`SHR` then `ROL`, showing the difference between a bit that's lost and one that's kept), and a `CALL`/`RET` subroutine (which pushes and pops the return address the same way `PUSH`/`POP` do, just automatically).
+- **Added `build/test-8086-examples.mjs`**, a standalone check (like the existing `build/test-8086.mjs`, but for the example picker specifically) that assembles and runs every one of the 12 examples and checks its final register/memory state against hand-worked-out expected values. All 12 pass. Building it caught two mistakes in my own first-guess expected values (not simulator bugs) before they could be mistaken for real ones.
+- **Confirmed the "click a segment to see all of it" feature already covered CS, DS, SS and ES** — only IP was ever excluded, since it isn't a memory segment.
+- **Added a second way to reach that same popup**: a small button now sits right on top of each segment's own box in the RAM panel, colour-matched to that box's border, so it can be opened from wherever its data already is instead of only from the chip's segment-register list.
+- The SS and ES buttons are narrower than CS and DS (230px vs 460px), and their full label ("Stack segment · SS = 0200h") ran past the button's own edge there. Shortened to "Stack · SS = 0200h" / "Extra · ES = 0100h" for those two only.
+
+### 5.7.0: The stack window stops resetting itself, and every byte is now one click away
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> the stack (SS) is updated to show position (02000) but the data is saved at 00FE. So, the data is not shown. So, keep the memory location fixed to 020FE to show the stored data for the specific program.
+>
+> Add clickable option over the segments. Clicking the segements should pop-up the whole memory section of that section in a pop-up window. so, anyone can see all the memory values of that segement.
+
+**Changes**
+- **Found the real bug behind this**: a PUSH correctly scrolled the stack box down to SP for the one step where the write happened, but every *other* step's window defaulted back to 0 regardless of what the box was already showing — so one step later, the pushed byte scrolled straight back out of view even though it was still sitting there in memory. Each box's window is now sticky: it carries forward from the last step that actually scrolled it, and only moves again when a later access needs it to.
+- **CS, DS, SS and ES are now clickable** (in the chip's own "Segment registers" box — IP is left alone, since it isn't a memory segment). Clicking one opens a full hex dump of that segment's entire 64 KB, all 4096 lines built as a single block of text rather than one element per byte, so it opens and scrolls without any per-byte DOM overhead. CS reads live (its bytes never change once loaded), DS/SS/ES read from the currently-displayed step's own snapshot, same as the small windows in the RAM panel.
+
+### 5.6.0: Which way the stack really goes, more room between the buses, a slider
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> Cross-check the stack push pop example. is it okay with the memory address? does it push pop from below (higher memory address this case)? If so, then maintain it carefully and mention about the this in the description. Maintain SP, BP correctly.
+>
+> Increse the gap between the buses those are vertically present in between the CPU chip and the RAM.
+>
+> for slow option, slow down the the process more. and instead of button add slider.
+
+**Changes**
+- **Checked the stack mechanics directly against the simulator's own PUSH/POP code** (`cpu.push`/`cpu.pop` in `js/sim/i8086.js`) and the assembler's addressing rule (a `[BP+…]` operand already defaults to the SS segment, exactly like real hardware, unless it names another segment explicitly) — both were already correct: SP starts at 0100h and PUSH moves it down (to a lower address) before writing; POP reads first, then moves it back up. The gap wasn't in the mechanics, it was in the wording: "the stack grows downwards" doesn't say which way "down" is in address terms. The PUSH step, the POP step, the "Use the stack" example blurb, and the "Segments & memory" reference all now say explicitly that the stack fills toward *lower* addresses from a high starting point.
+- **The three bus lines were spaced 20 units apart** (24 once the chip's own 1.18× scale was applied) — now 35 units (41 scaled), a clearer gap between Address/Data/Control. As a side effect this also fixes their invisible hover/click hit-areas, which at the old spacing slightly overlapped each other.
+- **The four fixed speed presets (Instant/Slow/Normal/Fast) are now one continuous slider** (0 = instant, 100 = slowest), with a word underneath it (Fast/Normal/Slow/Slowest) so it still reads at a glance. The slowest setting is now meaningfully slower than the old fixed "Slow" preset was (up from 1500ms per step to roughly 3400ms at the top of the slider).
+
+### 5.5.0: The stack box finally shows a PUSH — the real bug, not the symptom
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> The values in the stack is not updated properly. Adjust All the segment/ memory/ register values for the given examples properly. Cross-check every flow.
+>
+> Lower the internal data bus line (take it under the control unit). Adjust the 'Internal data bus' remain above it (adjust accordingly so that no overlap happens).
+>
+> Every register/memory value should update after the dot(data) reaches the position. Values are updated instantly.
+
+**Changes**
+- **Found the actual reason the stack box never updated.** Every segment's per-step snapshot only ever captured its first 64 bytes (offsets 0–63) — fine for CS (a program's instructions start at offset 0) and fine for DS (declared data usually does too), but the stack starts at SP = 0100h and grows *downward* from there, nowhere near offset 0. No amount of the box's own row-scrolling could ever reach a byte that was never captured in the first place. Every segment now snapshots its *entire* 64 KB per step (a real, independent copy, not a live view), so the stack box can now show a PUSH or POP wherever SP actually is.
+- **Segment values, base addresses, and "top of segment" bytes were being read from the CPU's live, already-finished state instead of that step's own snapshot.** Since the whole run is planned to completion before any of it is shown, "live" state is always the *end* of the program — this didn't visibly matter for the current examples (none of them change a segment register mid-run) but was still the wrong source, and would have shown wrong values the moment an example did change one. Every one of these now reads from the step's own snapshot, falling back to live state only when there's no story yet at all.
+- **Fixed a real coordinate bug from the chip-enlarging pass**: the internal data bus line's y-position had the x-scale helper applied to it by mistake, leaving it in the wrong place relative to the control unit. It's now derived directly from the control unit's own bottom edge plus a fixed margin — genuinely "under the control unit," and it can't drift back out of place if the control unit or the chip's scale changes again — with its label repositioned to sit just above it.
+- **The three coloured bus lines ran almost all the way down to their own same-coloured legend**, close enough (about 39px) to read as running straight into it. They now stop with a bigger, fixed margin above wherever the legend is, instead of at a fixed length of their own.
+
+### 5.4.0: A bigger chip, a matched CS/DS, and a legend that stays in its lane
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> the width of the DS should be similar as CS. Increase the gaps between the columns in the DS. Widen the CS a bit so the machine codes are shown properly. Enlarge the middle CPU (both height and width).
+>
+> Ensure the Address bus, control bus labels are not overlapped. Equidistance the middle three vertical lines with the Inside the chip and outside of the chip (RAM).
+
+**Changes**
+- **The chip diagram is 18% bigger**, top-left corner held in place. Every one of its internal coordinates — BIU/EU bands, the address adder, segment registers, instruction queue, register file, ALU, flags, output box, and every point the animated dot's wires pass through — is now computed from a single `cx()`/`cy()`/`sc()` scale helper instead of being a hand-picked pixel number, so the wiring and the diagram it lands on scale together. (Previously these were ~40 independent literals; scaling "by hand" would have meant retuning each one and risking the dot drifting off its target.)
+- **DS is now the same width as CS** (460, both), instead of noticeably narrower, and its address/value/name columns are spaced much further apart.
+- **CS is also wider**, so the machine-code column shows more bytes before truncating (4 bytes + "…" instead of 3).
+- **The bus-line legend ("Address bus"/"Data bus"/"Control bus") no longer runs into the RAM panel.** It used to be left-aligned starting right after a small tick mark, so a long name like "Control bus" could reach past the RAM panel's left edge depending on exactly how tight that gap was tuned. It's now right-aligned to a fixed stop just short of the panel, so this can't recur regardless of future gap or scale changes.
+- The gap between the chip and the RAM panel is re-derived from the chip's own (now bigger) right edge, keeping the two things equally spaced from each other on both sides rather than one fixed number that assumed the old, smaller chip.
+
+### 5.3.0: Fixing the fit — label containment, equal heights, tighter gaps
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> The UI is not fixed properly for the four segments. Maintain similar height for the segments as all have 6 rows with continuety and last row (if any example has more than 6 rows then make all the segments similar to that. Maintain gaps inside the segments for address, data, and others (columnwise gap) the labels for the segments (CS, SS) going out of the RAM box.
+>
+> You can shorten the description box (bottom-right) height to match with the left tabs lower point or enlarge the left tabs.
+>
+> Reduce gaps with the left program flow and middle. also reduce gap with middle CPU with RAM and Description box.
+
+**Changes**
+- **The CS/SS labels really were spilling above the RAM panel's own background.** CS and DS's row height (28px) didn't match SS and ES's (26px), and the label position above a box wasn't accounted for when the panel's own top edge was placed — so the label could sit right at or above the panel's border. All four boxes now share one row height, and the whole vertical layout (label → header → rows → next box's label, and the panel's own top margin) is computed from a small set of named gaps (`TOP_PAD`, `LBL_OFF`, `BOX_GAP`) instead of scattered hand-picked numbers, so the label is always guaranteed room inside the panel.
+- **DS's name column was right-aligned to the box edge**, so its left edge (and so its gap from the value column) drifted with every name's length. It's now left-aligned at a fixed x, truncated to fit, so the column reads as an actual column.
+- **The description box was sized by guesswork** (260px, then 312px) rather than by what it actually draws (a title, up to 6 wrapped description lines, a rule, up to 3 wrapped formula lines) — 260px would have clipped a full three-line formula. It's now sized to that content exactly.
+- **The left column (examples, flow list, buttons) was noticeably shorter than the RAM+description column beside it.** Rather than shrink the description box and risk clipping its text again, the left column was widened (310→350px, closing most of the gap to the chip in the same move) and stretched via the flow list's own height so its last button now lands level with the description box's bottom.
+- The gap between the chip and the RAM panel was tightened by moving the RAM column left; the chip's own internal wiring wasn't touched, so nothing inside it needed re-deriving.
+
+### 5.2.0: Four boxed segment tables, laid out for pointing, not spreading
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> Add four block (boxed shape) inside the ram for four segments. Follow the dots to exact memory location when need. keep the segement name outside top of the box with initial memory address. Reduce the width of the CS as much as possible untill the texts are not overlapped.
+>
+> Continue with the following changes: keep the CS and DS at left. It will be easier to point then. Name the variables beside the DS blocks, and remove unnessary memory row. Keep starting 5/6 rows then 3 vertical dots (to represent continiuty) then the last memory address of the section.
+
+**Changes**
+- The single 2x2 grid from 5.1.0 is replaced with **four bordered boxes**, each in its own accent colour: CS and DS stacked at the RAM panel's left edge (sharing one x, so a data access and a code fetch both land at the same entry point into the panel — easier to follow than two separate columns), SS and ES stacked in a second column to their right.
+- Each box now shows a **fixed, short shape** instead of a long scroll: 6 live rows (still the same scrolling window as before, so PUSH/POP/CALL/RET/MOVS/STOS still land exactly where the access happened), a static "…" row, and a final row pinned to that segment's real last byte (base × 10h + FFFFh) — so every box stays compact regardless of how far the touched offset is from the start, while still showing where the segment actually ends.
+- The segment name and its current base address sit **above** each box, outside it, rather than inside as a header line.
+- **DS's row table gained back a name column**, showing the label of any declared byte at that address (e.g. `msg`, `result`) beside its value.
+- CS's box is narrower: assembly text truncates to 16 characters and the machine-code column to 3 bytes plus "…" for longer encodings, freeing width that a full 24-character/6-byte worst case would have needed.
+- **Every dot path that reads or writes memory now finishes at the box it actually landed in.** Previously a data access always finished at the RAM panel's outer edge, which only lined up with whichever box happened to sit there — once SS and ES moved to their own column in 5.1.0, a stack or string access would have finished short of its real box. Path helpers (`pAddr`, `pCtrl`, `pData2EU`, `pData2Reg`, `pDataOut`) now take the target box's x explicitly.
+
+### 5.1.0: The 8086's register flow fixed, and a real segment/memory map
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> I think the loading (dot flow) of AX, BX registers is not correct. Suppose, if I code MOV AX, 05h, then the dot should follow towards AX to load.
+>
+> Try to add the memory structure that I have given, also the registers along with the different segements.
+>
+> Recheck everything, flow, IP, Instruction registers. and rearrange components for better visibility.
+>
+> Try to show both SS, ES as CS, DS is shown. You can create vertical columns for them. Shrink the CS, DS a little and add the new column for SS, ES. […] 1, 2 can given to CS, DS with more vertical Space and 3, 4 to SS, ES for less vertical space. The 2, 4 may also have less horizontal space depending on the data. As machine code is written on the CS, it takes more space. You can remove the details tab for this I8086 and utilize the whole space.
+
+**Changes**
+- **Register write-back/read paths always pointed at AX's row.** `MOV BX, 5h` (and every instruction naming any register other than AX) animated the dot into AX's row in the register file, not the register that actually changed; a plain (non-ALU) write-back also reused the ALU's own outbound path instead of a real inbound one. Fixed with a `regRowY(r)` lookup and register-parameterized path functions, so the dot always lands on the true destination — verified for both an AX case and a BX case.
+- **Reads and writes were always attributed to DS**, even when the real access was through SS (PUSH/POP/CALL/RET) or ES (MOVS/STOS/a segment-override operand). This meant a POP's memory read was silently skipped from the flow entirely whenever DS and SS didn't share the same base, and a PUSH's write was only ever shown by the "stack traffic" fallback, by accident of which branch it happened to fall into — not because the segment was identified correctly. Now each access is attributed to its real segment (an explicit override wins, then stack instructions → SS, string destinations → ES, else DS), and every one of the three segment windows scrolls and highlights independently.
+- **The RAM panel is now a real 2x2 grid**, not just CS and DS stacked with SS/ES mentioned in passing: CS (top-left, wide, machine code needs the room) and DS (top-right, narrower) share the taller row band; SS (bottom-left) and ES (bottom-right) share a shorter one below. Each of the four now has its own live 64-byte address/value window (`dmem`/`smem`/`emem` in the per-step snapshot), so stepping through `PUSH AX` / `POP BX` now visibly scrolls the stack table to the right address near SP, and a string instruction would do the same for ES around DI.
+- Added a **"Segments & memory" overlay** (next to "Instruction set" and "Write your own"): the CS/DS/SS/ES ↔ offset-register ↔ purpose reference table, plus a to-scale bar showing where this program's four segments currently sit across the 1 MB address space (00000h–FFFFFh) — drawn from the program's live CS/DS/SS/ES values, not a fixed illustration, so it also shows when segments overlap.
+- The 8086 page already asks for the details panel to fold away via the existing `requestWide(true)` mechanism, so no separate change was needed there to make room for the wider RAM panel.
+
+---
+
+### 5.0.0: v5 — better mobile interactivity, and two 8086 fixes
+
+**Prompts** (2026-09-18, exact times not in the saved record):
+> Adjust every components for the better mobile view and interactivity.
+>
+> for the i8086, can you narrow the vertical bus line section and add SS, ES along with CS, DS?
+>
+> This might be a big change. So create v5 to maintain version.
+
+**Changes**
+- New version folder, copied from v4, since this batch (a mobile pass plus an 8086 change) was flagged as a bigger change than a normal in-place update.
+- **Touch devices could not reach the right-click details card at all** — a touchscreen has no separate hover or right-click gesture — so a real gap in mobile interactivity, not previously called out in this log, is now fixed: pressing and holding a part (about half a second) opens the same concise-card-with-buttons a right-click does on a mouse; a normal short tap still opens the part as before. Verified this doesn't fire on an ordinary tap, and doesn't conflict with dragging a part.
+- Checked the whole-computer page, the 8086 page, SSD and the motherboard at a phone width: the existing responsive layout (stage/panel stacking, the "Zoom diagram" magnifier, and the touch-target padding already applied to every control) already held up well; no further layout changes were needed there.
+- On the 8086 page, the three vertical bus lines are now drawn closer together (the wires already reference this spacing symbolically, so nothing else needed to move).
+- The RAM panel now also shows **"Stack segment · SS = …"** and **"Extra segment · ES = …"**, next to the existing Code and Data segment displays — the segment register box itself already listed all five registers (CS, DS, SS, ES, IP), but RAM's own header text only ever mentioned CS and DS.
+
+**On keeping this file up to date.** Asked directly whether this log gets updated every time a change is made: honestly, no — it fell behind for a long stretch (see the note that used to sit here about 4.10.0–4.15.0, now folded into their own entries above). From this version on, every change is written up here as it's delivered, not batched up and reconstructed afterward.
+
+---
 
 ### 4.15.0: Motherboard gets real parts, and the tower is reordered
 
