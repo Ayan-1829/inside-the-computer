@@ -1,0 +1,4 @@
+{
+  "siteUrl": "https://example.com/",
+  "_note": "Change siteUrl to your real domain (with trailing slash), then run: node build/build.mjs"
+}
