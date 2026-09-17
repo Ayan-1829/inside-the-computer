@@ -13,7 +13,7 @@ const $ = s => document.querySelector(s);
 const html = document.documentElement;
 html.classList.add('js');
 const stage = $('#stage'), layersEl = $('#layers'), panel = $('#panel'), inner = $('#panel-inner'), tip = $('#tip'),
-      crumbsEl = $('#crumbs'), scroller = $('#scroller'), zoomBtn = $('#btn-zoom'), depthEl = $('#depth'), hintEl = $('#hint'), badge = $('#model-badge'), announce = $('#announce'), stripEl = $('#strip');
+      crumbsEl = $('#crumbs'), scroller = $('#scroller'), zoomBtn = $('#btn-zoom'), depthEl = $('#depth'), hintEl = $('#hint'), badge = $('#model-badge'), tools = $('#stage-tools'), announce = $('#announce'), stripEl = $('#strip');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 const coarse = matchMedia('(pointer: coarse)');
 const HTTP = /^https?:$/.test(location.protocol);
@@ -46,7 +46,7 @@ function buildLayer(ownId){
   svg.setAttribute('role','group');
   svg.setAttribute('aria-label', n.name + ', interactive diagram');
   svg.innerHTML = sc.svg;
-  return {svg, init: sc.init};
+  return {svg, init: sc.init, drag: !!sc.drag};
 }
 /* Transform that makes `target` fill the visible stage. The layer scales about its own
    centre, which differs from the visible centre when the diagram is magnified and scrolled. */
@@ -65,7 +65,7 @@ function findHot(svg, id, stopAt){
 function swapLayer(own, animate){
   const old = layer, oldOwn = curOwner;
   layersEl.querySelectorAll('.leaving').forEach(e => e.remove());
-  const {svg, init} = buildLayer(own);
+  const {svg, init, drag} = buildLayer(own);
   if (!old || !animate){
     if (old) old.remove();
     layersEl.appendChild(svg);
@@ -97,6 +97,9 @@ function swapLayer(own, animate){
   }
   layer = svg; curOwner = own;
   if (init) init(svg, N[own]);
+  if (drag) restoreOffsets(svg, own);
+  tools.classList.toggle('show', drag && hasOffsets(own));
+  svg.dataset.drag = drag ? '1' : '';
   centerScroll();
   setTimeout(() => padTargets(svg), animate ? 720 : 0);
 }
@@ -104,12 +107,14 @@ function applyFocus(){
   const svg = layer;
   svg.classList.remove('focus-mode');
   svg.querySelectorAll('.focused,.focus-anc').forEach(e => e.classList.remove('focused','focus-anc'));
+  svg.querySelectorAll('.lbl.focused').forEach(e => e.classList.remove('focused'));
   if (cur === curOwner) return;
   let n = N[cur], els = [];
   while (n && n.id !== curOwner){ els = [...svg.querySelectorAll(`.hot[data-id="${n.id}"]`)]; if (els.length) break; n = N[n.parent]; }
   if (!els.length) return;
   svg.classList.add('focus-mode');
   els.forEach(e => { e.classList.add('focused'); let p = e.parentElement.closest('.hot'); while (p){ p.classList.add('focus-anc'); p = p.parentElement.closest('.hot'); } });
+  svg.querySelectorAll(`.lbl[data-for="${els[0].dataset.id}"]`).forEach(l => l.classList.add('focused'));
   if (stage.classList.contains('magnified')){
     const r = els[0].getBoundingClientRect(), sr = scroller.getBoundingClientRect();
     scroller.scrollBy({left: (r.left + r.width/2) - (sr.left + sr.width/2), behavior: reduce.matches ? 'auto' : 'smooth'});
@@ -180,6 +185,7 @@ function hintFor(n){
   if (n.scene === 'registers') return 'Set the D switches, then press Clock';
   if (n.scene === 'control') return 'Press Next step or Run';
   if (n.scene === 'ic') return `${tap} a button to highlight its pins`;
+  if (n.scene === 'pc' || n.scene === 'board') return `${tap} a part to open it, or drag it to move it`;
   return `${tap} a part to zoom in`;
 }
 function renderPanel(id){
@@ -199,13 +205,105 @@ function updateMeta(id){
   const ld = $('#ld-page'); if (ld) ld.textContent = JSON.stringify(jsonLD(id, SITE));
 }
 
+/* ---------- draggable parts ----------
+   Offsets are stored per drawing in SIM['drag:<owner>'] = {partId: [dx, dy]}
+   in the part's own coordinates. Labels for a part move with it. */
+let drag = null, suppressClick = false;
+const offsetsFor = own => SIM['drag:' + own] || (SIM['drag:' + own] = {});
+const hasOffsets = own => Object.values(offsetsFor(own)).some(([x,y]) => Math.abs(x) + Math.abs(y) > 0.5);
+function labelScale(wrap){
+  const a = wrap.parentNode.getScreenCTM(), b = layer.getScreenCTM();
+  return a && b ? a.a / b.a : 1;
+}
+function setOffset(wrap, dx, dy, save){
+  const id = wrap.dataset.drag, k = labelScale(wrap);
+  wrap.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : '';
+  layer.querySelectorAll(`.lbl[data-for="${id}"]`).forEach(l => l.style.transform = dx || dy ? `translate(${dx*k}px, ${dy*k}px)` : '');
+  if (save){ offsetsFor(curOwner)[id] = [dx, dy]; }
+  const moved = hasOffsets(curOwner) || Math.abs(dx) + Math.abs(dy) > 0.5;
+  layer.classList.toggle('moved', moved);
+  tools.classList.toggle('show', moved);
+}
+function restoreOffsets(svg, own){
+  const o = offsetsFor(own);
+  Object.keys(o).forEach(id => { const w = svg.querySelector(`.dragwrap[data-drag="${id}"]`); if (w){ w.classList.add('dragging');
+    const [dx, dy] = o[id]; w.style.transform = `translate(${dx}px, ${dy}px)`; } });
+  requestAnimationFrame(() => {
+    Object.keys(o).forEach(id => { const w = svg.querySelector(`.dragwrap[data-drag="${id}"]`); if (!w) return;
+      const k = labelScale(w), [dx, dy] = o[id];
+      svg.querySelectorAll(`.lbl[data-for="${id}"]`).forEach(l => { l.classList.add('dragging'); l.style.transform = `translate(${dx*k}px, ${dy*k}px)`; });
+      requestAnimationFrame(() => { w.classList.remove('dragging'); svg.querySelectorAll('.lbl.dragging').forEach(l => l.classList.remove('dragging')); }); });
+    svg.classList.toggle('moved', hasOffsets(own));
+  });
+}
+layersEl.addEventListener('pointerdown', e => {
+  if (!layer || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('.ctl,.bitc')) return;
+  let wrap = e.target.closest('.dragwrap');
+  const lb = e.target.closest('.lbl[data-for]');
+  if (!wrap && lb) wrap = layer.querySelector(`.dragwrap[data-drag="${lb.dataset.for}"]`);
+  if (!wrap || !layer.contains(wrap)) return;
+  const m = wrap.parentNode.getScreenCTM(); if (!m) return;
+  const o = offsetsFor(curOwner)[wrap.dataset.drag] || [0,0];
+  const area = (stage.classList.contains('magnified') ? layer : scroller).getBoundingClientRect(), r = wrap.getBoundingClientRect();
+  drag = {wrap, sx:e.clientX, sy:e.clientY, ox:o[0], oy:o[1], k:m.a, moved:false, id:e.pointerId,
+    minX: area.left - r.left + 4, maxX: area.right - r.right - 4, minY: area.top - r.top + 4, maxY: area.bottom - r.bottom - 4};
+});
+layersEl.addEventListener('pointermove', e => {
+  if (!drag || e.pointerId !== drag.id) return;
+  let px = e.clientX - drag.sx, py = e.clientY - drag.sy;
+  if (!drag.moved){
+    if (Math.hypot(px, py) < 6) return;
+    drag.moved = true; hideTip();
+    try { layersEl.setPointerCapture(e.pointerId); } catch(_){}
+    drag.wrap.classList.add('dragging');
+    layer.querySelectorAll(`.lbl[data-for="${drag.wrap.dataset.drag}"]`).forEach(l => l.classList.add('dragging'));
+    /* bring the part to the front: last in its group, and its group just below the labels */
+    const w = drag.wrap, labels = layer.querySelector('.labels');
+    w.parentNode.appendChild(w);
+    let top = w; while (top.parentNode !== layer) top = top.parentNode;
+    if (top !== w && labels) layer.insertBefore(top, labels); else if (labels) layer.insertBefore(w, labels);
+  }
+  px = Math.min(Math.max(px, Math.min(drag.minX, 0)), Math.max(drag.maxX, 0));
+  py = Math.min(Math.max(py, Math.min(drag.minY, 0)), Math.max(drag.maxY, 0));
+  setOffset(drag.wrap, drag.ox + px/drag.k, drag.oy + py/drag.k, false);
+  e.preventDefault();
+});
+function endDrag(e){
+  if (!drag || (e && e.pointerId !== drag.id)) return;
+  if (drag.moved){
+    const t = drag.wrap.style.transform.match(/-?[\d.]+/g) || [0,0];
+    offsetsFor(curOwner)[drag.wrap.dataset.drag] = [+t[0], +t[1]];
+    drag.wrap.classList.remove('dragging');
+    layer.querySelectorAll('.lbl.dragging').forEach(l => l.classList.remove('dragging'));
+    suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
+    announce.textContent = `${N[drag.wrap.dataset.drag].name} moved.`;
+  }
+  drag = null;
+}
+layersEl.addEventListener('pointerup', endDrag);
+layersEl.addEventListener('pointercancel', endDrag);
+$('#btn-reset-layout').addEventListener('click', () => {
+  if (!layer) return;
+  layer.querySelectorAll('.dragwrap').forEach(w => setOffset(w, 0, 0, true));
+  SIM['drag:' + curOwner] = {};
+  tools.classList.remove('show');
+  announce.textContent = 'All parts moved back.';
+});
+
 /* ---------- tooltip & hover ---------- */
 let hoverEl = null;
 function setHover(el){
   if (hoverEl === el) return;
   if (hoverEl) hoverEl.classList.remove('is-hover');
+  if (layer) layer.querySelectorAll('.lbl.hover').forEach(l => l.classList.remove('hover'));
   hoverEl = el;
-  if (el) el.classList.add('is-hover');
+  if (el){ el.classList.add('is-hover'); layer.querySelectorAll(`.lbl[data-for="${el.dataset.id}"]`).forEach(l => l.classList.add('hover')); }
+}
+/* The part under the pointer: a hotspot, or the part a name label belongs to */
+function hotAt(t){
+  const lb = t.closest && t.closest('.lbl[data-for]');
+  if (lb) return layer.querySelector(`.hot[data-id="${lb.dataset.for}"]`);
+  return t.closest ? t.closest('.hot') : null;
 }
 function showTip(el, x, y){
   const n = N[el.dataset.id]; if (!n) return;
@@ -223,21 +321,30 @@ function hideTip(){ tip.classList.remove('show'); setHover(null); }
 
 layersEl.addEventListener('pointermove', e => {
   if (e.pointerType === 'touch') return;
-  const h = e.target.closest('.hot');
-  if (h && layer && layer.contains(h) && !e.target.closest('.ctl,.bitc')){ setHover(h); showTip(h, e.clientX, e.clientY); }
+  if (drag && drag.moved) return;
+  const h = layer ? hotAt(e.target) : null;
+  if (h && layer.contains(h) && !e.target.closest('.ctl,.bitc')){ setHover(h); showTip(h, e.clientX, e.clientY); }
   else hideTip();
 });
 layersEl.addEventListener('pointerleave', hideTip);
 layersEl.addEventListener('click', e => {
   if (!layer || !layer.contains(e.target)) return;
   if (e.target.closest('.ctl,.bitc')) return;
-  const h = e.target.closest('.hot');
+  if (suppressClick){ suppressClick = false; return; }
+  const h = hotAt(e.target);
   if (h){ go(h.dataset.id); return; }
   if (cur !== curOwner) go(curOwner);
 });
 layersEl.addEventListener('keydown', e => {
   const h = e.target.closest && e.target.closest('.hot');
   if (h && e.target === h && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); go(h.dataset.id); }
+  const wrap = h && h.closest('.dragwrap');
+  const dirs = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]};
+  if (wrap && e.shiftKey && dirs[e.key]){                 /* Shift + arrows moves a draggable part */
+    e.preventDefault(); e.stopPropagation();
+    const o = offsetsFor(curOwner)[wrap.dataset.drag] || [0,0];
+    setOffset(wrap, o[0] + dirs[e.key][0]*14, o[1] + dirs[e.key][1]*14, true);
+  }
 });
 layersEl.addEventListener('focusin', e => { const h = e.target.closest && e.target.closest('.hot'); if (h && e.target === h){ setHover(h); showTip(h); } });
 layersEl.addEventListener('focusout', hideTip);

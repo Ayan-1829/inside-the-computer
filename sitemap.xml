@@ -37,6 +37,14 @@
   <url><loc>https://example.com/parts/video-out.html</loc><lastmod>2026-09-10</lastmod><priority>0.6</priority></url>
   <url><loc>https://example.com/parts/ethernet.html</loc><lastmod>2026-09-10</lastmod><priority>0.6</priority></url>
   <url><loc>https://example.com/parts/audio.html</loc><lastmod>2026-09-10</lastmod><priority>0.6</priority></url>
+  <url><loc>https://example.com/parts/monitor.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/speakers.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/printer.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/keyboard.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/mouse.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/joystick.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/gamepad.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
+  <url><loc>https://example.com/parts/webcam.html</loc><lastmod>2026-09-10</lastmod><priority>0.8</priority></url>
   <url><loc>https://example.com/parts/control-unit.html</loc><lastmod>2026-09-10</lastmod><priority>0.6</priority></url>
   <url><loc>https://example.com/parts/decoder.html</loc><lastmod>2026-09-10</lastmod><priority>0.6</priority></url>
   <url><loc>https://example.com/parts/alu.html</loc><lastmod>2026-09-10</lastmod><priority>0.6</priority></url>

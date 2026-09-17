@@ -52,6 +52,7 @@ function panelHTML(id, href){
   var n = N[id], own = N[ownerOf(id)], model = own.model && !n.ic;
   var h = '<p class="p-level">Level ' + n.level + ': ' + LEVELS[n.level] + '</p><h1 class="p-title">' + n.name + '</h1><p class="p-short">' + n.short + '</p>';
   if (model) h += '<span class="p-badge"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.6v.1"/></svg>Diagram is a simplified educational model</span>';
+  if (n.device) h += '<span class="p-badge"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="var(--' + (n.device === 'input' ? 'accent' : 'out') + ')"/></svg>' + (n.device === 'input' ? 'Input device' : 'Output device') + '</span>';
   h += sec('What is it?', '<p>' + n.what + '</p>');
   h += sec('What does it do?', '<p>' + n.does + '</p>');
   h += sec('Why it matters', '<p>' + n.why + '</p>');
@@ -64,8 +65,14 @@ function panelHTML(id, href){
   else if (n.scene === 'control') h += sec('Try it', '<p>' + n.try + '</p><div class="live" data-live="control" aria-live="polite">Press <b>Next step</b> to begin.</div>');
   else if (n.try) h += sec('Try it', '<p>' + n.try + '</p>' + (n.scene === 'alu' ? '<div class="live" data-live="alu" aria-live="polite"></div>' : ''));
 
-  var kids = n.children.filter(function(c){ return !N[c].ic; });
+  var kids = n.children.filter(function(c){ return !N[c].ic && !N[c].device; });
   if (kids.length) h += sec('Inside it', '<div class="chips">' + kids.map(function(c){ return link(href, c, 'chip', '<i></i>' + N[c].name); }).join('') + '</div>');
+  var devs = n.children.filter(function(c){ return N[c].device; });
+  if (devs.length){
+    var grp = function(kind, title){ var d = devs.filter(function(c){ return N[c].device === kind; });
+      return d.length ? '<p class="p-sub">' + title + '</p><div class="chips">' + d.map(function(c){ return link(href, c, 'chip', '<i class="' + (kind === 'input' ? 'in' : 'out') + '"></i>' + N[c].name); }).join('') + '</div>' : ''; };
+    h += sec('Connected devices', grp('input', 'Input: information goes into the computer') + grp('output', 'Output: results come out of the computer'));
+  }
   var chipKid = n.children.filter(function(c){ return N[c].ic; })[0];
   if (chipKid) h += sec('Real chip', icCard(chipKid, href) + '<p class="note"><b>Real-world illustration.</b> ' + ACCURACY + '</p>');
   if (n.chipNote) h += sec('Real chip', '<p>' + n.chipNote + '</p><p class="note"><b>Real-world illustration.</b> ' + ACCURACY + '</p>');

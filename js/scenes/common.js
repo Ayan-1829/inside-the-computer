@@ -144,3 +144,20 @@ function bindSim(el, id, init, compute, opts={}){
   upd(false);
   return {st, upd};
 }
+
+/* ---------- name labels (pills) ----------
+   Put labels in a final <g class="labels"> so they are painted on top of every
+   component. data-for links a label to its part: hovering or clicking the label
+   acts on the part, and the label follows the part when it is dragged. */
+const plainLen = s => s.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,'x').length;
+function LB(x, y, text, o={}){
+  const size = o.size || 16, dot = o.dot ? 16 : 0;
+  const w = Math.round(plainLen(text) * size * 0.6 + 22 + dot), h = size + 14;
+  const x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w/2;
+  return `<g class="lbl"${o.for ? ` data-for="${o.for}"` : ''}>${R(x0, y-h/2, w, h, h/2, '')}` +
+    (o.dot ? `<circle class="lbl-dot ${o.dot}" cx="${x0+15}" cy="${y}" r="5.5"/>` : '') +
+    `<text x="${x0 + 11 + dot}" y="${y + size*0.36}" style="font-size:${size}px">${text}</text></g>`;
+}
+const LAYER = labels => `<g class="labels">${labels}</g>`;
+/* Wrap a part so the user can drag it */
+const DW = (id, markup) => `<g class="dragwrap" data-drag="${id}">${markup}</g>`;

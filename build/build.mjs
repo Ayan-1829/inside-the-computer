@@ -23,7 +23,7 @@ if (!SITE.endsWith('/')) SITE += '/';
 
 /* Load the same data + panel code the browser uses */
 const ctx = vm.createContext({ console });
-for (const f of ['js/core.js','js/data/hardware.js','js/data/cpu.js','js/data/alu.js','js/data/logic.js','js/data/chips.js','js/panel.js'])
+for (const f of ['js/core.js','js/data/hardware.js','js/data/devices.js','js/data/cpu.js','js/data/alu.js','js/data/logic.js','js/data/chips.js','js/panel.js'])
   vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 vm.runInContext('linkTree()', ctx);
 const { N, ORDER } = ctx;
@@ -37,6 +37,21 @@ for (const id of ORDER){
   if (n.chip && !N[n.chip]) problems.push(`${id}: chip "${n.chip}" does not exist`);
 }
 if (problems.length){ console.error('Data problems:\n  ' + problems.join('\n  ')); process.exit(1); }
+
+/* contrast check: text colours must reach 4.5:1 (WCAG AA) in both themes */
+const css = fs.readFileSync(path.join(ROOT, 'css/styles.css'), 'utf8');
+const tokens = block => Object.fromEntries([...block.matchAll(/--([\w-]+):(#[0-9A-Fa-f]{6})/g)].map(m => [m[1], m[2]]));
+const light = tokens(css.slice(css.indexOf(':root{'), css.indexOf('[data-theme="dark"]{')));
+const dark = { ...light, ...tokens(css.slice(css.indexOf('[data-theme="dark"]{'), css.indexOf('*{box-sizing'))) };
+const lum = h => { const c = [1,3,5].map(i => parseInt(h.slice(i,i+2),16)/255).map(v => v <= .03928 ? v/12.92 : ((v+.055)/1.055)**2.4); return .2126*c[0] + .7152*c[1] + .0722*c[2]; };
+const ratio = (a,b) => { const [x,y] = [lum(a), lum(b)].sort((p,q) => q-p); return (x+.05)/(y+.05); };
+const TEXT_PAIRS = [['ink','surface'],['ink-2','surface'],['ink-3','surface'],['ink-3','bg'],['accent','surface'],['out','surface'],['lbl-ink','lbl-bg'],
+  ['i-text','i-panel'],['i-text','i-block'],['i-text','i-case'],['i-text','i-metal'],['i-text','i-metal-lt'],['i-text-mut','i-panel'],['i-text-mut','i-block'],
+  ['i-text-mut','i-case'],['i-text-mut','surface'],['i-text-inv','i-board'],['i-text-inv','i-chip'],['i-text-inv','i-metal-2'],['i-text-inv','i-screen'],['i-die-text','i-die-block']];
+const weak = [];
+for (const [name, t] of [['light', light], ['dark', dark]])
+  for (const [a,b] of TEXT_PAIRS){ const r = ratio(t[a], t[b]); if (r < 4.5) weak.push(`${name}: --${a} on --${b} is ${r.toFixed(2)}:1`); }
+if (weak.length) console.warn('Contrast warnings (text should be at least 4.5:1):\n  ' + weak.join('\n  '));
 
 const tpl = fs.readFileSync(path.join(ROOT, 'build/template.html'), 'utf8');
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

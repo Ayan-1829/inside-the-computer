@@ -97,9 +97,12 @@ SCENES.ic = (n) => {
   for (let p=1;p<=pins;p++){
     const bottom = p <= per, i = bottom ? p-1 : pins-p, cx = x0 + pitch*(i+.5);
     const py = bottom ? 400 : 204, ly = bottom ? 468 : 186, ny = bottom ? 390 : 263;
-    const lab = c.labels[p-1], small = lab.length > 4 ? ' style="font-size:13px"' : '';
+    const lab = c.labels[p-1], two = lab.includes(' ');
+    /* long names such as "A>B out" are split over two lines so neighbours do not collide */
+    const txt = two ? (([a,b]) => `<tspan x="${cx}" dy="${bottom ? 0 : -17}">${pl(a)}</tspan><tspan x="${cx}" dy="17">${esc(b)}</tspan>`)(lab.split(' '))
+                    : pl(lab);
     s += `<g class="pin ${kind(c.kinds[p-1])}" data-pin="${p}"><title>Pin ${p}: ${esc(lab.replace('~','not '))}</title>${R(cx-12,py,24,36,3,'m-pin')}
-      <text class="pin-l" x="${cx}" y="${ly}"${small}>${pl(lab)}</text>${T(cx,ny,p,'t t-xs t-inv t-mid t-num')}</g>`;
+      <text class="pin-l" x="${cx}" y="${ly}"${two ? ' style="font-size:15px"' : ''}>${txt}</text>${T(cx,ny,p,'t t-xs t-inv t-mid t-num')}</g>`;
   }
   const units = c.units.concat([['Power',[pins/2,pins]]]);
   const bw = Math.min(120, 800/units.length - 10), total = units.length*(bw+10)-10, bx = 500-total/2;

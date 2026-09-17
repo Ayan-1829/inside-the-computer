@@ -5,8 +5,8 @@
    ========================================================== */
 /* ---------------- Level 1 ---------------- */
 def('computer',{name:'Computer',level:1,scene:'pc',tip:'The whole desktop system unit',
- short:'A desktop system unit with its side panel removed. Every part you see works together to run programs.',
- what:'A computer is a machine that stores and processes information by following instructions called programs. This desktop tower (the “system unit”) holds the parts that do the work; the monitor, keyboard and mouse plug into it from outside.',
+ short:'A desktop computer: the system unit (tower), shown with its side panel removed, and the input and output devices connected to it.',
+ what:'A computer is a machine that stores and processes information by following instructions called programs. The desktop tower (the “system unit”) holds the parts that do the work. Around it are input devices, such as the keyboard, mouse, joystick and webcam, and output devices, such as the monitor, speakers and printer.',
  does:'It takes input (keystrokes, clicks, network data), processes it in the CPU and GPU, keeps working data in RAM, saves files to storage, and sends results to outputs such as the screen and speakers.',
  why:'Every part has one job, and the whole system is only as fast as its slowest link. Knowing what each part does helps you choose upgrades, fix problems and understand how software really runs.',
  ex:[['Gaming desktop','Fast GPU, 6–8+ core CPU, 32 GB RAM'],['Office PC','Integrated graphics, 16 GB RAM'],['Workstation','Many CPU cores, 64–256 GB RAM'],['Mini PC','Laptop-class parts in a small box']],
@@ -92,7 +92,7 @@ def('io',{name:'I/O ports',parent:'computer',level:2,scene:'io',tip:'USB, displa
  ex:[['USB-A and USB-C','Keyboards, drives, phones'],['HDMI and DisplayPort','Monitors and TVs'],['Ethernet (RJ45)','Wired network'],['3.5 mm audio','Speakers, headphones, microphones']],
  specs:[['USB','0.48–40 Gbit/s'],['Display','HDMI 2.1, DisplayPort 1.4 / 2.1'],['Network','1–10 Gbit/s Ethernet']],
  fact:'USB-C is only the shape of the connector. The same USB-C port might carry USB 2.0, USB4, DisplayPort video or up to 240 W of power, depending on what the device supports.',
- rel:[['motherboard','Mounted on its back edge'],['display-outputs','The graphics card has its own video ports']]});
+ rel:[['motherboard','Mounted on its back edge'],['keyboard','Input devices plug in here'],['monitor','Output devices plug in here'],['display-outputs','The graphics card has its own video ports']]});
 
 /* ---------------- Motherboard parts ---------------- */
 def('cpu-socket',{name:'CPU socket',parent:'motherboard',level:3,tip:'Holds and connects the CPU',
