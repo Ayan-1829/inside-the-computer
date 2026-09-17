@@ -80,7 +80,7 @@ function render(id){
     TITLE: esc(call('metaTitle', id)), DESC: esc(call('metaDesc', id)), KEYWORDS: esc(keywords),
     CANONICAL: canonical, OGTYPE: home ? 'website' : 'article',
     JSONLD: JSON.stringify(call('jsonLD', id, SITE)).replace(/</g,'\\u003c'),
-    CRUMBS: call('crumbsHTML', id, href), DEPTH: call('depthHTML', n.level),
+    CRUMBS: call('crumbsHTML', id, href),
     STRIP: call('stripHTML', id, href), PANEL: call('panelHTML', id, href),
     TREE: '<ul>' + call('treeHTML', 'computer', id, href) + '</ul>',
   };

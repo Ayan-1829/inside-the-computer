@@ -13,7 +13,7 @@ const $ = s => document.querySelector(s);
 const html = document.documentElement;
 html.classList.add('js');
 const stage = $('#stage'), layersEl = $('#layers'), panel = $('#panel'), inner = $('#panel-inner'), tip = $('#tip'),
-      crumbsEl = $('#crumbs'), scroller = $('#scroller'), zoomBtn = $('#btn-zoom'), depthEl = $('#depth'), hintEl = $('#hint'), badge = $('#model-badge'), tools = $('#stage-tools'), announce = $('#announce'), stripEl = $('#strip');
+      crumbsEl = $('#crumbs'), scroller = $('#scroller'), zoomBtn = $('#btn-zoom'), hintEl = $('#hint'), badge = $('#model-badge'), tools = $('#stage-tools'), announce = $('#announce'), stripEl = $('#strip');
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 const coarse = matchMedia('(pointer: coarse)');
 const HTTP = /^https?:$/.test(location.protocol);
@@ -166,6 +166,19 @@ function padTargets(svg){
 let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => padTargets(layer), 200); });
 
 /* ---------- navigation ---------- */
+/* Back returns to the part you came from (like a browser's back button).
+   With nothing to go back to (e.g. a part page opened directly) it goes up one level. */
+let trail = [];
+function updateBack(){
+  const b = $('#btn-back'), prev = trail.length > 1 ? N[trail[trail.length - 2]] : null, up = N[N[cur].parent];
+  b.disabled = !prev && !up;
+  b.setAttribute('aria-label', prev ? `Go back to ${prev.name}` : up ? `Go up to ${up.name}` : 'Nothing to go back to');
+  b.title = prev ? `Back to ${prev.name}` : up ? `Up to ${up.name}` : '';
+}
+function goBack(){
+  if (trail.length > 1) history.back();          /* the popstate/hashchange handler moves the trail back */
+  else { const p = N[cur].parent; if (p) go(p); }
+}
 function go(id, opts = {}){
   if (!N[id]) id = 'computer';
   if (id === cur && layer) return;
@@ -177,7 +190,6 @@ function go(id, opts = {}){
   renderPanel(id);
   crumbsEl.innerHTML = crumbsHTML(id, urlFor);
   crumbsEl.parentElement.scrollLeft = crumbsEl.parentElement.scrollWidth;
-  depthEl.innerHTML = depthHTML(N[id].level);
   stripEl.innerHTML = stripHTML(id, urlFor);
   const c = stripEl.querySelector('.cur'); if (c) stripEl.scrollLeft = c.offsetLeft - 40;
   updateMeta(id);
@@ -185,7 +197,11 @@ function go(id, opts = {}){
   badge.classList.toggle('show', !!oN.model);
   hintEl.textContent = hintFor(oN);
   hintEl.hidden = !hintEl.textContent;
-  $('#btn-back').disabled = id === 'computer';
+  /* the trail of visited parts, kept in step with the browser history */
+  if (opts.fromHistory){ if (trail.length > 1 && trail[trail.length - 2] === id) trail.pop(); else trail.push(id); }
+  else if (opts.replace || !trail.length) trail = [id];
+  else trail.push(id);
+  updateBack();
   if (!opts.fromHistory){
     if (HTTP){ const u = urlFor(id); if (u !== location.href) history[opts.replace ? 'replaceState' : 'pushState']({id}, '', u); }
     else if (location.hash.slice(2) !== id && !(opts.replace && id === html.dataset.node)){
@@ -427,7 +443,7 @@ document.addEventListener('click', e => {
   go(a.dataset.go);
   if ((fromPanel || inDialog) && innerWidth <= 980 && !stripEl.contains(a)) stage.scrollIntoView({behavior: reduce.matches ? 'auto' : 'smooth', block:'start'});
 });
-$('#btn-back').addEventListener('click', () => { const p = N[cur].parent; if (p) go(p); });
+$('#btn-back').addEventListener('click', goBack);
 $('#btn-home').addEventListener('click', () => {
   for (const k in SIM) delete SIM[k];
   for (const k in LASTKEY) delete LASTKEY[k];

@@ -105,9 +105,6 @@ function crumbsHTML(id, href){
   var p = pathTo(id);
   return p.map(function(c, i){ return '<li><a href="' + href(c) + '" data-go="' + c + '"' + (i === p.length-1 ? ' aria-current="page"' : '') + '>' + N[c].name + '</a></li>'; }).join('');
 }
-function depthHTML(level){
-  return [1,2,3,4,5].map(function(l){ return '<li class="' + (l < level ? 'past' : l === level ? 'on' : '') + '"' + (l === level ? ' aria-current="step"' : '') + '><span class="d-dot"></span><span class="d-txt">Level ' + l + ': ' + LEVELS[l] + '</span></li>'; }).join('');
-}
 function treeHTML(id, cur, href){
   var n = N[id];
   return '<li><a href="' + href(id) + '" data-go="' + id + '"' + (id === cur ? ' class="cur"' : '') + '>' + n.name + ' <small>L' + n.level + '</small></a>' +

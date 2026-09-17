@@ -53,7 +53,8 @@ js/scenes/hardware.js   desk with tower and devices, motherboard, RAM, GPU,
 js/scenes/cpu.js        CPU die, fetch-decode-execute walkthrough, register
 js/scenes/alu.js        working 4-bit ALU, barrel shifter, comparator,
                         and the switch between the two ALU modes
-js/scenes/alu86.js      the 8086 ALU mode: every 8086 operand operation
+js/scenes/alu86.js      the 8086 ALU mode: a small 8086 with registers, memory and
+                        every operand operation
 js/scenes/logic.js      gate gallery, single gates, full adder, mux
 js/scenes/chips.js      chip pin diagrams and "Inside the chip" views
 js/scenes/i8086.js      the 8086 emulator screen (HTML, not SVG)
@@ -115,7 +116,15 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
 - A 2-to-1 multiplexer and a 4-bit register with a clock.
 - An ALU with two modes, chosen with the switch at the top of the ALU diagram:
   - **Simple 4-bit ALU**: nine operations, parallel units, a result multiplexer and Z/N/C/V flags.
-  - **8086 ALU**: 8-bit or 16-bit A and B, and tabs on the left with all 59 operations the 8086 performs on its operands. The tabs are arithmetic, multiply/divide, logic, shift/rotate, decimal adjust, move/convert, flags, and all 16 jump conditions. It shows the flags going in and coming out (undefined flags are marked "?"), the high half or remainder where there is one, and real 8086 clock-cycle counts. Results come from the emulator, so the two always agree.
+  - **8086 ALU**: a small working 8086. It has:
+    - registers AX, BX, CX and DX, and 16 bytes of memory at DS:0000
+    - A (destination) and B (source), each a register, a memory address or a number, following the 8086's rules
+    - tabs on the left with all 59 operations the 8086 performs on its operands
+    - a preview of which registers and memory bytes will change, and **Execute** to write them back
+    - flags going in and coming out, with undefined flags marked "?"
+    - real 8086 clock cycles, including memory access time
+
+    Results come from the emulator, so the two always agree.
 - An 8-bit barrel shifter and a 4-bit magnitude comparator.
 - A fetch-decode-execute walkthrough of a small looping program.
 - 34 real chips with pin diagrams and an "Inside the chip" view: processors, memory, firmware, timing, bus, ALU, shifter, regulators, audio and serial chips.
@@ -128,6 +137,10 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
   - step, run and run-to-end, with changed registers, flags and memory highlighted
 
   In this model the instruction pointer counts instructions, not bytes.
+
+## Going back
+
+**Back** returns to the part you were looking at before, even if you jumped there from a link in another part's panel. It works like your browser's back button, and the two stay in step. If you opened a part's page directly, so there is nothing to go back to, Back goes up one level instead; its tooltip says which. **Escape** always goes up one level, and the breadcrumb takes you to any level above.
 
 ## Hiding the details panel
 
@@ -147,7 +160,7 @@ On the desk (home) view and the motherboard view, every part can be dragged to s
 
 ## Accessibility and devices
 
-- Every part and control can be reached with the keyboard: Tab to move, Enter or Space to activate, Escape to go up a level.
+- Every part and control can be reached with the keyboard: Tab to move, Enter or Space to activate, Escape to go up a level (the Back button returns to the previous part).
 - On phones:
   - a strip under the diagram lists every part in the current view as large buttons
   - small controls get invisible 44 px touch areas

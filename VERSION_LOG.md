@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 3.2.0 | 2026-09-11 | 07:20 (13:20) | 8086 ALU with CX, DX and memory; Back returns to the previous part; level indicator removed |
 | 3.1.0 | 2026-09-11 | 03:26 (09:26) | 8086 mode for the ALU with all 59 operand operations; collapsible details panel |
 | 3.0.1 | 2026-09-11 | 02:55 (08:55) | Complete icon set and web manifest, refreshed preview image, clearer Power supply label, full package |
 | 3.0.0 | 2026-09-11 | 02:35 (08:35) | Working 8086 emulator, 34 real chips with pinouts and internal views, text labels, 1.5 s tooltips |
@@ -20,6 +21,46 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 3.2.0: Registers and memory in the 8086 ALU, a real Back button
+
+**Prompt**
+
+- 2026-09-11, after 3.1.0 (the exact time is not in the saved record yet):
+  > Along with AX and BX, include CX, DX, and memories for the 8086.
+  >
+  > Take the label for the current component (dot-indicated navigation) out of the box or remove it (file navigation at the top is enough).
+  >
+  > Also, the back button should take you to the previous state from which it was derived. Now it takes you to the previous folder. Therefore, any reference from other components is missed.
+
+**Changes**
+
+*8086 ALU: registers and memory*
+- The 8086 mode is now a small working machine:
+  - four registers, AX, BX, CX and DX, each with its high and low halves (for example AH and AL)
+  - 16 bytes of memory at DS:0000–000F
+- **A (destination)** can be AX, BX, CX, DX or a memory address. **B (source)** can be any register, a memory address or a number. In 8-bit mode the choices are AL, BL, CL and DL.
+- The 8086's rules are followed:
+  - no memory-to-memory: it is refused with an explanation, and Execute is disabled
+  - no number as the destination
+  - shifts count by 1 or by CL
+  - MUL and IMUL multiply AL or AX; DIV and IDIV divide AX or the real DX:AX, now that DX exists
+- Click any memory byte to choose the address. Words are shown the way the 8086 stores them, low byte first.
+- Before anything is written, the registers and memory bytes that will change are outlined, with the new value next to each register. **Execute** writes them back and carries the flags forward, so ADC after ADD uses the real carry. **Random** and **Reset** set up new values.
+- Clock cycles now include the 6-cycle address time for a memory operand and the 4-cycle penalty for each word read or written at an odd address. MOV between AX and memory uses the 8086's shorter 10-cycle form.
+- Checked:
+  - 20 results worked out by hand, covering memory operands, write-back, DX:AX division, shifts by CL, cycles and the operand rules
+  - all 590 combinations of operation, width and operand choice, checked for overlapping text
+
+*Level indicator removed*
+- The dotted "Level N" indicator at the top-left of every diagram is gone; the breadcrumb above the diagram shows where you are. The panel still names the level.
+
+*Back button*
+- **Back** now returns to the part you were looking at before, even when you arrived through a link in another part's panel. It stays in step with the browser's own back and forward buttons, and works the same when the site is opened from files.
+- If there is nothing to go back to (a part page opened directly), Back goes up one level. Its tooltip says where it will go.
+- **Escape** still goes up one level.
+
+---
 
 ### 3.1.0: 8086 ALU mode and a collapsible details panel
 
