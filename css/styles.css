@@ -820,18 +820,3 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-exs-ov::-webkit-scrollbar,.x86-flow::-webkit-scrollbar{width:8px}
 .x86-exs-ov::-webkit-scrollbar-thumb,.x86-flow::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
 .x86-exs-ov,.x86-flow{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-
-/* "turn your phone sideways" — every diagram on this site is wide, so a
-   narrow, coarse-pointer (touch) screen held in portrait gets a dismissible
-   reminder to rotate. Hidden entirely on desktop/laptop and on tablets or
-   phones already held in landscape, since it would just be clutter there. */
-.rotate-hint{display:none}
-@media (max-width:980px) and (orientation:portrait) and (pointer:coarse){
-  .rotate-hint{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--accent);color:var(--on-accent);font-family:var(--font-ui)}
-  .rotate-hint.dismissed{display:none}
-  .rotate-hint svg{flex:none;width:24px;height:24px;animation:rotate-hint-spin 1.8s ease-in-out infinite}
-  .rotate-hint p{flex:1;margin:0;font-size:14.5px;font-weight:600;line-height:1.35}
-  .rotate-hint button{flex:none;background:none;border:0;color:inherit;font-size:17px;line-height:1;padding:6px;cursor:pointer;opacity:.85}
-  .rotate-hint button:hover{opacity:1}
-}
-@keyframes rotate-hint-spin{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-88deg)}}

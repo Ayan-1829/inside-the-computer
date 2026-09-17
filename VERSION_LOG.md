@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.16.0 | 2026-09-18 | — | Site-wide: the "turn your phone sideways" banner removed again — it didn't look right and wasn't reliably dismissible in a mobile browser |
 | 5.15.0 | 2026-09-18 | — | Site-wide: a dismissible "turn your phone sideways" banner on narrow touch screens held in portrait |
 | 5.14.0 | 2026-09-18 | — | Site-wide: the stale white-chip favicon/app-install icons replaced with the real black-chip-on-green mark, and the logo's "AS" given an actual gold gradient instead of a flat fill |
 | 5.13.0 | 2026-09-18 | — | 8086: the animated dot lands on the exact memory row again — reading its real, current on-screen position (the box scrolled to it first) right before each step's dot sets off, instead of a generic point in the box, which is what the scrollable-list redesign had temporarily lost |
@@ -56,6 +57,14 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.16.0: The rotate-phone banner, removed
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> The rotating text is not looking good. It is hardly coded and cannot be removed from the mobile browser. Remove this note.
+
+**Changes**
+- The banner added in 5.15.0 didn't look right and, on an actual mobile browser, wasn't reliably dismissible — so it's removed entirely rather than patched: the markup, its CSS (including the spin animation), and its dismiss-wiring in `js/engine.js` are all gone. No visible or behavioural trace of it remains on any page.
 
 ### 5.15.0: Rotate your phone
 
