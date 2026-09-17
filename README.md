@@ -67,6 +67,9 @@ build/template.html     HTML used for every generated page
 build/build.mjs         the page generator (also checks chips and contrast)
 build/check-chips.mjs   checks every chip definition
 build/test-8086.mjs     runs every 8086 example and 48 known-result checks
+build/gen-alu86-encodings.mjs, build/test-alu86-encoding.py
+                        check the 8086 ALU view's machine code with the
+                        Capstone disassembler (pip install capstone)
 build/site.config.json  your site URL
 ```
 
@@ -89,7 +92,7 @@ build/site.config.json  your site URL
 
 Chips with 24 or more pins are drawn upright, like a datasheet. Run `node build/check-chips.mjs` to check your entry.
 
-**Change colours or text sizes.** Edit the variables at the top of `css/styles.css`. There is one block for light mode and one for dark mode. Diagram text sizes are the `.t`, `.t-sm`, `.t-xs` and `.t-lg` rules.
+**Change colours or text sizes.** Edit the variables at the top of `css/styles.css`. There is one block for light mode and one for dark mode. The green-and-yellow gradients use the `--g-…` variables. Diagrams use them through shared SVG gradients (`fill:url(#g-panel)` and so on), defined once near the top of `build/template.html`. Diagram text sizes are the `.t`, `.t-sm`, `.t-xs` and `.t-lg` rules.
 
 The build checks that every text colour pair reaches a 4.5:1 contrast ratio in both themes. It prints a warning naming any pair that falls short.
 
@@ -116,7 +119,7 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
 - A 2-to-1 multiplexer and a 4-bit register with a clock.
 - An ALU with two modes, chosen with the switch at the top of the ALU diagram:
   - **Simple 4-bit ALU**: nine operations, parallel units, a result multiplexer and Z/N/C/V flags.
-  - **8086 ALU**: a small working 8086. It has:
+  - **8086 ALU**: a small working 8086, drawn like the classic 8086 block diagram. Memory is at the top. Below it the BIU holds the address adder (Σ), the segment registers and IP, and the instruction queue. The thick internal bus joins it to the EU, which holds the register file, the control unit, the ALU and the flag register. **Execute** plays the five steps, fetch, decode, operands, execute and write back, lighting each path in turn. The queue shows the instruction's real 8086 machine code, and IP advances by its length. It has:
     - registers AX, BX, CX and DX, and 16 bytes of memory at DS:0000
     - A (destination) and B (source), each a register, a memory address or a number, following the 8086's rules
     - tabs on the left with all 59 operations the 8086 performs on its operands

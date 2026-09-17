@@ -50,7 +50,10 @@ const ratio = (a,b) => { const [x,y] = [lum(a), lum(b)].sort((p,q) => q-p); retu
 const TEXT_PAIRS = [['ink','surface'],['ink-2','surface'],['ink-3','surface'],['ink-3','bg'],['accent','surface'],['out','surface'],['lbl-ink','lbl-bg'],
   ['i-text','i-panel'],['i-text','i-block'],['i-text','i-case'],['i-text','i-metal'],['i-text','i-metal-lt'],['i-text-mut','i-panel'],['i-text-mut','i-block'],
   ['i-text-mut','i-case'],['i-text-mut','surface'],['i-text-inv','i-board'],['i-text-inv','i-chip'],['i-text-inv','i-metal-2'],['i-text-inv','i-screen'],['i-die-text','i-die-block'],
-  ['on-accent','accent'],['lbl-hi','surface'],['lbl-hi-inv','i-board'],['pin-in','surface'],['pin-out','surface'],['pin-bi','surface'],['pin-pwr','surface'],['pin-nc','surface'],['pin-in','bg'],['pin-out','bg']];
+  ['on-accent','accent'],['lbl-hi','surface'],['lbl-hi-inv','i-board'],['pin-in','surface'],['pin-out','surface'],['pin-bi','surface'],['pin-pwr','surface'],['pin-nc','surface'],['pin-in','bg'],['pin-out','bg'],
+  ['i-text','g-panel-a'],['i-text','g-panel-b'],['i-text','g-block-a'],['i-text','g-block-b'],['i-text-mut','g-panel-b'],['i-text-mut','g-block-b'],
+  ['ink','g-panel-b'],['ink-2','g-panel-b'],['ink-3','g-panel-b'],['ink-3','g-stage-b'],['ink-3','g-stage-c'],
+  ['on-accent','g-on-a'],['on-accent','g-on-b'],['i-text-inv','g-board-a'],['i-text-inv','g-board-b'],['accent','g-panel-b']];
 const weak = [];
 for (const [name, t] of [['light', light], ['dark', dark]])
   for (const [a,b] of TEXT_PAIRS){ const r = ratio(t[a], t[b]); if (r < 4.5) weak.push(`${name}: --${a} on --${b} is ${r.toFixed(2)}:1`); }

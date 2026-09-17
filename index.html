@@ -51,10 +51,26 @@
 </script>
 </head>
 <body>
+<!-- Shared SVG gradients: diagrams use them with fill:url(#g-…). Colours come from CSS variables, so they follow the theme. -->
+<svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="g-panel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-panel-a)"/><stop offset="1" style="stop-color:var(--g-panel-b)"/></linearGradient>
+    <linearGradient id="g-block" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-block-a)"/><stop offset="1" style="stop-color:var(--g-block-b)"/></linearGradient>
+    <linearGradient id="g-on" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g-on-a)"/><stop offset="1" style="stop-color:var(--g-on-b)"/></linearGradient>
+    <linearGradient id="g-sig" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-sig-a)"/><stop offset="1" style="stop-color:var(--g-sig-b)"/></linearGradient>
+    <linearGradient id="g-flag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-flag-a)"/><stop offset="1" style="stop-color:var(--g-flag-b)"/></linearGradient>
+    <linearGradient id="g-acc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g-acc-a)"/><stop offset="1" style="stop-color:var(--g-acc-b)"/></linearGradient>
+    <linearGradient id="g-board" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g-board-a)"/><stop offset="1" style="stop-color:var(--g-board-b)"/></linearGradient>
+    <linearGradient id="g-biu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-biu-a)"/><stop offset="1" style="stop-color:var(--g-biu-b)"/></linearGradient>
+    <linearGradient id="g-eu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g-eu-a)"/><stop offset="1" style="stop-color:var(--g-eu-b)"/></linearGradient>
+    <linearGradient id="g-brand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--g-brand-a)"/><stop offset="1" style="stop-color:var(--g-brand-b)"/></linearGradient>
+    <radialGradient id="g-led" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFE7A8"/><stop offset=".55" style="stop-color:var(--signal)"/><stop offset="1" stop-color="#C77F00"/></radialGradient>
+  </defs>
+</svg>
 <div class="app">
   <header class="topbar">
     <a class="brand" href="index.html" aria-label="Inside the Computer, go to the start">
-      <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--accent)"/><rect x="18" y="18" width="28" height="28" rx="4" fill="var(--bg)"/><path d="M24 10v8M32 10v8M40 10v8M24 46v8M32 46v8M40 46v8M10 24h8M10 32h8M10 40h8M46 24h8M46 32h8M46 40h8" stroke="var(--bg)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="var(--signal)"/></svg>
+      <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="url(#g-brand)"/><rect x="18" y="18" width="28" height="28" rx="4" fill="var(--bg)"/><path d="M24 10v8M32 10v8M40 10v8M24 46v8M32 46v8M40 46v8M10 24h8M10 32h8M10 40h8M46 24h8M46 32h8M46 40h8" stroke="var(--bg)" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="url(#g-led)"/></svg>
       <p class="brand-name">Inside the Computer</p>
     </a>
     <div class="spacer"></div>

@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 3.3.0 | 2026-09-11 | 08:55 (14:55) | 8086 shown as BIU/EU architecture with animated flow; lighter corner labels; shifter 0 inputs; gradients; no overlapping text |
 | 3.2.0 | 2026-09-11 | 07:20 (13:20) | 8086 ALU with CX, DX and memory; Back returns to the previous part; level indicator removed |
 | 3.1.0 | 2026-09-11 | 03:26 (09:26) | 8086 mode for the ALU with all 59 operand operations; collapsible details panel |
 | 3.0.1 | 2026-09-11 | 02:55 (08:55) | Complete icon set and web manifest, refreshed preview image, clearer Power supply label, full package |
@@ -21,6 +22,56 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 3.3.0: 8086 architecture and flow, gradients, tidier labels
+
+**Prompts**
+
+- 2026-09-11, after 3.2.0 (the exact time is not in the saved record yet), with an image of the classic 8086 architecture diagram attached:
+  > In for 8086 part, try to use this structure to make student understand the flow.
+  >
+  > Make the text 'Simplified educational model' look transparent and small. Take it to top-right of the box. Do the same for 'Click the bits...' at bottom-left.
+  >
+  > For the shifter.html, reduce the length of the pins with 0 input when shifted right or left. Use the same angle for them or connect them together to a common 0.
+  >
+  > Try to avoid overlaping texts.
+  >
+  > Use some colour gradients to look the app more attractive. You can use differents shades of Green, yellow
+- Later:
+  > Continue
+
+**Changes**
+
+*8086 drawn like its architecture diagram, with the flow animated*
+- The 8086 ALU view now follows the classic block diagram:
+  - memory outside the chip, at the top
+  - the **BIU**: the address adder (Σ) above CS, DS, ES, SS and IP, and the 6-byte instruction queue
+  - the thick internal bus
+  - the **EU**: the register file (AH|AL … DH|DL, SI, DI, BP, SP), the A and B inputs, the ALU, the result, the control unit below the queue, and the flag register
+- **Execute** plays the five steps: 1 fetch, 2 decode, 3 operands, 4 execute, 5 write back. Each step lights only its own paths and numbered badge, and describes itself in words. "Skip to the end" finishes at once, and people who prefer reduced motion get the result straight away.
+- The queue shows the instruction's real 8086 machine code, labelled byte by byte (opcode, ModR/M, address, data). All 4,646 combinations the view can produce were checked against the Capstone disassembler.
+- The BIU works out the 20-bit address, for example DS × 16 + 0004h = 01004h. IP advances by the instruction's length on each Execute.
+- The flag register shows each flag's current value and what it will become (for example 0→1, or 0→? when undefined). Click a flag to change it.
+- 24 functional checks pass, and all 590 operation and operand combinations were checked for overlapping text.
+
+*Corner labels*
+- "Simplified educational model" (top-right) and the hint text (bottom-left) are now small, with no box or border, tucked into the corners of the diagram.
+
+*Shifter*
+- The 0 inputs used when bits shift in from outside now run at the same angle as each layer's other wires, are short, and join one shared "0" source per layer. They no longer cross other wires.
+
+*Colour gradients*
+- Soft green-to-yellow gradients on the page, the diagram area and the details panel.
+- Richer gradients on diagram blocks, active buttons, lit bits, flags, the MUX, the BIU and EU areas, and the logo.
+- Everything follows light and dark mode, and the build's contrast check covers every gradient colour.
+
+*No overlapping text*
+- A new check looked at every view (60) at three screen sizes, with the details panel shown and hidden. It checked text against text, and the corner labels against the diagrams. The one clash found (a long button label on the 4164 chip) is fixed.
+
+*Phones*
+- Enlarged tap areas for small buttons no longer spread over neighbouring buttons, and they are recalculated after "Zoom diagram". Before, tapping SUB in the dense 8086 operation grid could select CMP. All 118 operation taps (fitted and zoomed) now select the right operation, and no tap area blocks another control on any view.
+
+---
 
 ### 3.2.0: Registers and memory in the 8086 ALU, a real Back button
 

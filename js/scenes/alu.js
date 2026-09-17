@@ -131,11 +131,20 @@ SCENES.shifter = (n) => {
       const y0 = rows[l], y1 = rows[l+1] - 10;
       s += `<g data-ly="${l}" data-kd="S">${W([[cx(i),y0],[cx(i),y1]], `S${l}_${i}`)}</g>`;
       const left = i + K[l], right = i - K[l];
-      s += `<g data-ly="${l}" data-kd="L">${left <= 7 ? W([[cx(left),y0],[cx(i),y1]], `L${l}_${i}`) : W([[cx(i)+30,y0+16],[cx(i),y1]], `L${l}_${i}`) + T(cx(i)+34,y0+18,'0','t t-xs t-mut')}</g>`;
-      s += `<g data-ly="${l}" data-kd="R">${right >= 0 ? W([[cx(right),y0],[cx(i),y1]], `R${l}_${i}`) : W([[cx(i)-30,y0+16],[cx(i),y1]], `R${l}_${i}`) + T(cx(i)-44,y0+18,'0','t t-xs t-mut')}</g>`;
+      /* A bit that would come from outside the 8 columns is 0. Its wire keeps the layer's slope but is cut
+         short (it reaches 35 units sideways) and ends on a shared "0" rail. */
+      const yr = y1 - (35 / (K[l]*70)) * (y1 - y0);
+      s += `<g data-ly="${l}" data-kd="L">${left <= 7 ? W([[cx(left),y0],[cx(i),y1]], `L${l}_${i}`) : W([[cx(i)+35,yr],[cx(i),y1]], `L${l}_${i}`)}</g>`;
+      s += `<g data-ly="${l}" data-kd="R">${right >= 0 ? W([[cx(right),y0],[cx(i),y1]], `R${l}_${i}`) : W([[cx(i)-35,yr],[cx(i),y1]], `R${l}_${i}`)}</g>`;
       s += `<circle class="junc" data-s="N${l}_${i}" cx="${cx(i)}" cy="${rows[l+1]-6}" r="7"/>`;
     }
-    s += `<g class="bg">${T(830,rows[l+1],`layer ${l+1}: ±${K[l]}`,'t t-xs t-mut')}</g>`;
+    /* the shared constant-0 source for each direction */
+    { const y0 = rows[l], y1 = rows[l+1] - 10, yr = y1 - (35 / (K[l]*70)) * (y1 - y0);
+      const zero = (x, side) => `<g class="zero-src"><rect x="${x - 13}" y="${yr - 13}" width="26" height="26" rx="6"/><text x="${x}" y="${yr + 6}">0</text></g>`;
+      const lx0 = cx(8 - K[l]) + 35, lx1 = cx(7) + 35, rx0 = cx(0) - 35, rx1 = cx(K[l] - 1) - 35;
+      s += `<g data-ly="${l}" data-kd="L"><path class="rail0" d="M${lx0} ${yr}H${lx1 + 22}"/>${zero(lx1 + 35)}</g>`;
+      s += `<g data-ly="${l}" data-kd="R"><path class="rail0" d="M${rx0 - 22} ${yr}H${rx1}"/>${zero(rx0 - 35)}</g>`; }
+    s += `<g class="bg">${T(870,rows[l+1],`layer ${l+1}: ±${K[l]}`,'t t-xs t-mut')}</g>`;
   }
   for (let i=0;i<8;i++){
     s += W([[cx(i),rows[3]],[cx(i),outY]],`O_${i}`);

@@ -33,6 +33,15 @@
   --lbl-bg:#FFFFFF; --lbl-ink:#101814; --lbl-edge:#8E9B94;
   --lbl-hi:#0B5A43; --lbl-hi-inv:#B4F5DC; --on-accent:#FFFFFF;
   --pin-in:#16654F; --pin-out:#8A5600; --pin-bi:#2F5FC4; --pin-pwr:#B24A3A; --pin-nc:#5E6B64;
+  /* gradients: greens and yellows (every stop is checked for contrast by the build) */
+  --g-bg-1:rgba(22,101,79,.13); --g-bg-2:rgba(227,154,18,.13);
+  --g-stage-a:#FFFFFF; --g-stage-b:#F2F8EF; --g-stage-c:#FBF6E6;
+  --g-panel-a:#FFFFFF; --g-panel-b:#EBF4EA; --g-block-a:#F5F9F3; --g-block-b:#E4EEE1;
+  --g-on-a:#1F7F61; --g-on-b:#0F4E3C; --g-brand-a:#23896A; --g-brand-b:#0F4E3C;
+  --g-sig-a:rgba(242,180,60,.42); --g-sig-b:rgba(227,154,18,.12);
+  --g-acc-a:rgba(22,101,79,.20); --g-acc-b:rgba(227,154,18,.22);
+  --g-flag-a:#F7C45A; --g-flag-b:#E39A12; --g-board-a:#317260; --g-board-b:#214F40;
+  --g-biu-a:rgba(227,154,18,.16); --g-biu-b:rgba(227,154,18,.04); --g-eu-a:rgba(22,101,79,.12); --g-eu-b:rgba(22,101,79,.03);
 }
 [data-theme="dark"]{
   --bg:#0F1613; --surface:#151E1A; --surface-2:#1B2621;
@@ -59,12 +68,24 @@
   --lbl-bg:#0B110E; --lbl-ink:#F2F7F4; --lbl-edge:#5B6D65;
   --lbl-hi:#8BE8C6; --lbl-hi-inv:#8BE8C6; --on-accent:#05140E;
   --pin-in:#4DC39C; --pin-out:#FFB23A; --pin-bi:#86A9FF; --pin-pwr:#F08A78; --pin-nc:#8E9C95;
+  --g-bg-1:rgba(77,195,156,.11); --g-bg-2:rgba(255,178,58,.07);
+  --g-stage-a:#17231E; --g-stage-b:#141E19; --g-stage-c:#1B1E15;
+  --g-panel-a:#1E2B25; --g-panel-b:#17221D; --g-block-a:#27362F; --g-block-b:#1F2C26;
+  --g-on-a:#6ADAB3; --g-on-b:#3AA884; --g-brand-a:#5AD0A8; --g-brand-b:#2A8F6E;
+  --g-sig-a:rgba(255,178,58,.36); --g-sig-b:rgba(255,178,58,.10);
+  --g-acc-a:rgba(77,195,156,.22); --g-acc-b:rgba(255,178,58,.16);
+  --g-flag-a:#FFCB6B; --g-flag-b:#F0A021; --g-board-a:#276552; --g-board-b:#1A4839;
+  --g-biu-a:rgba(255,178,58,.12); --g-biu-b:rgba(255,178,58,.03); --g-eu-a:rgba(77,195,156,.11); --g-eu-b:rgba(77,195,156,.02);
 }
 
 *{box-sizing:border-box}
+.svg-defs{position:absolute;width:0;height:0;overflow:hidden}   /* not display:none, or some browsers drop the gradients */
 html,body{margin:0;height:100%}
 body{
-  background:var(--bg); color:var(--ink);
+  background:radial-gradient(1100px 620px at 0% 0%, var(--g-bg-1), transparent 62%),
+             radial-gradient(900px 560px at 100% 0%, var(--g-bg-2), transparent 60%),
+             radial-gradient(900px 600px at 50% 110%, var(--g-bg-1), transparent 60%), var(--bg);
+  background-attachment:fixed; color:var(--ink);
   font-family:var(--font-ui); font-size:17px; line-height:1.45;
   -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
 }
@@ -100,7 +121,8 @@ button{font:inherit;color:inherit}
 .main{display:grid;grid-template-columns:minmax(0,68fr) minmax(330px,32fr);gap:16px;padding:0 24px 24px;min-height:0}
 
 .stage{position:relative;min-height:0;border-radius:20px;border:1px solid var(--line);background-color:var(--surface);
-  background-image:radial-gradient(var(--grid-dot) 1px, transparent 1.2px);background-size:22px 22px;background-position:11px 11px;
+  background-image:radial-gradient(var(--grid-dot) 1px, transparent 1.2px), linear-gradient(155deg, var(--g-stage-a) 0%, var(--g-stage-b) 58%, var(--g-stage-c) 100%);
+  background-size:22px 22px, 100% 100%;background-position:11px 11px, 0 0;
   overflow:hidden;box-shadow:var(--shadow);touch-action:manipulation}
 #layers{position:absolute;inset:0}
 .scroller{position:absolute;inset:0;overflow:hidden}
@@ -115,13 +137,13 @@ button{font:inherit;color:inherit}
 .layer.leave-out{opacity:0;transform:scale(.9)}
 .layer.leave-fade{opacity:0}
 
-.model-badge{position:absolute;right:16px;top:16px;z-index:3;display:none;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;
-  font-size:14.5px;font-weight:600;color:var(--ink-2);background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line)}
+.model-badge{position:absolute;right:10px;top:6px;z-index:3;display:none;align-items:center;gap:5px;padding:2px 4px;
+  font-size:12px;font-weight:500;color:var(--ink-3);background:transparent;border:none;pointer-events:none}
 .model-badge.show{display:inline-flex}
-.model-badge svg{width:14px;height:14px}
+.model-badge svg{width:12px;height:12px}
 .hint[hidden]{display:none}
-.hint{position:absolute;left:16px;bottom:14px;z-index:3;max-width:calc(100% - 32px);font-size:15px;color:var(--ink-2);
-  padding:7px 12px;border-radius:10px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line-2);pointer-events:none}
+.hint{position:absolute;left:12px;bottom:6px;z-index:3;max-width:calc(100% - 24px);font-size:12.5px;font-weight:500;color:var(--ink-3);
+  padding:2px 4px;background:transparent;border:none;pointer-events:none}
 .tip{position:absolute;z-index:5;pointer-events:none;max-width:270px;padding:9px 12px;border-radius:10px;background:var(--ink);color:var(--bg);
   font-size:15.5px;line-height:1.4;opacity:0;transform:translateY(4px);transition:opacity .12s, transform .12s;box-shadow:0 8px 24px -8px rgba(0,0,0,.35)}
 .tip.show{opacity:1;transform:none}
@@ -129,7 +151,7 @@ button{font:inherit;color:inherit}
 .tip span{opacity:.78}
 
 /* ---------- Info panel ---------- */
-.panel{min-height:0;overflow-y:auto;border-radius:20px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);scroll-behavior:smooth}
+.panel{min-height:0;overflow-y:auto;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg, var(--g-panel-a) 0%, var(--g-panel-a) 40%, var(--g-panel-b) 100%);box-shadow:var(--shadow);scroll-behavior:smooth}
 .panel-inner{padding:26px 28px 40px}
 .p-level{margin:0 0 8px;font-size:15px;font-weight:600;color:var(--accent)}
 .p-title{margin:0;font-size:clamp(32px,2.8vw,44px);font-weight:800;letter-spacing:-.025em;line-height:1.04}
@@ -226,7 +248,7 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .m-case{fill:var(--i-case);stroke:var(--i-case-edge);stroke-width:2}
 .m-cavity{fill:var(--i-cavity)}
 .m-shadow{fill:#000;opacity:.12}
-.m-board{fill:var(--i-board);stroke:var(--i-board-edge);stroke-width:2}
+.m-board{fill:url(#g-board);stroke:var(--i-board-edge);stroke-width:2}
 .m-chip{fill:var(--i-chip);stroke:var(--i-chip-edge);stroke-width:1.5}
 .m-plastic{fill:var(--i-chip-edge);stroke:var(--i-chip);stroke-width:1}
 .m-slot{fill:#20262A;stroke:#0f1416;stroke-width:1}
@@ -236,14 +258,14 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .m-metal-lt{fill:var(--i-metal-lt);stroke:var(--i-metal-edge);stroke-width:1.5}
 .m-gold{fill:var(--i-gold)}
 .m-copper{fill:var(--i-copper)}
-.m-panel{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5}
-.m-block{fill:var(--i-block);stroke:var(--i-panel-edge);stroke-width:1.5}
+.m-panel{fill:url(#g-panel);stroke:var(--i-panel-edge);stroke-width:1.5}
+.m-block{fill:url(#g-block);stroke:var(--i-panel-edge);stroke-width:1.5}
 .m-die{fill:var(--i-die);stroke:var(--i-die-edge);stroke-width:1.5}
 .m-die-block{fill:var(--i-die-block);stroke:var(--i-die-edge);stroke-width:1.5}
 .m-die-cell{fill:var(--i-die-cell)}
 .m-hole{fill:var(--i-hole);stroke:var(--i-board-edge);stroke-width:1.5}
 .m-accent{fill:var(--accent)}
-.m-acc-soft{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.m-acc-soft{fill:url(#g-acc);stroke:var(--accent);stroke-width:1.5}
 .m-on{fill:var(--signal)}
 .m-fan{fill:var(--i-fan);stroke:var(--i-metal-edge);stroke-width:2}
 .blades path{fill:var(--i-blade)}
@@ -264,6 +286,9 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .g-bub{fill:var(--i-sym-fill);stroke:var(--i-sym)}
 .wire{fill:none;stroke:var(--i-wire);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
 .wire.on{stroke:var(--signal)}
+.rail0{fill:none;stroke:var(--i-wire);stroke-width:3;stroke-linecap:round}
+.zero-src rect{fill:var(--i-panel);stroke:var(--i-wire);stroke-width:2}
+.zero-src text{font-size:15px;font-weight:700;text-anchor:middle;fill:var(--i-text)}
 .junc{fill:var(--i-wire);transition:fill .2s}.junc.on{fill:var(--signal)}
 .ctl{cursor:pointer}
 .sw-track{fill:var(--i-block);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s,stroke .2s}
@@ -280,8 +305,9 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .btn-s rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:all .15s}
 .btn-s text{font-size:16px;font-weight:600;fill:var(--i-text);text-anchor:middle;pointer-events:none}
 .btn-s:hover rect{stroke:var(--accent)}
-.btn-s.on rect{fill:var(--accent);stroke:var(--accent)}
+.btn-s.on rect{fill:url(#g-on);stroke:var(--accent)}
 .btn-s.on text{fill:var(--accent-ink)}
+.btn-s[style] text{font-size:inherit}   /* a button's own font-size (set on the group) wins */
 .mux-path{fill:none;stroke:var(--i-panel-edge);stroke-width:2;stroke-dasharray:4 5}
 .mux-path.on{stroke:var(--signal);stroke-dasharray:none;stroke-width:3}
 .bit{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s,stroke .2s}
@@ -339,7 +365,7 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .bitc{cursor:pointer}
 .bitc rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s,stroke .2s}
 .bitc text{font-size:23px;font-weight:700;text-anchor:middle;fill:var(--i-text);pointer-events:none;font-variant-numeric:tabular-nums}
-.bitc.on rect{fill:var(--signal-soft);stroke:var(--signal)}
+.bitc.on rect{fill:url(#g-sig);stroke:var(--signal)}
 .bitc:hover rect{stroke:var(--accent)}
 .bitc.ro{cursor:default}.bitc.ro:hover rect{stroke:var(--i-panel-edge)}
 .bitc.ro.on:hover rect{stroke:var(--signal)}
@@ -349,7 +375,7 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .m-block.active,.m-panel.active{stroke:var(--signal);stroke-width:2.5}
 .flag rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s}
 .flag text{font-size:16.5px;font-weight:700;text-anchor:middle;fill:var(--i-text)}
-.flag.on rect{fill:var(--signal);stroke:var(--signal)}
+.flag.on rect{fill:url(#g-flag);stroke:var(--signal)}
 .flag.on text{fill:#3b2600}
 .pill rect{fill:var(--i-block);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s,stroke .2s}
 .pill text{font-size:16.5px;font-weight:700;text-anchor:middle;fill:var(--i-text-mut)}
@@ -429,6 +455,25 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .flag.fin.on text{fill:var(--i-text)}
 .flag.fout.chg rect{stroke:var(--accent);stroke-width:3}
 .btn-s.dis{opacity:.45;cursor:not-allowed}
+/* 8086 architecture view */
+.band-biu{fill:url(#g-biu);stroke:var(--signal);stroke-width:1.5;stroke-opacity:.55}
+.band-eu{fill:url(#g-eu);stroke:var(--accent);stroke-width:1.5;stroke-opacity:.5}
+.bus86{fill:none;stroke:var(--i-sym);stroke-width:8;stroke-linecap:round;transition:stroke .25s}
+.bus86.on{stroke:var(--signal)}
+.qcell rect{fill:url(#g-panel);stroke:var(--i-panel-edge);stroke-width:1.2;transition:fill .25s,stroke .25s}
+.qcell.empty rect{stroke-dasharray:3 3;opacity:.6}
+.qcell.on:not(.empty) rect{fill:url(#g-sig);stroke:var(--signal);stroke-width:2}
+[data-seg].use rect{stroke:var(--accent);stroke-width:2.2}
+.alu86.active{stroke:var(--signal);stroke-width:3}
+.step-badge circle{fill:var(--i-panel);stroke:var(--i-wire);stroke-width:1.6;transition:fill .25s,stroke .25s}
+.step-badge text{font-size:12.5px;font-weight:800;text-anchor:middle;fill:var(--i-text-mut)}
+.step-badge.on circle{fill:url(#g-flag);stroke:var(--signal)}
+.step-badge.on text{fill:#3b2600}
+[data-hibox].lit > rect{stroke:var(--signal);stroke-width:2.5}
+.flag.fin.chg rect{stroke:var(--accent);stroke-width:3}
+.flag.fin.und rect{stroke-dasharray:4 3}
+[data-half].will{stroke:var(--signal);stroke-width:2.5;stroke-dasharray:5 3}
+[data-half].flash{fill:var(--signal-soft);stroke:var(--signal);stroke-dasharray:none}
 /* 8086 machine: registers and memory */
 .memc{cursor:pointer}
 .memc rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .25s,stroke .25s}
@@ -500,15 +545,15 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 /* ---------- 8086 emulator (HTML scene) ---------- */
 .html-scene{overflow:auto;padding:18px 18px 18px;font-family:var(--font-ui);color:var(--ink)}
 .x86{display:flex;flex-direction:column;gap:12px;min-width:0}
-.x86-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-right:300px}   /* keep clear of the model badge */
+.x86-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-right:190px}   /* keep clear of the model badge */
 .x86-bar .btn{height:40px}
-.btn-p{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}
-.btn.btn-p:hover,.btn.btn-p:focus-visible{color:var(--on-accent);background:var(--accent);border-color:var(--accent)}
+.btn-p{background:linear-gradient(160deg, var(--g-on-a), var(--g-on-b));border-color:var(--accent);color:var(--on-accent,#fff)}
+.btn.btn-p:hover,.btn.btn-p:focus-visible{color:var(--on-accent);background:linear-gradient(160deg, var(--g-on-a), var(--g-on-b));border-color:var(--accent)}
 .btn-p:hover:not(:disabled){filter:brightness(1.08)}
 .x86 .btn:disabled{opacity:.45;cursor:not-allowed}
 .x86-steps{margin-left:auto;font-size:14px;color:var(--ink-3);font-weight:600}
 .x86-grid{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1fr) minmax(0,1.28fr);gap:10px}
-.x86-box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
+.x86-box{background:linear-gradient(180deg, var(--g-panel-a), var(--g-panel-b));border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
 .x86-box h4{margin:2px 0 8px;font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--ink-3);text-transform:uppercase}
 .x86-box h4:not(:first-child){margin-top:12px}
 .x86-list{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto;font-family:var(--font-mono);font-size:13.5px;line-height:1.55}
@@ -541,10 +586,10 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-msg code,.x86-desc b{font-family:var(--font-mono)}
 .x86-msg .ln-tag{font-size:12.5px;font-weight:700;color:var(--ink-3)}
 .x86-msg .bad{color:var(--pin-pwr)}
-.x86-ref{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.x86-ref{background:linear-gradient(180deg, var(--g-panel-a), var(--g-panel-b));border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .x86-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .x86-tabs a{padding:6px 11px;border-radius:999px;border:1px solid var(--line);font-size:14.5px;font-weight:600;color:var(--ink-2);text-decoration:none}
-.x86-tabs a.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent,#fff)}
+.x86-tabs a.on{background:linear-gradient(160deg, var(--g-on-a), var(--g-on-b));border-color:var(--accent);color:var(--on-accent,#fff)}
 .x86-ops{display:flex;flex-wrap:wrap;gap:6px}
 .x86-ops .op{font-family:var(--font-mono);font-size:13.5px;font-weight:700;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
 .x86-ops .op:hover,.x86-ops .op.on{border-color:var(--accent);background:var(--accent-soft)}

@@ -143,6 +143,7 @@ zoomBtn.addEventListener('click', () => {
   const on = stage.classList.toggle('magnified');
   zoomBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
   zoomBtn.querySelector('span').textContent = on ? 'Fit diagram' : 'Zoom diagram';
+  setTimeout(() => padTargets(layer), 350);
   requestAnimationFrame(() => { centerScroll(); padTargets(layer); });
 });
 
@@ -153,16 +154,42 @@ function padTargets(svg){
   if (!coarse.matches && innerWidth > 600) return;
   const m = svg.getScreenCTM(); if (!m) return;
   const k = m.a, min = 44 / k;
-  svg.querySelectorAll('.ctl, .hot, .bitc[data-k]').forEach(el => {
+  /* every visible target and its own box */
+  const items = [];
+  svg.querySelectorAll('.ctl, .hot, .bitc[data-k], .bitc[role]').forEach(el => {
     let b; try { b = el.getBBox(); } catch(_) { return; }
+    if (!b.width || !b.height || !el.getClientRects().length) return;
+    items.push({el, b});
+  });
+  /* Grow small targets to about 44 px, but never over a neighbouring target:
+     a gap between two targets is split down the middle. */
+  items.forEach(it => {
+    const b = it.b;
     if (b.width >= min && b.height >= min) return;
-    const w = Math.max(b.width, min), h = Math.max(b.height, min);
+    let x0 = b.x - Math.max(0, min - b.width)/2, x1 = b.x + b.width + Math.max(0, min - b.width)/2;
+    let y0 = b.y - Math.max(0, min - b.height)/2, y1 = b.y + b.height + Math.max(0, min - b.height)/2;
+    items.forEach(o => {
+      if (o === it || o.el.contains(it.el) || it.el.contains(o.el)) return;
+      const c = o.b, ovX = c.x < b.x + b.width && c.x + c.width > b.x, ovY = c.y < b.y + b.height && c.y + c.height > b.y;
+      const hitsPad = c.x < x1 && c.x + c.width > x0 && c.y < y1 && c.y + c.height > y0;
+      if (!hitsPad) return;
+      if (ovY && c.x >= b.x + b.width) x1 = Math.min(x1, (b.x + b.width + c.x) / 2);
+      else if (ovY && c.x + c.width <= b.x) x0 = Math.max(x0, (c.x + c.width + b.x) / 2);
+      else if (ovX && c.y >= b.y + b.height) y1 = Math.min(y1, (b.y + b.height + c.y) / 2);
+      else if (ovX && c.y + c.height <= b.y) y0 = Math.max(y0, (c.y + c.height + b.y) / 2);
+      else if (!ovX && !ovY){          /* diagonal neighbour: trim the axis with the bigger gap */
+        const gx = c.x >= b.x + b.width ? c.x - (b.x + b.width) : b.x - (c.x + c.width), gy = c.y >= b.y + b.height ? c.y - (b.y + b.height) : b.y - (c.y + c.height);
+        if (gx >= gy){ if (c.x > b.x) x1 = Math.min(x1, (b.x + b.width + c.x) / 2); else x0 = Math.max(x0, (c.x + c.width + b.x) / 2); }
+        else { if (c.y > b.y) y1 = Math.min(y1, (b.y + b.height + c.y) / 2); else y0 = Math.max(y0, (c.y + c.height + b.y) / 2); }
+      }
+    });
     const r = document.createElementNS(SVGNS,'rect');
-    r.setAttribute('class','tap-pad'); r.setAttribute('x', b.x - (w-b.width)/2); r.setAttribute('y', b.y - (h-b.height)/2);
-    r.setAttribute('width', w); r.setAttribute('height', h);
-    el.insertBefore(r, el.firstChild);
+    r.setAttribute('class','tap-pad'); r.setAttribute('x', x0); r.setAttribute('y', y0);
+    r.setAttribute('width', x1 - x0); r.setAttribute('height', y1 - y0);
+    it.el.insertBefore(r, it.el.firstChild);
   });
 }
+window.refreshTapTargets = () => padTargets(layer);
 let rsz; addEventListener('resize', () => { clearTimeout(rsz); rsz = setTimeout(() => padTargets(layer), 200); });
 
 /* ---------- navigation ---------- */

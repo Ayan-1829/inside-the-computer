@@ -46,7 +46,7 @@ const A86_REGS = ['A','B','C','D'];
 const A86_MEM = 16;                                   /* bytes of memory shown, at DS:0000 */
 const A86_DEFAULT = () => ({w:16, regs:{A:0x1234, B:0x00FF, C:0x0003, D:0x0000},
   mem:[0x10,0x20,0x30,0x40,0x34,0x12,0x78,0x56,0x05,0x00,0xFF,0x7F,0x00,0x80,0x01,0x00],
-  flags:0x0002, dst:'A', src:'B', cnt:'1', addr:4, imm:5, op:'ADD', grp:'arith', execs:0, last:''});
+  flags:0x0002, dst:'A', src:'B', cnt:'1', addr:4, imm:5, op:'ADD', grp:'arith', execs:0, last:'', ip:0});
 const SHIFTS = ['SHL','SHR','SAR','ROL','ROR','RCL','RCR'];
 const opOf = label => label.split(' ')[0];
 
@@ -158,7 +158,8 @@ function cycles86(o, st){
   }
   else base = {DAA:4,DAS:4,AAA:4,AAS:4,AAM:83,AAD:60,CBW:2,CWD:5,CLC:2,STC:2,CMC:2,CLD:2,STD:2,CLI:2,STI:2,LAHF:4,SAHF:4}[K];
   const out = fmtCyc(base, mem ? EA : 0, words, w, st);
-  if (op[0] === 'J') out.text = `CMP ${out.text.replace(/ \(.*$/, '')} + ${op} ${o.taken ? 16 : 4}`;
+  if (op[0] === 'J'){ const j = o.taken ? 16 : 4; out.text = `CMP ${out.text} + ${op} ${j}`; out.lo += j; out.hi += j; out.total = String(out.lo);
+    out.time = `${(out.lo * 0.2).toFixed(1)} µs at 5 MHz`; }
   return out;
 }
 function fmtCyc(base, ea, words, w, st, range){
@@ -167,7 +168,7 @@ function fmtCyc(base, ea, words, w, st, range){
   const parts = [range ? `${base[0]}–${base[1]}` : String(base)];
   if (ea) parts.push(`${ea} address`); if (odd) parts.push(`${odd} odd address`);
   const total = lo === hi ? String(lo) : `${lo}–${hi}`;
-  return {text: `${parts.join(' + ')}${parts.length > 1 ? ' = ' + total : ''}`, time: lo === hi ? `${(lo * 0.2).toFixed(1)} µs at 5 MHz` : `${(lo * 0.2).toFixed(1)}–${(hi * 0.2).toFixed(1)} µs at 5 MHz`};
+  return {text: `${parts.join(' + ')}${parts.length > 1 ? ' = ' + total : ''}`, total, lo, hi, time: lo === hi ? `${(lo * 0.2).toFixed(1)} µs at 5 MHz` : `${(lo * 0.2).toFixed(1)}–${(hi * 0.2).toFixed(1)} µs at 5 MHz`};
 }
 
 function explain86(o, st){
@@ -207,145 +208,259 @@ function explain86(o, st){
   return {title: o.asm + (op[0] === 'J' ? ` then ${op} …` : ''), desc: d, text: x};
 }
 
+/* ---------------- machine code: the bytes the BIU puts in the queue ----------------
+   Standard 8086 encodings. A memory operand here is always a direct address
+   (ModR/M mod = 00, r/m = 110, then a 16-bit address). Checked against the
+   Capstone disassembler (build/test-alu86-encoding.py). */
+const RCODE = {A:0, C:1, D:2, B:3};
+const ALU_N = {ADD:0, OR:1, ADC:2, SBB:3, AND:4, SUB:5, XOR:6, CMP:7};
+const GRP3 = {NOT:2, NEG:3, MUL:4, IMUL:5, DIV:6, IDIV:7};
+const SH_N = {ROL:0, ROR:1, RCL:2, RCR:3, SHL:4, SHR:5, SAR:7};
+const JCC_N = {JO:0, JNO:1, JB:2, JAE:3, JE:4, JNE:5, JBE:6, JA:7, JS:8, JNS:9, JP:10, JNP:11, JL:12, JGE:13, JLE:14, JG:15};
+const ONE_BYTE = {DAA:0x27, DAS:0x2F, AAA:0x37, AAS:0x3F, CBW:0x98, CWD:0x99, LAHF:0x9F, SAHF:0x9E, CLC:0xF8, STC:0xF9, CMC:0xF5, CLD:0xFC, STD:0xFD, CLI:0xFA, STI:0xFB};
+function encode86(o, st){
+  const {op, w, d, s} = o, W = w === 16 ? 1 : 0, addr = memAddr(st, w), out = [];
+  const B = (b, role) => out.push([b & 255, role]);
+  const modrm = (mod, reg, rm) => (mod << 6) | (reg << 3) | rm;
+  const mem = () => { B(addr & 255, 'address low'); B(addr >> 8, 'address high'); };
+  const imm = (v, wide) => { B(v & 255, wide ? 'data low' : 'data'); if (wide) B((v >> 8) & 255, 'data high'); };
+  const rm = (k, ext) => { if (k === 'M'){ B(modrm(0, ext, 6), 'ModR/M'); mem(); } else B(modrm(3, ext, RCODE[k]), 'ModR/M'); };
+  const K = op[0] === 'J' ? 'CMP' : op;
+  if (ONE_BYTE[K] !== undefined) B(ONE_BYTE[K], 'opcode');
+  else if (K === 'AAM' || K === 'AAD'){ B(K === 'AAM' ? 0xD4 : 0xD5, 'opcode'); B(0x0A, 'base 10'); }
+  else if (ALU_N[K] !== undefined || K === 'TEST' || K === 'MOV'){
+    const iv = st.imm & (2**w - 1);
+    if (s === 'I'){
+      if (K === 'MOV'){ if (d === 'M'){ B(0xC6 | W, 'opcode'); B(modrm(0, 0, 6), 'ModR/M'); mem(); } else B(0xB0 + W*8 + RCODE[d], 'opcode'); imm(iv, W); }
+      else if (K === 'TEST'){ if (d === 'A') B(0xA8 | W, 'opcode'); else { B(0xF6 | W, 'opcode'); rm(d, 0); } imm(iv, W); }
+      else { const n = ALU_N[K];
+        if (d === 'A'){ B(n*8 + 4 + W, 'opcode'); imm(iv, W); }
+        else { const small = W && (iv < 0x80 || iv >= 0xFF80); B(W ? (small ? 0x83 : 0x81) : 0x80, 'opcode'); rm(d, n); imm(iv, W && !small); } }
+    }
+    else if (K === 'MOV' && d === 'A' && s === 'M'){ B(0xA0 | W, 'opcode'); mem(); }
+    else if (K === 'MOV' && d === 'M' && s === 'A'){ B(0xA2 | W, 'opcode'); mem(); }
+    else { const base = K === 'MOV' ? 0x88 : K === 'TEST' ? 0x84 : ALU_N[K]*8;
+      if (d === 'M'){ B(base | W, 'opcode'); B(modrm(0, RCODE[s], 6), 'ModR/M'); mem(); }
+      else if (s === 'M'){ B(base | (K === 'TEST' ? 0 : 2) | W, 'opcode'); B(modrm(0, RCODE[d], 6), 'ModR/M'); mem(); }
+      else { B(base | W, 'opcode'); B(modrm(3, RCODE[s], RCODE[d]), 'ModR/M'); } }
+  }
+  else if (K === 'XCHG'){
+    if (W && d !== 'M' && s !== 'M' && (d === 'A' || s === 'A')) B(0x90 + RCODE[d === 'A' ? s : d], 'opcode');
+    else if (d === 'M' || s === 'M'){ B(0x86 | W, 'opcode'); B(modrm(0, RCODE[d === 'M' ? s : d], 6), 'ModR/M'); mem(); }
+    else { B(0x86 | W, 'opcode'); B(modrm(3, RCODE[s], RCODE[d]), 'ModR/M'); }
+  }
+  else if (K === 'INC' || K === 'DEC'){
+    if (W && d !== 'M') B((K === 'INC' ? 0x40 : 0x48) + RCODE[d], 'opcode'); else { B(0xFE | W, 'opcode'); rm(d, K === 'INC' ? 0 : 1); } }
+  else if (GRP3[K] !== undefined){ B(0xF6 | W, 'opcode'); rm(K === 'NOT' || K === 'NEG' ? d : s, GRP3[K]); }
+  else if (SH_N[K] !== undefined){ B((s === 'CL' ? 0xD2 : 0xD0) | W, 'opcode'); rm(d, SH_N[K]); }
+  if (op[0] === 'J'){ B(0x70 + JCC_N[op], 'opcode'); out.push([null, 'jump offset']); }
+  return out;
+}
+
+/* ---------------- the drawing: 8086 architecture (BIU above, EU below) ----------------
+   Laid out like the classic 8086 block diagram: memory outside the chip at the top;
+   the BIU with the address adder (Σ), segment registers and instruction queue; the
+   internal bus; and the EU with the register file, control unit, ALU and flags.
+   Execute animates the five stages: fetch, decode, operands, execute, write back. */
+const SEGS86 = {CS:0x0000, DS:0x0100, ES:0x0100, SS:0x0200};      /* same as the emulator */
+const UNIT_WORD = {arith:'adder', logic:'logic', shift:'shifter', muldiv:'microcode loop', bcd:'decimal adjust', move:'move', cond:'compare', flags:'flag logic'};
+const FLOW_STAGES = ['fetch', 'decode', 'operands', 'execute', 'write'];
+
 function alu86Scene(n){
-  const VB = [1300, 700];
+  const VB = [1320, 800];
   let s = '';
-  /* ---- left: width and operation tabs ---- */
-  s += hot('alu-control',[16,64,288,628], R(16,64,288,628,16,'m-panel') + T(32,90,'Operations','t t-sm'),{rx:20, label:'Operation decoder: every 8086 operation'});
-  s += btnS(28,100,130,34,'8-bit','data-w="8" aria-label="8-bit operands (AL, BL, CL, DL)"') + btnS(164,100,130,34,'16-bit','data-w="16" aria-label="16-bit operands (AX, BX, CX, DX)"');
-  ALU86_GROUPS.forEach(([g, name], i) => { s += btnS(28 + (i % 2)*136, 146 + Math.floor(i/2)*40, 130, 34, name, `data-grp="${g}" aria-label="${name} operations" style="font-size:14.5px"`); });
-  s += `<path class="ln" d="M28 312H292" style="opacity:.5"/>`;
-  ALU86_GROUPS.forEach(([g, , ops]) => { s += `<g data-set="${g}">` + ops.map((o, i) => btnS(28 + (i % 2)*136, 322 + Math.floor(i/2)*40, 130, 36, o, `data-op="${o}" aria-label="Operation ${o}"`)).join('') + '</g>'; });
-  /* ---- A and B rows with operand choices ---- */
-  const rows = {a:64, b:158, r:440, h:500};
-  s += hot('alu-registers', [[320,rows.a,640,54],[320,rows.b,640,54],[320,rows.r,640,54],[320,rows.h,640,54]],
-    ['a','b','r','h'].map(k => R(320,rows[k],640,54,12,'m-block', `data-row="${k}"`)).join(''), {label:'Operand and result registers'});
-  const cellX = i => 448 + i*24 + Math.floor(i/4)*5;
-  const rowBits = (k, ro) => { let c = ''; for (let i = 0; i < 16; i++){ const b = 15 - i;
-      c += `<g class="bitc${ro ? ' ro' : ''}" data-row="${k}" data-b="${b}" ${ro ? '' : `role="switch" tabindex="0" aria-checked="false" aria-label="${k.toUpperCase()} bit ${b}"`}>${R(cellX(i), rows[k] + 11, 22, 32, 5, '')}<text x="${cellX(i) + 11}" y="${rows[k] + 33}" style="font-size:16px">0</text></g>`; }
-    return c; };
-  s += T(332,rows.a+36,'A','t t-lg') + T(356,rows.a+24,'','t t-xs t-mut','data-txt="an1"') + T(356,rows.a+42,'','t t-sm','data-txt="an2"') + rowBits('a');
-  s += T(332,rows.b+36,'B','t t-lg') + T(356,rows.b+24,'','t t-xs t-mut','data-txt="bn1"') + T(356,rows.b+42,'','t t-sm','data-txt="bn2"') + rowBits('b');
-  s += T(332,rows.r+24,'Result','t t-sm') + T(332,rows.r+44,'','t t-xs t-mut','data-txt="rn"') + rowBits('r', true);
-  s += `<g data-hirow>` + T(332,rows.h+24,'','t t-sm','data-txt="hn1"') + T(332,rows.h+44,'','t t-xs t-mut','data-txt="hn2"') + rowBits('h', true) + '</g>';
-  ['a','b','r','h'].forEach(k => { s += T(854,rows[k]+26,'','t','data-txt="' + k + 'x"') + T(854,rows[k]+44,'','t t-xs t-mut','data-txt="' + k + 'd"'); });
-  const chip = (row, key, label, x, y) => btnS(x, y, 50, 30, label, `data-pick="${row}" data-k="${key}" style="font-size:14px"`);
-  s += T(334,142,'A is','t t-xs t-mut','data-lbl="dst"') + ['A','B','C','D','M'].map((k, i) => chip('dst', k, k === 'M' ? 'Mem' : k + 'X', 372 + i*54, 122)).join('') + T(372,142,'','t t-xs t-mut','data-txt="dnote"');
-  s += T(334,236,'B is','t t-xs t-mut','data-lbl="src"') + ['A','B','C','D','M','I'].map((k, i) => chip('src', k, k === 'M' ? 'Mem' : k === 'I' ? 'Num' : k + 'X', 372 + i*54, 216)).join('') +
-       ['1','CL'].map((k, i) => chip('cnt', k, k, 372 + i*54, 216)).join('') + T(704,236,'','t t-xs t-mut','data-txt="snote"');
-  /* ---- flags in ---- */
-  s += T(334,280,'Flags in','t t-sm');
-  FLAG_ORDER.forEach((f, i) => { s += `<g class="ctl flag fin" data-fin="${f}" role="switch" tabindex="0" aria-checked="false" aria-label="${FLAG_NAME[f]} flag going in"><title>${FLAG_NAME[f]} flag before the instruction</title>${R(414 + i*46, 256, 40, 36, 7, '')}${T(434 + i*46, 271, f, '', 'style="font-size:12px"')}<text x="${434 + i*46}" y="${287}" data-fv="${f}" style="font-size:14px">0</text></g>`; });
-  /* ---- units ---- */
-  ALU86_UNITS.forEach(([u, name, full, node], i) => {
-    const x = 320 + i*80.6, y = 302, cx = x + 38;
-    const art = {arith:'+ −', logic:'& | ^', shift:'≪ ≫', muldiv:'× ÷', bcd:'+6', move:'→', cond:'?', flags:'set'}[u];
-    const body = `<title>${full}</title>` + R(x, y, 76, 96, 12, 'm-panel', `data-act="${u}"`) + T(cx, y + 24, name, 't t-xs t-mid') +
-      T(cx, y + 56, art, 't t-sm t-mid') + T(cx, y + 84, '—', 't t-xs t-mid t-num', `data-txt="u-${u}"`);
-    s += node ? hot(node, [x, y, 76, 96], body, {rx:14, label: full}) : `<g>${body}</g>`;
-    s += W([[cx, y+96],[cx, 404],[560 + i*20, 404],[560 + i*20, 410]], 'w-' + u);
-  });
-  s += hot('multiplexer',[420,410,440,22], P('M420 410H860L840 432H440Z','m-acc-soft') + T(640,426,'Result MUX','t t-xs t-mid'),{label:'Result multiplexer'});
-  s += W([[640,432],[640,440]], 'w-res');
-  /* ---- flags out ---- */
-  s += hot('flag-logic',[320,560,640,46], R(320,560,640,46,12,'m-block') + T(334,588,'Flags out','t t-sm'), {label:'Flags produced by the operation'});
-  FLAG_ORDER.forEach((f, i) => { s += `<g class="flag fout" data-fout="${f}"><title>${FLAG_NAME[f]} flag</title>${R(414 + i*46, 564, 40, 38, 7, '')}${T(434 + i*46, 579, f, '', 'style="font-size:12px"')}<text x="${434 + i*46}" y="${596}" data-fo="${f}" style="font-size:14px">0</text></g>`; });
-  s += T(832,580,'? = undefined','t t-xs t-mut') + T(832,598,'on the 8086','t t-xs t-mut');
-  /* ---- right: registers, memory, Execute ---- */
-  s += R(976,64,308,546,14,'m-panel') + T(990,88,'Registers','t t-sm');
-  A86_REGS.forEach((k, i) => { const y = 98 + i*42;
-    s += `<g data-reg="${k}">${R(986, y, 288, 38, 8, 'm-block')}${T(998, y + 25, k + 'X', 't t-sm')}${T(1034, y + 20, '', 't t-sm t-num', 'data-rv')}${T(1034, y + 34, '', 't t-xs t-mut', 'data-rh')}` +
-         `${T(1112, y + 20, '', 't t-sm t-num', 'data-rn')}${T(1266, y + 20, '', 't t-xs t-end', 'data-rr')}</g>`; });
-  s += T(990,286,'Memory at DS:0000 <tspan class="t-xs t-mut" style="font-weight:500">· click a byte</tspan>','t t-sm');
-  for (let c = 0; c < 8; c++) s += T(1046 + c*29, 304, c, 't t-xs t-mut t-mid');
-  for (let r = 0; r < 2; r++){ s += T(990, 330 + r*36, I8086.hex(r*8, 4), 't t-xs t-mut t-num');
-    for (let c = 0; c < 8; c++){ const a = r*8 + c;
-      s += `<g class="ctl memc" data-addr="${a}" role="button" tabindex="0" aria-label="Memory byte at ${I8086.hex(a, 4)}h"><title>Address ${I8086.hex(a, 4)}h</title>${R(1033 + c*29, 312 + r*36, 26, 28, 5, '')}<text x="${1046 + c*29}" y="${331 + r*36}" data-mv style="font-size:13.5px">00</text></g>`; } }
-  s += T(990,400,'','t t-xs t-mut','data-txt="mnote1"') + T(990,418,'','t t-xs t-mut','data-txt="mnote2"');
-  s += btnS(986,432,288,44,'Execute','data-exec aria-label="Execute the instruction"');
-  s += btnS(986,484,140,34,'Random','data-rand aria-label="Random values in registers and memory" style="font-size:14px"') + btnS(1134,484,140,34,'Reset','data-reset aria-label="Reset registers, memory and flags" style="font-size:14px"');
-  s += T(990,540,'Clock cycles on a real 8086','t t-xs t-mut') + T(990,560,'','t t-sm','data-txt="cyc"') + T(990,578,'','t t-xs t-mut','data-txt="cyc2"') + T(990,600,'','t t-xs t-mut','data-txt="execs"');
-  /* ---- explanation ---- */
-  s += T(320,630,'','t t-sm','data-txt="ex1"') + T(320,652,'','t t-sm t-mut','data-txt="ex2"') + T(320,674,'','t t-sm t-mut','data-txt="ex3"');
+  const badge = (k, x, y) => `<g class="step-badge" data-stage="${k + 1}"><circle cx="${x}" cy="${y}" r="11"/><text x="${x}" y="${y + 5}">${k + 1}</text></g>`;
+  /* ---- left: width, operation tabs, Execute ---- */
+  s += hot('alu-control',[10,66,262,726], R(10,66,262,726,16,'m-panel') + T(24,90,'Operations','t t-sm'),{rx:20, label:'Operation decoder: every 8086 operation'});
+  s += btnS(20,100,118,32,'8-bit','data-w="8" aria-label="8-bit operands (AL, BL, CL, DL)"') + btnS(144,100,118,32,'16-bit','data-w="16" aria-label="16-bit operands (AX, BX, CX, DX)"');
+  ALU86_GROUPS.forEach(([g, name], i) => { s += btnS(20 + (i % 2)*124, 142 + Math.floor(i/2)*38, 118, 32, name, `data-grp="${g}" aria-label="${name} operations" style="font-size:14px"`); });
+  s += `<path class="ln" d="M20 300H262" style="opacity:.5"/>`;
+  ALU86_GROUPS.forEach(([g, , ops]) => { s += `<g data-set="${g}">` + ops.map((o, i) => btnS(20 + (i % 2)*124, 310 + Math.floor(i/2)*38, 118, 33, o, `data-op="${o}" aria-label="Operation ${o}" style="font-size:14.5px"`)).join('') + '</g>'; });
+  s += btnS(20,628,242,44,'Execute','data-exec aria-label="Execute the instruction and show the flow"');
+  s += btnS(20,680,118,32,'Random','data-rand aria-label="Random values in registers and memory" style="font-size:14px"') + btnS(144,680,118,32,'Reset','data-reset aria-label="Reset registers, memory and flags" style="font-size:14px"');
+  s += T(24,736,'','t t-xs t-mut','data-txt="execs"') + T(24,756,'','t t-xs t-mut','data-txt="execs2"');
+  /* ---- memory, outside the chip ---- */
+  s += R(286,66,714,80,12,'m-block') + T(300,86,'Memory <tspan class="t-xs t-mut" style="font-weight:500">outside the 8086 · click a byte</tspan>','t t-sm') + T(990,86,'','t t-xs t-mut t-end','data-txt="mnote"');
+  for (let a = 0; a < A86_MEM; a++){ const x = 340 + a*40;
+    s += `<g class="ctl memc" data-addr="${a}" role="button" tabindex="0" aria-label="Memory byte at offset ${I8086.hex(a, 4)}h"><title>Offset ${I8086.hex(a, 4)}h (physical address ${I8086.hex(SEGS86.DS*16 + a, 5)}h)</title>${R(x, 94, 34, 28, 5, '')}<text x="${x + 17}" y="${113}" data-mv style="font-size:14px">00</text></g>` +
+         T(x + 17, 138, I8086.hex(a, 2), 't t-xs t-mut t-mid', 'style="font-size:11.5px"'); }
+  /* ---- BIU ---- */
+  s += R(286,152,1024,172,16,'band-biu') + T(300,174,'BIU','t t-sm') + T(338,174,'Bus interface unit','t t-xs t-mut');
+  s += W([[650,188],[650,146]], 'w-addr') + T(658,168,'20-bit address','t t-xs t-mut');
+  s += P('M578 216H722L698 188H602Z','m-acc-soft','data-act="sum"') + T(650,209,'Σ','t t-sm t-mid');
+  s += T(570,206,'address adder','t t-xs t-mut t-end');
+  s += W([[650,222],[650,216]], 'w-seg');
+  ['CS','DS','ES','SS','IP'].forEach((r, i) => { const y = 222 + i*19;
+    s += `<g data-seg="${r}">${R(580, y, 140, 18, 3, 'm-block')}${T(592, y + 14, r, 't t-xs')}${T(708, y + 14, '', 't t-xs t-num t-end', 'data-sv')}</g>`; });
+  s += W([[760,334],[760,202],[710,202]], 'w-off') + T(768,300,'offset','t t-xs t-mut');
+  s += T(800,208,'','t t-xs t-mut','data-txt="pa1"') + T(800,230,'','t t-sm t-num','data-txt="pa2"') + T(800,252,'','t t-sm t-num','data-txt="pa3"');
+  s += W([[520,146],[520,334]], 'w-mem-rd') + W([[520,334],[520,146]], 'w-mem-wr') + T(512,244,'16-bit','t t-xs t-mut t-end') + T(512,262,'data bus','t t-xs t-mut t-end');
+  s += W([[1000,108],[1205,108],[1205,196]], 'w-fetch') + T(1014,100,'instruction bytes','t t-xs t-mut') + badge(0, 1188, 128);
+  s += T(1196,190,'Instruction queue','t t-xs t-end') + T(1216,190,'6 bytes','t t-xs t-mut');
+  for (let q = 0; q < 6; q++){ const y = 196 + q*20;
+    s += `<g class="qcell" data-q="${q}">${R(1110, y, 190, 19, 3, '')}${T(1124, y + 15, '', 't t-xs t-num', 'data-qb')}${T(1156, y + 15, '', 't t-xs t-mut', 'data-qr')}</g>`; }
+  /* ---- internal bus ---- */
+  s += `<path class="bus86" data-s="w-bus" d="M296 334H1300"/>` + T(318,326,'internal bus, 16 bits','t t-xs t-mut') + badge(2, 300, 334);
+  /* ---- EU ---- */
+  s += R(286,346,1024,446,16,'band-eu') + T(300,368,'EU','t t-sm') + T(328,368,'Execution unit','t t-xs t-mut');
+  s += W([[440,382],[440,334]], 'w-reg-rd') + W([[440,334],[440,382]], 'w-reg-wr');   /* read: up to the bus; write: down */
+  A86_REGS.forEach((k, i) => { const y = 384 + i*38;
+    s += `<g data-reg="${k}">${T(306, y + 23, k + 'X', 't t-sm')}${R(336, y, 94, 34, 6, 'm-block', 'data-half="H"')}${R(434, y, 94, 34, 6, 'm-block', 'data-half="L"')}` +
+         `${T(344, y + 22, k + 'H', 't t-xs t-mut')}${T(420, y + 23, '', 't t-sm t-num t-end', 'data-hv')}${T(442, y + 22, k + 'L', 't t-xs t-mut')}${T(518, y + 23, '', 't t-sm t-num t-end', 'data-lv')}` +
+         `${T(536, y + 14, '', 't t-xs', 'data-rr')}${T(536, y + 30, '', 't t-xs t-num', 'data-rn')}</g>`; });
+  [['SI','0000h'],['DI','0000h'],['BP','0000h'],['SP','0100h']].forEach(([r, v], i) => { const y = 540 + i*32;
+    s += `${T(306, y + 20, r, 't t-sm')}${R(336, y, 192, 28, 6, 'm-block')}${T(518, y + 20, v, 't t-sm t-num t-end')}`; });
+  s += T(306,684,'SI, DI, BP and SP hold addresses; not used here.','t t-xs t-mut');
+  /* operand latches A and B, fed from the bus */
+  const latch = (k, x, w, chips) => {
+    let g = R(x, 390, w, 106, 12, 'm-panel', `data-latch="${k}"`) + T(x + 10, 414, k.toUpperCase(), 't t-sm');
+    const pitch = w === 244 ? 36 : 41, cw = w === 244 ? 34 : 38, idx = {dst:0, src:0, cnt:0};
+    chips.forEach(([key, label]) => { const row = k === 'a' ? 'dst' : (key === '1' || key === 'CL') ? 'cnt' : 'src', i = idx[row]++;
+      g += btnS(x + 28 + i*pitch, 396, cw, 24, label, `data-pick="${row}" data-k="${key}" style="font-size:12.5px"`); });
+    for (const [row, y] of [['h', 426], ['l', 450]]){
+      g += T(x + 44, y + 15, '', 't t-xs t-mut t-end', `data-rl="${k}${row}"`);
+      for (let c = 0; c < 8; c++){ const b = (row === 'h' ? 15 : 7) - c, cx = x + 48 + c*24;
+        g += `<g class="bitc" data-row="${k}" data-b="${b}" role="switch" tabindex="0" aria-checked="false" aria-label="${k.toUpperCase()} bit ${b}">${R(cx, y, 21, 20, 4, '')}<text x="${cx + 10.5}" y="${y + 15}" style="font-size:13.5px">0</text></g>`; } }
+    return g + T(x + 10, 488, '', 't t-xs t-mut', `data-txt="${k}x"`);
+  };
+  s += W([[786,334],[786,390]], 'w-a') + W([[1038,334],[1038,390]], 'w-b');
+  s += hot('alu-registers', [[668,390,236,106],[916,390,244,106],[700,610,300,72]], '', {label:'Operand and result registers'});
+  s += latch('a', 668, 236, [['A','AX'],['B','BX'],['C','CX'],['D','DX'],['M','Mem']]);
+  s += latch('b', 916, 244, [['A','AX'],['B','BX'],['C','CX'],['D','DX'],['M','Mem'],['I','Num'],['1','1'],['CL','CL']]);
+  /* ALU */
+  s += W([[786,496],[786,516]], 'w-ain') + W([[1038,496],[1038,516]], 'w-bin');
+  s += P('M700 516H868L908 548L948 516H1116L1052 592H764Z','m-acc-soft alu86','data-act="alu"') + T(908,572,'ALU','t t-sm t-mid') + T(908,588,'','t t-xs t-mid','data-txt="aluop"') + badge(3, 730, 540);
+  /* control unit, under the queue */
+  s += W([[1205,316],[1205,380]], 'w-q2cu') + badge(1, 1224, 360);
+  s += R(1164,380,136,84,12,'m-panel','data-act="cu"') + T(1174,400,'Control unit','t t-xs') + T(1174,420,'','t t-xs t-num','data-txt="cu1"') + T(1174,438,'','t t-xs t-mut','data-txt="cu2"') + T(1174,456,'','t t-xs t-mut','data-txt="cu3"');
+  s += W([[1180,464],[1180,530],[1106,530]], 'w-cu2alu');
+  /* result, high half / remainder, flags */
+  s += W([[908,592],[908,610]], 'w-res');
+  s += R(700,610,300,72,12,'m-block','data-act="res"') + T(710,628,'','t t-xs','data-txt="rn"') + T(990,628,'','t t-sm t-num t-end','data-txt="rx"');
+  for (const [row, y] of [['h', 636], ['l', 658]]){
+    s += T(772, y + 14, '', 't t-xs t-mut t-end', `data-rl="r${row}"`);
+    for (let c = 0; c < 8; c++){ const b = (row === 'h' ? 15 : 7) - c, cx = 780 + c*24;
+      s += `<g class="bitc ro" data-row="r" data-b="${b}">${R(cx, y, 21, 19, 4, '')}<text x="${cx + 10.5}" y="${y + 14}" style="font-size:13px">0</text></g>`; } }
+  s += `<g data-hibox>${R(1010,610,144,72,12,'m-block')}${T(1020,630,'','t t-xs','data-txt="hn1"')}${T(1020,648,'','t t-xs t-mut','data-txt="hn2"')}${T(1144,672,'','t t-sm t-num t-end','data-txt="hx"')}</g>`;
+  s += W([[700,646],[656,646],[656,334]], 'w-wb') + badge(4, 656, 700 - 40);
+  s += W([[1066,575],[1164,575]], 'w-flags');
+  s += hot('flag-logic',[1164,556,136,140], R(1164,556,136,140,12,'m-block') + T(1174,574,'Flag register','t t-xs'), {label:'Flag register'});
+  FLAG_ORDER.forEach((f, i) => { const x = 1170 + (i % 3)*42, y = 582 + Math.floor(i/3)*37;
+    s += `<g class="ctl flag fin" data-fin="${f}" role="switch" tabindex="0" aria-checked="false" aria-label="${FLAG_NAME[f]} flag"><title>${FLAG_NAME[f]} flag</title>${R(x, y, 38, 33, 6, '')}${T(x + 19, y + 13, f, '', 'style="font-size:11.5px"')}<text x="${x + 19}" y="${y + 28}" data-fv style="font-size:13px">0</text></g>`; });
+  s += T(1164,712,'? = undefined','t t-xs t-mut');
+  /* explanation */
+  s += T(300,736,'','t t-sm','data-txt="ex1"') + T(300,758,'','t t-sm t-mut','data-txt="ex2"') + T(300,780,'','t t-sm t-mut','data-txt="ex3"');
   s += aluModeSwitch(VB[0]/2 + 10, '8086');
   return {svg: s, vb: VB, init: el => {
     requestWide(true);
     el.dataset.scrollStart = 'left';
     const st = SIM.alu86 && SIM.alu86.regs ? SIM.alu86 : (SIM.alu86 = A86_DEFAULT());
-    let flash = null, flashTimer = null;
+    if (st.ip === undefined) st.ip = 0;
+    let flash = null, flashTimer = null, anim = null;
     const txt = (k, v) => { const e = el.querySelector(`[data-txt="${k}"]`); if (e) e.innerHTML = v; };
-    const fmt = (v, bw) => `${I8086.hex(v, bw/4)}h`, dec = (v, bw) => `${v}${v >= 2**(bw-1) ? ` · ${v - 2**bw}` : ''}`;
-    const showRow = (k, val, bw, on) => el.querySelectorAll(`.bitc[data-row="${k}"]`).forEach(c => { const b = +c.dataset.b, vis = b < bw;
-      c.style.display = vis ? '' : 'none'; const bit = (val >> b) & 1; c.classList.toggle('on', !!bit && on !== false); c.querySelector('text').textContent = bit;
-      if (c.getAttribute('role')) c.setAttribute('aria-checked', bit ? 'true' : 'false'); c.style.opacity = on === false ? .35 : ''; });
-    /* what the A and B rows show and edit: [kind, width, label line 1, label line 2] */
+    const fmt = (v, bw) => `${I8086.hex(v, bw/4)}h`;
+    const regLabel = (k, bw, half) => k === 'M' ? (half === 'h' ? 'hi' : 'lo') : k === 'I' ? (half === 'h' ? 'hi' : 'lo') : k === 'CL' || k === '1' ? '' : bw === 8 ? k + 'L' : k + (half === 'h' ? 'H' : 'L');
+    const showBits = (k, val, bw, on, lbl) => {
+      el.querySelectorAll(`.bitc[data-row="${k}"]`).forEach(c => { const b = +c.dataset.b, vis = bw && b < bw;
+        c.style.display = vis ? '' : 'none'; const bit = (val >> b) & 1; c.classList.toggle('on', !!bit && on !== false); c.querySelector('text').textContent = bit;
+        if (c.getAttribute('role')) c.setAttribute('aria-checked', bit ? 'true' : 'false'); c.style.opacity = on === false ? .35 : ''; });
+      const h = el.querySelector(`[data-rl="${k}h"]`), l = el.querySelector(`[data-rl="${k}l"]`);
+      if (h) h.textContent = bw === 16 ? lbl[0] : ''; if (l) l.textContent = bw ? lbl[1] : '';
+    };
     const aSpec = (op, w) => {
       const R = rules86(op);
-      if (R.dst !== 'fixed') return [st.dst, w, 'destination', st.dst === 'M' ? memName(memAddr(st, w)) : regName(st.dst, w)];
-      if (['MUL','IMUL'].includes(op)) return ['A', w, 'always', w === 8 ? 'AL' : 'AX'];
-      if (['DIV','IDIV'].includes(op)) return ['A', 16, 'dividend', w === 8 ? 'AX' : 'DX:AX'];
-      if (['DAA','DAS','CBW'].includes(op)) return ['A', 8, 'always', 'AL'];
-      if (['AAA','AAS','AAM','AAD','CWD'].includes(op)) return ['A', 16, 'always', 'AX'];
-      if (op === 'SAHF') return ['AH', 8, 'always', 'AH'];
-      return [null, w, '', 'not used'];
+      if (R.dst !== 'fixed') return [st.dst, w];
+      if (['MUL','IMUL','DAA','DAS','CBW'].includes(op)) return ['A', ['MUL','IMUL'].includes(op) ? w : 8];
+      if (['DIV','IDIV','AAA','AAS','AAM','AAD','CWD'].includes(op)) return ['A', 16];
+      if (op === 'SAHF') return ['AH', 8];
+      return [null, w];
+    };
+    /* which paths an instruction uses, per stage */
+    const paths = o => {
+      const R = rules86(o.op), mem = (o.d === 'M' || o.s === 'M');
+      const writes = o.res && o.res.stored, memWrite = writes && o.d === 'M' && !['CMP','TEST'].includes(o.op);
+      const regWrite = (o.regsChanged || []).length > 0;
+      return {
+        fetch: ['w-fetch', 'q'], decode: ['w-q2cu', 'cu'],
+        operands: ['w-bus', 'w-a', ...(R.src && (o.s !== '1') ? ['w-b'] : []), ...(A86_REGS.includes(o.d) || A86_REGS.includes(o.s) || o.s === 'CL' || R.dst === 'fixed' ? ['w-reg-rd'] : []), ...(mem ? ['w-mem-rd', 'w-addr', 'w-seg', 'w-off', 'sum'] : [])],
+        execute: ['w-ain', ...(R.src ? ['w-bin'] : []), 'w-cu2alu', 'alu', 'w-flags', 'flags'],
+        write: [...(writes || regWrite ? ['w-res', 'res', 'w-wb', 'w-bus'] : []), ...(regWrite ? ['w-reg-wr'] : []), ...(memWrite ? ['w-mem-wr', 'w-addr', 'w-seg', 'w-off', 'sum'] : [])],
+      };
+    };
+    const light = keys => {
+      el.querySelectorAll('.wire[data-s], .bus86').forEach(x => x.classList.toggle('on', keys.includes(x.dataset.s)));
+      el.querySelectorAll('[data-act]').forEach(x => x.classList.toggle('active', keys.includes(x.dataset.act)));
+      el.querySelectorAll('.qcell').forEach(x => x.classList.toggle('on', keys.includes('q')));
+      el.querySelector('[data-hibox]').classList.toggle('lit', keys.includes('res'));
+    };
+    const stageText = (k, o, code) => {
+      const bytes = code.filter(b => b[0] !== null).map(b => I8086.hex(b[0], 2)).join(' ');
+      const dN = o.d ? (o.d === 'M' ? memName(memAddr(st, o.w)) : regName(o.d, o.w)) : '', sN = o.s === 'M' ? memName(memAddr(st, o.w)) : o.s === 'I' ? String(st.imm & (2**o.w - 1)) : o.s === 'CL' ? 'CL' : o.s === '1' ? '1' : o.s ? regName(o.s, o.w) : '';
+      const operandsWord = [o.d && !['MUL','IMUL','DIV','IDIV'].includes(o.op) ? dN : (aSpec(o.op, o.w)[0] ? (aSpec(o.op, o.w)[1] === 16 ? 'AX' : 'AL') : ''), sN].filter(Boolean);
+      return {
+        fetch: `1 · Fetch: the BIU reads ${code.filter(b => b[0] !== null).length} byte${code.length > 1 ? 's' : ''} (${bytes}) at CS × 16 + IP into the queue.`,
+        decode: `2 · Decode: the control unit turns ${bytes} into ${o.asm}.`,
+        operands: operandsWord.length ? `3 · Operands: ${operandsWord.join(' and ')} go${operandsWord.length === 1 ? 'es' : ''} over the internal bus to the ALU${(o.d === 'M' || o.s === 'M') ? `; the BIU reads memory at ${I8086.hex(SEGS86.DS*16 + memAddr(st, o.w), 5)}h` : ''}.` : '3 · Operands: this instruction works on the flags only.',
+        execute: `4 · Execute: the ALU does ${o.op}${o.res && !o.res.none ? ` and gets ${fmt(o.res.v, o.res.w)}` : ''}, and the flags are updated.`,
+        write: o.op[0] === 'J' ? `5 · The jump is ${o.taken ? 'taken: IP moves to the jump target' : 'not taken: IP moves to the next instruction'}.` :
+          o.res && o.res.stored ? `5 · Write back: the result goes over the bus into ${o.res.name}.` : '5 · Nothing to write back: only the flags change.',
+      }[k];
     };
     const upd = () => {
       const op = opOf(st.op), R = rules86(op), w = FORCE_W[op] || st.w;
-      /* keep the operand choices valid for this operation */
       if (R.dst !== 'fixed' && !R.dst.includes(st.dst)) st.dst = 'A';
       if (R.src && R.src !== 'count' && !R.src.includes(st.src)) st.src = 'B';
-      const o = run86(st), ex = explain86(o, st);
-      /* A row */
-      const [ak, aw, a1, a2] = aSpec(op, w);
+      const o = run86(st), ex = explain86(o, st), code = o.error ? [] : encode86(o, st);
+      el._last = o;
+      /* A latch */
+      const [ak, aw] = aSpec(op, w);
       const aval = ak === 'AH' ? st.regs.A >> 8 : ak === 'A' && R.dst === 'fixed' ? (aw === 8 ? st.regs.A & 255 : st.regs.A) : ak ? readOp(st, ak, aw) : 0;
-      showRow('a', aval, ak ? aw : 16, !!ak); txt('an1', a1); txt('an2', a2);
-      txt('ax', ak ? fmt(aval, aw) : ''); txt('ad', ak ? dec(aval, aw) : '');
-      /* B row */
+      showBits('a', aval, ak ? aw : 0, !!ak, ak === 'AH' ? ['', 'AH'] : [regLabel(ak, aw, 'h'), regLabel(ak, aw, 'l')]);
+      txt('ax', ak ? `${fmt(aval, aw)} = ${aval}${R.dst === 'fixed' ? ` · always ${ak === 'AH' ? 'AH' : aw === 8 ? 'AL' : ['DIV','IDIV'].includes(op) && w === 16 ? 'DX:AX' : 'AX'}` : ''}` : 'not used');
+      /* B latch */
       const bk = R.src === 'count' ? st.cnt : R.src ? st.src : null, bw = R.src === 'count' ? 8 : w;
       const bval = bk === '1' ? 1 : bk === 'CL' ? st.regs.C & 255 : bk ? readOp(st, bk, bw) : 0;
-      showRow('b', bval, bk ? bw : 16, !!bk);
+      showBits('b', bval, bk ? bw : 0, !!bk, [regLabel(bk, bw, 'h'), bk === 'CL' ? 'CL' : bk === '1' ? '' : regLabel(bk, bw, 'l')]);
       el.querySelectorAll('.bitc[data-row="b"]').forEach(c => c.classList.toggle('ro', bk === '1'));
-      txt('bn1', bk ? (R.src === 'count' ? 'count' : 'source') : ''); txt('bn2', !bk ? 'not used' : bk === 'I' ? 'number' : bk === 'M' ? memName(memAddr(st, bw)) : bk === '1' ? '1' : bk === 'CL' ? 'CL' : regName(bk, bw));
-      txt('bx', bk ? fmt(bval, bw) : ''); txt('bd', bk ? dec(bval, bw) : '');
-      /* operand choice buttons */
+      txt('bx', bk ? `${fmt(bval, bw)} = ${bval}${R.src === 'count' ? ' · the count' : ''}` : 'not used');
       el.querySelectorAll('[data-pick]').forEach(b => { const row = b.dataset.pick, k = b.dataset.k;
         const show = row === 'dst' ? R.dst !== 'fixed' : row === 'src' ? !!R.src && R.src !== 'count' : R.src === 'count';
         b.style.display = show ? '' : 'none';
         const cur = row === 'dst' ? st.dst : row === 'src' ? st.src : st.cnt, allowed = row === 'cnt' || (row === 'dst' ? R.dst : R.src).includes(k);
         b.classList.toggle('on', show && cur === k); b.classList.toggle('dis', !allowed); b.setAttribute('aria-pressed', cur === k);
         if (row !== 'cnt' && k !== 'M' && k !== 'I') b.querySelector('text').textContent = regName(k, w); });
-      const fixedNote = {MUL:`MUL always multiplies ${w === 8 ? 'AL; the answer fills AX' : 'AX; the answer fills DX:AX'}`, IMUL:`IMUL always multiplies ${w === 8 ? 'AL; the answer fills AX' : 'AX; the answer fills DX:AX'}`,
-        DIV:`DIV always divides ${w === 8 ? 'AX (quotient AL, remainder AH)' : 'DX:AX (quotient AX, remainder DX)'}`, IDIV:`IDIV always divides ${w === 8 ? 'AX (quotient AL, remainder AH)' : 'DX:AX (quotient AX, remainder DX)'}`}[op];
-      txt('dnote', R.dst !== 'fixed' ? '' : fixedNote || (aSpec(op, w)[0] ? `${op} always works on ${aSpec(op, w)[3]}` : `${op} has no operands`));
-      el.querySelector('[data-lbl="dst"]').style.display = R.dst === 'fixed' ? 'none' : '';
-      el.querySelector('[data-lbl="src"]').style.display = R.src ? '' : 'none';
-      el.querySelector('[data-txt="snote"]').setAttribute('x', R.src === 'count' ? 488 : 704);
-      txt('snote', R.src === 'count' ? 'the 8086 shifts by 1 or by CL' : '');
-      /* results */
-      const Rz = o.res || {v:0, w, none:true, name:''};
-      showRow('r', Rz.v, Rz.none || o.error ? 0 : Rz.w, !o.error && Rz.stored);
-      txt('rn', o.error ? 'not possible' : Rz.stored ? '→ ' + Rz.name : Rz.name);
-      txt('rx', o.error ? '<tspan style="fill:var(--pin-pwr)">Error</tspan>' : op[0] === 'J' ? `<tspan style="fill:var(--${o.taken ? 'accent' : 'ink-3'})">${o.taken ? 'Jump taken' : 'Not taken'}</tspan>` : Rz.none ? '' : fmt(Rz.v, Rz.w));
-      txt('rd', o.error || Rz.none ? '' : dec(Rz.v, Rz.w));
-      const H = !o.error && o.hi, hr = el.querySelector('[data-hirow]');
-      hr.style.display = H ? '' : 'none'; el.querySelector('[data-row="h"].m-block').style.display = H ? '' : 'none';
-      if (H){ showRow('h', H.v, H.w, true); const [n1, ...rest] = H.name.split(' '); txt('hn1', '→ ' + n1); txt('hn2', rest.join(' ')); txt('hx', fmt(H.v, H.w)); txt('hd', dec(H.v, H.w)); }
-      else { txt('hx', ''); txt('hd', ''); }
-      /* units and wires */
+      /* ALU, control unit, queue */
       const unit = o.error ? null : {ADD:'arith',ADC:'arith',SUB:'arith',SBB:'arith',CMP:'arith',INC:'arith',DEC:'arith',NEG:'arith',AND:'logic',OR:'logic',XOR:'logic',NOT:'logic',TEST:'logic',
         MUL:'muldiv',IMUL:'muldiv',DIV:'muldiv',IDIV:'muldiv',AAM:'muldiv',AAD:'muldiv',DAA:'bcd',DAS:'bcd',AAA:'bcd',AAS:'bcd',MOV:'move',XCHG:'move',CBW:'move',CWD:'move'}[op] || (SHIFTS.includes(op) ? 'shift' : op[0] === 'J' ? 'cond' : 'flags');
-      ALU86_UNITS.forEach(([u]) => { const on = u === unit || (op[0] === 'J' && u === 'arith' && !o.error);
-        el.querySelector(`[data-act="${u}"]`).classList.toggle('active', on);
-        txt('u-' + u, on ? (u === 'cond' ? (o.taken ? 'taken' : 'not') : u === 'flags' ? 'flags' : u === 'arith' && op[0] === 'J' ? fmt(Rz.v, Rz.w) : Rz.none ? '—' : fmt(Rz.v, Rz.w)) : '—');
-        el.querySelectorAll(`.wire[data-s="w-${u}"]`).forEach(x => x.classList.toggle('on', on)); });
-      el.querySelectorAll('.wire[data-s="w-res"]').forEach(x => x.classList.toggle('on', !o.error && Rz.stored));
-      /* flags */
-      FLAG_ORDER.forEach(f => { const bit = I8086.FB[f], vin = (st.flags >> bit) & 1, vout = o.error ? vin : (o.flags >> bit) & 1, und = !o.error && o.undef.has(f);
-        const gi = el.querySelector(`[data-fin="${f}"]`); gi.classList.toggle('on', !!vin); gi.setAttribute('aria-checked', vin ? 'true' : 'false'); gi.querySelector('[data-fv]').textContent = vin;
-        const go = el.querySelector(`[data-fout="${f}"]`); go.classList.toggle('on', !!vout && !und); go.classList.toggle('chg', vout !== vin && !und); go.classList.toggle('keep', und);
-        go.querySelector('[data-fo]').textContent = und ? '?' : vout;
-        go.querySelector('title').textContent = `${FLAG_NAME[f]} flag: ${und ? 'undefined after ' + op + ' (the 8086 manual does not say what it will be)' : vout !== vin ? 'changes to ' + vout : 'unchanged'}`; });
-      /* registers and memory: current value, value after Execute, and roles */
+      txt('aluop', o.error ? '' : `${op[0] === 'J' ? 'CMP' : op} · ${UNIT_WORD[unit]}`);
+      txt('cu1', o.error ? 'cannot encode' : op[0] === 'J' ? `CMP, then ${op}` : `decodes ${op}`);
+      const range = !o.error && o.cycles.total.includes('–');
+      txt('cu2', o.error ? '' : `${o.cycles.total} ${range ? 'cycles' : 'clock cycles'}`);
+      txt('cu3', o.error ? '' : range ? o.cycles.time.replace(' at 5 MHz', '') : o.cycles.time);
+      el.querySelector('[data-act="cu"]').parentNode.querySelector('title')?.remove();
+      if (!o.error){ const t = document.createElementNS('http://www.w3.org/2000/svg', 'title'); t.textContent = `Clock cycles on a real 8086: ${o.cycles.text}`; el.querySelector('[data-act="cu"]').appendChild(t); }
+      el.querySelectorAll('.qcell').forEach((c, q) => { const b = code[q];
+        c.querySelector('[data-qb]').textContent = b ? (b[0] === null ? '??' : I8086.hex(b[0], 2)) : '';
+        c.querySelector('[data-qr]').textContent = b ? b[1] : (q === 0 ? '' : ''); c.classList.toggle('empty', !b); });
+      if (code.length > 6) el.querySelector('.qcell[data-q="5"] [data-qr]').textContent += ` (+${code.length - 6} more)`;
+      /* BIU: segment registers and the physical address */
+      el.querySelectorAll('[data-seg]').forEach(g => { const r = g.dataset.seg; g.querySelector('[data-sv]').textContent = fmt(r === 'IP' ? st.ip : SEGS86[r], 16); });
+      const memUsed = !o.error && (o.d === 'M' || o.s === 'M');
+      el.querySelector('[data-seg="DS"]').classList.toggle('use', memUsed);
+      el.querySelector('[data-seg="CS"]').classList.toggle('use', !memUsed);
+      el.querySelector('[data-seg="IP"]').classList.toggle('use', !memUsed);
+      const off = memAddr(st, w);
+      if (memUsed){ txt('pa1', 'Data address = DS × 16 + offset'); txt('pa2', `${fmt(SEGS86.DS, 16)} × 16 + ${fmt(off, 16)}`); txt('pa3', `= ${I8086.hex(SEGS86.DS*16 + off, 5)}h`); }
+      else { txt('pa1', 'Next instruction = CS × 16 + IP'); txt('pa2', `${fmt(SEGS86.CS, 16)} × 16 + ${fmt(st.ip, 16)}`); txt('pa3', `= ${I8086.hex(SEGS86.CS*16 + st.ip, 5)}h`); }
+      /* result and high half */
+      const Rz = o.res || {v:0, w, none:true, name:''};
+      showBits('r', Rz.v, Rz.none || o.error ? 0 : Rz.w, !o.error && Rz.stored, Rz.w === 16 ? ['high', 'low'] : ['', '']);
+      txt('rn', o.error ? 'Not possible' : Rz.stored ? `Result → ${Rz.name}` : Rz.none ? (op[0] === 'J' ? 'CMP result not stored' : 'Flags only') : 'Result (not stored)');
+      txt('rx', o.error ? '<tspan style="fill:var(--pin-pwr)">Error</tspan>' : op[0] === 'J' ? `<tspan style="fill:var(--${o.taken ? 'accent' : 'ink-3'})">${o.taken ? 'Jump taken' : 'Not taken'}</tspan>` : Rz.none ? '' : fmt(Rz.v, Rz.w));
+      const H = !o.error && o.hi, hb = el.querySelector('[data-hibox]');
+      hb.style.display = H ? '' : 'none';
+      if (H){ const [n1, ...rest] = H.name.split(' '); txt('hn1', '→ ' + n1); txt('hn2', rest.join(' ')); txt('hx', fmt(H.v, H.w)); }
+      /* register file: values, roles, value after Execute */
       const roles = {A:[], B:[], C:[], D:[]};
       if (R.dst !== 'fixed' && A86_REGS.includes(st.dst)) roles[st.dst].push('A');
       if (bk && A86_REGS.includes(bk)) roles[bk].push('B');
@@ -353,58 +468,86 @@ function alu86Scene(n){
       if (R.dst === 'fixed' && aSpec(op, w)[0]) roles.A.push('A');
       if ((['MUL','IMUL','DIV','IDIV'].includes(op) && w === 16) || op === 'CWD') roles.D.push(op === 'CWD' || op === 'MUL' || op === 'IMUL' ? 'high' : 'dividend');
       A86_REGS.forEach(k => { const g = el.querySelector(`[data-reg="${k}"]`), v = st.regs[k], nv = o.regs ? o.regs[k] : v, will = !o.error && nv !== v;
-        g.querySelector('[data-rv]').textContent = fmt(v, 16);
-        g.querySelector('[data-rh]').textContent = `${k}H ${I8086.hex(v >> 8, 2)} · ${k}L ${I8086.hex(v & 255, 2)}`;
+        g.querySelector('[data-hv]').textContent = I8086.hex(v >> 8, 2); g.querySelector('[data-lv]').textContent = I8086.hex(v & 255, 2);
+        g.querySelector('[data-rr]').innerHTML = roles[k].length ? `<tspan style="fill:var(--accent);font-weight:700">${roles[k].join(', ')}</tspan>` : '';
         g.querySelector('[data-rn]').innerHTML = will ? `<tspan style="fill:var(--accent)">→ ${fmt(nv, 16)}</tspan>` : '';
-        g.querySelector('[data-rr]').textContent = roles[k].join(', ');
-        g.classList.toggle('will', will); g.classList.toggle('flash', !!(flash && flash.regs.includes(k))); });
-      const mw = (d => d)(w), ma = memAddr(st, w), memUsed = (R.dst !== 'fixed' && st.dst === 'M') || bk === 'M';
+        g.querySelectorAll('[data-half]').forEach(r => { const hv = r.dataset.half === 'H' ? [v >> 8, nv >> 8] : [v & 255, nv & 255];
+          r.classList.toggle('will', will && hv[0] !== hv[1]); r.classList.toggle('flash', !!(flash && flash.regs.includes(k))); }); });
+      /* memory */
+      const ma = memAddr(st, w), memSel = memUsed;
       el.querySelectorAll('.memc').forEach(c => { const a = +c.dataset.addr, nv = o.mem ? o.mem[a] : st.mem[a];
         c.querySelector('[data-mv]').textContent = I8086.hex(st.mem[a], 2);
-        c.classList.toggle('sel', memUsed && (a === ma || (mw === 16 && a === ma + 1)));
-        c.classList.toggle('pick', !memUsed && a === ma);
+        c.classList.toggle('sel', memSel && (a === ma || (w === 16 && a === ma + 1)));
+        c.classList.toggle('pick', !memSel && a === ma);
         c.classList.toggle('will', !o.error && nv !== st.mem[a]); c.classList.toggle('flash', !!(flash && flash.mem.includes(a))); });
       const mv = readOp(st, 'M', w);
-      txt('mnote1', `Mem = ${memName(ma)} = ${fmt(mv, w)}`);
-      txt('mnote2', w === 16 ? `Stored low byte first: ${I8086.hex(st.mem[ma], 2)}, then ${I8086.hex(st.mem[ma+1], 2)}` : 'A single byte');
-      /* cycles, buttons, words */
-      txt('cyc', o.error ? '—' : o.cycles.text); txt('cyc2', o.error ? '' : o.cycles.time);
-      txt('execs', st.execs ? `Done ${st.execs}: ${esc(st.last.length > 30 ? st.last.slice(0, 29) + '…' : st.last)}` : 'Press Execute to write it back');
+      txt('mnote', `Mem = ${memName(ma)} = ${fmt(mv, w)}${w === 16 ? ` · low byte first: ${I8086.hex(st.mem[ma], 2)}, ${I8086.hex(st.mem[ma + 1], 2)}` : ''}`);
+      /* flags: current value, and the value after Execute */
+      FLAG_ORDER.forEach(f => { const bit = I8086.FB[f], vin = (st.flags >> bit) & 1, vout = o.error ? vin : (o.flags >> bit) & 1, und = !o.error && o.undef.has(f);
+        const g = el.querySelector(`[data-fin="${f}"]`); g.classList.toggle('on', !!vin); g.setAttribute('aria-checked', vin ? 'true' : 'false');
+        g.querySelector('[data-fv]').textContent = und ? `${vin}→?` : vout !== vin ? `${vin}→${vout}` : vin;
+        g.classList.toggle('chg', vout !== vin && !und); g.classList.toggle('und', und);
+        g.querySelector('title').textContent = `${FLAG_NAME[f]} flag is ${vin}. ${und ? `After ${op} it is undefined on the 8086.` : vout !== vin ? `${op} changes it to ${vout}.` : `${op} leaves it at ${vin}.`} Click to change it.`; });
+      /* buttons and words */
+      txt('execs', st.execs ? `Done: ${st.execs} instruction${st.execs > 1 ? 's' : ''}` : 'Nothing written yet.');
+      txt('execs2', st.execs ? esc(st.last.length > 34 ? st.last.slice(0, 33) + '…' : st.last) : 'Execute plays the 5 steps.');
       const ex_ = el.querySelector('[data-exec]'); ex_.classList.toggle('dis', !!o.error); ex_.classList.add('on');
+      ex_.querySelector('text').textContent = anim ? 'Skip to the end' : 'Execute';
       el.querySelectorAll('[data-grp]').forEach(b => { const on = b.dataset.grp === st.grp; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
       el.querySelectorAll('[data-set]').forEach(g => g.style.display = g.dataset.set === st.grp ? '' : 'none');
       el.querySelectorAll('[data-op]').forEach(b => { const on = b.dataset.op === st.op; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
       el.querySelectorAll('[data-w]').forEach(b => { const on = +b.dataset.w === w; b.classList.toggle('on', on); b.classList.toggle('dis', !!FORCE_W[op]); });
       const e1 = `<tspan style="font-weight:700">${esc(ex.title)}</tspan>${ex.desc ? ` — ${esc(ex.desc)}` : ''}`;
-      const lines = wrap(ex.text, 108);
-      txt('ex1', e1); txt('ex2', esc(lines[0] || '')); txt('ex3', esc(lines.slice(1).join(' ')));
+      const lines = wrap(ex.text, 118);
+      txt('ex1', anim ? `<tspan style="font-weight:700;fill:var(--accent)">${esc(stageText(FLOW_STAGES[anim.stage], o, code))}</tspan>` : e1);
+      txt('ex2', esc(lines[0] || '')); txt('ex3', esc(lines.slice(1).join(' ')));
       if (typeof setLive === 'function') setLive('alu', `<b>${esc(ex.title)}</b>: ${esc(ex.text)}`);
-      el._last = o;
+      /* paths: during the animation only the current stage; otherwise everything this instruction uses */
+      el.querySelectorAll('.step-badge').forEach(b => b.classList.toggle('on', !!anim && +b.dataset.stage === anim.stage + 1));
+      if (anim) light(paths(o)[FLOW_STAGES[anim.stage]]);
+      else if (o.error) light([]);
+      else { const P = paths(o); light([...new Set(FLOW_STAGES.flatMap(k => P[k]))].filter(k => !['q', 'cu', 'alu', 'flags', 'res', 'sum'].includes(k))); }
     };
-    /* controls */
+    /* Execute: play the five stages, then write the result back */
+    const commit = () => {
+      const o = run86(st); if (o.error) return;
+      const code = encode86(o, st);
+      flash = {regs: o.regsChanged, mem: o.memChanged};
+      st.regs = {...o.regs}; st.mem = o.mem.slice(); st.flags = o.flags; st.execs++;
+      st.ip = (st.ip + code.length) & 0xFFFF;
+      st.last = o.asm + (o.op[0] === 'J' ? ` then ${o.op} (${o.taken ? 'taken' : 'not taken'})` : '');
+      anim = null; upd();
+      clearTimeout(flashTimer); flashTimer = setTimeout(() => { flash = null; if (el.isConnected) upd(); }, 1600);
+    };
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    onPress(el.querySelector('[data-exec]'), () => {
+      if (anim){ clearTimeout(anim.timer); commit(); return; }
+      if (el._last && el._last.error) return;
+      if (reduceMotion){ commit(); return; }
+      anim = {stage: 0};
+      const next = () => { if (!el.isConnected){ anim = null; return; }
+        if (anim.stage >= FLOW_STAGES.length - 1){ anim.timer = setTimeout(commit, 900); return; }
+        anim.stage++; upd(); anim.timer = setTimeout(next, 1100); };
+      upd(); anim.timer = setTimeout(next, 1100);
+    });
+    const stopAnim = () => { if (anim){ clearTimeout(anim.timer); anim = null; } };
     el.querySelectorAll('.bitc[data-row="a"],.bitc[data-row="b"]').forEach(c => onPress(c, () => {
-      if (c.classList.contains('ro')) return;
+      if (c.classList.contains('ro')) return; stopAnim();
       const op = opOf(st.op), R = rules86(op), w = FORCE_W[op] || st.w, bit = 1 << +c.dataset.b;
       if (c.dataset.row === 'a'){ const [ak, aw] = aSpec(op, w); if (!ak) return;
-        if (ak === 'AH') st.regs.A ^= bit << 8; else if (R.dst === 'fixed') st.regs.A = aw === 8 ? st.regs.A ^ bit : st.regs.A ^ bit; else writeOp(st, ak, aw, readOp(st, ak, aw) ^ bit); }
+        if (ak === 'AH') st.regs.A ^= bit << 8; else if (R.dst === 'fixed') st.regs.A ^= bit; else writeOp(st, ak, aw, readOp(st, ak, aw) ^ bit); }
       else { const bk = R.src === 'count' ? st.cnt : R.src ? st.src : null; if (!bk || bk === '1') return;
-        if (bk === 'CL') st.regs.C ^= bit; else { const bw = w; writeOp(st, bk, bw, readOp(st, bk, bw) ^ bit); } }
+        if (bk === 'CL') st.regs.C ^= bit; else writeOp(st, bk, w, readOp(st, bk, w) ^ bit); }
       flash = null; upd(); }));
-    el.querySelectorAll('[data-pick]').forEach(b => onPress(b, () => { if (b.classList.contains('dis')) return; st[b.dataset.pick] = b.dataset.k; flash = null; upd(); }));
-    el.querySelectorAll('.memc').forEach(c => onPress(c, () => { st.addr = +c.dataset.addr; flash = null; upd(); }));
-    el.querySelectorAll('[data-w]').forEach(b => onPress(b, () => { if (!b.classList.contains('dis')){ st.w = +b.dataset.w; upd(); } }));
-    el.querySelectorAll('[data-fin]').forEach(g => onPress(g, () => { st.flags ^= 1 << I8086.FB[g.dataset.fin]; upd(); }));
-    el.querySelectorAll('[data-grp]').forEach(b => onPress(b, () => { st.grp = b.dataset.grp; const ops = ALU86_GROUPS.find(g => g[0] === st.grp)[2];
-      if (!ops.includes(st.op)) st.op = ops[0]; flash = null; upd(); }));
-    el.querySelectorAll('[data-op]').forEach(b => onPress(b, () => { st.op = b.dataset.op; flash = null; upd(); }));
-    onPress(el.querySelector('[data-exec]'), () => {
-      const o = run86(st); if (o.error) return;
-      flash = {regs: o.regsChanged, mem: o.memChanged};
-      st.regs = {...o.regs}; st.mem = o.mem.slice(); st.flags = o.flags; st.execs++; st.last = o.asm + (o.op[0] === 'J' ? ` then ${o.op} (${o.taken ? 'taken' : 'not taken'})` : '');
-      upd(); clearTimeout(flashTimer); flashTimer = setTimeout(() => { flash = null; if (el.isConnected) upd(); }, 1600);
-    });
-    onPress(el.querySelector('[data-rand]'), () => { A86_REGS.forEach(k => st.regs[k] = Math.floor(Math.random() * 65536)); st.mem = st.mem.map(() => Math.floor(Math.random() * 256)); flash = null; upd(); });
-    onPress(el.querySelector('[data-reset]'), () => { const keep = {op: st.op, grp: st.grp, w: st.w}; Object.assign(st, A86_DEFAULT(), keep); flash = null; upd(); });
+    el.querySelectorAll('[data-pick]').forEach(b => onPress(b, () => { if (b.classList.contains('dis')) return; stopAnim(); st[b.dataset.pick] = b.dataset.k; flash = null; upd(); }));
+    el.querySelectorAll('.memc').forEach(c => onPress(c, () => { stopAnim(); st.addr = +c.dataset.addr; flash = null; upd(); }));
+    el.querySelectorAll('[data-w]').forEach(b => onPress(b, () => { if (!b.classList.contains('dis')){ stopAnim(); st.w = +b.dataset.w; upd(); } }));
+    el.querySelectorAll('[data-fin]').forEach(g => onPress(g, () => { stopAnim(); st.flags ^= 1 << I8086.FB[g.dataset.fin]; upd(); }));
+    el.querySelectorAll('[data-grp]').forEach(b => onPress(b, () => { stopAnim(); st.grp = b.dataset.grp; const ops = ALU86_GROUPS.find(g => g[0] === st.grp)[2];
+      if (!ops.includes(st.op)) st.op = ops[0]; flash = null; upd(); if (window.refreshTapTargets) refreshTapTargets(); }));
+    el.querySelectorAll('[data-op]').forEach(b => onPress(b, () => { stopAnim(); st.op = b.dataset.op; flash = null; upd(); }));
+    onPress(el.querySelector('[data-rand]'), () => { stopAnim(); A86_REGS.forEach(k => st.regs[k] = Math.floor(Math.random() * 65536)); st.mem = st.mem.map(() => Math.floor(Math.random() * 256)); flash = null; upd(); });
+    onPress(el.querySelector('[data-reset]'), () => { stopAnim(); const keep = {op: st.op, grp: st.grp, w: st.w}; Object.assign(st, A86_DEFAULT(), keep); flash = null; upd(); });
     bindModeSwitch(el);
     upd();
   }};

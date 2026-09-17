@@ -132,7 +132,7 @@ Object.assign(CHIPS, {
    inside:{cols:[[{id:'row',t:'Row decoder'},{id:'cd',t:'Column decoder'}],[{id:'arr',t:'Memory array',s:'262,144 SRAM cells',k:'acc'},{id:'col',t:'Column I/O',s:'sense amplifiers'}],[{id:'io',t:'Data buffers'},{id:'ctl',t:'Control logic',s:'read / write'}]],
      arrows:[['row','arr'],['cd','col'],['arr','col','both'],['col','io','both'],['ctl','io']], left:[['A0–A14','in',['row','cd']]], right:[['D0–D7','bi','io']], bottom:[['CS, OE, WE','in','ctl']]}},
  'ic-4164':{part:'4164',desc:'64K × 1 dynamic RAM',labels:['NC','D','~W','~RAS','A0','A2','A1','VCC','A7','A5','A4','A3','A6','Q','~CAS','VSS'],
-   kinds:'niiiiiipiiiiioip', power:[8,16], pkg:'DIP-16', units:[['Address (row, then column)',[5,7,6,12,11,10,13,9]],['Data in / out',[2,14]],['Strobes',[4,15,3]]],
+   kinds:'niiiiiipiiiiioip', power:[8,16], pkg:'DIP-16', units:[['Row / column',[5,7,6,12,11,10,13,9]],['Data in / out',[2,14]],['Strobes',[4,15,3]]],
    inside:{cols:[[{id:'ral',t:'Row\nlatch',s:'captured\nby RAS'},{id:'cal',t:'Column\nlatch',s:'captured\nby CAS'}],[{id:'rd',t:'Row\ndecoder'},{id:'cd',t:'Column\ndecoder'}],[{id:'arr',t:'Memory\narray',s:'65,536 cells:\ntransistor +\ncapacitor',k:'acc'},{id:'sa',t:'Sense amps\nand refresh'}],[{id:'io',t:'Data in / out'}]],
      arrows:[['ral','rd'],['cal','cd'],['rd','arr'],['cd','sa'],['arr','sa','both'],['sa','io','both']], left:[['A0–A7','in',['ral','cal']],['RAS','in','ral'],['CAS','in','cal']], right:[['D in, Q out','bi','io']], bottom:[['W (write)','in','io']]}},
  'ic-27c256':{part:'27C256',desc:'32K × 8 EPROM',labels:['VPP','A12','A7','A6','A5','A4','A3','A2','A1','A0','O0','O1','O2','GND','O3','O4','O5','O6','O7','~CE','A10','~OE','A11','A9','A8','A13','A14','VCC'],
