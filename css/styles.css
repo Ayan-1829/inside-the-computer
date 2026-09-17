@@ -480,12 +480,22 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-outbox.lit{color:var(--accent);font-weight:700}
 .x86-edit{height:300px}
 .x86-edit textarea{width:100%;height:100%;resize:none;font-family:var(--font-mono);font-size:13px;line-height:1.5;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.x86-exs{height:160px;overflow:auto;font-family:var(--font-ui)}
-.x86-exg{margin-bottom:6px}
-.x86-exg b{display:block;font-size:11.5px;color:var(--ink-3);margin:2px 0 3px}
-.x86-exg button{font-family:var(--font-mono);font-size:11.5px;font-weight:700;padding:2px 6px;margin:0 3px 3px 0;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.x86-exg button:hover{border-color:var(--accent);background:var(--accent-soft)}
-.x86-exg button.on{background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border-color:var(--accent);color:var(--on-accent)}
+.x86-exsel select{width:100%;height:22px;font-family:var(--font-ui);font-size:12.5px;font-weight:600;padding:0 6px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.x86-exsel select:hover{border-color:var(--accent)}
+
+/* Instruction-set / ALU-operations reference dialogs */
+dialog.x86-ref-dlg{width:min(880px,calc(100vw - 32px))}
+.x86-ref-body{padding:6px 22px 22px;overflow:auto;max-height:calc(min(80vh,760px) - 80px)}
+.x86-refg{margin-top:16px}
+.x86-refg:first-child{margin-top:0}
+.x86-refg h3{margin:0 0 6px;font-size:15px;font-weight:700;color:var(--accent)}
+.x86-reftbl{width:100%;border-collapse:collapse;font-size:14.5px}
+.x86-reftbl tr{cursor:pointer;transition:background .12s}
+.x86-reftbl tr:hover{background:var(--accent-soft)}
+.x86-reftbl td{padding:6px 8px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.x86-reftbl td.mn{font-family:var(--font-mono);font-weight:700;color:var(--ink);white-space:nowrap;width:1%}
+.x86-reftbl td.mn .sym{display:inline-block;min-width:1.6em;margin-left:6px;padding:0 4px;border-radius:5px;background:var(--surface-2);color:var(--accent);font-weight:700;text-align:center}
+.x86-reftbl td:last-child{color:var(--ink-2)}
 
 /* 8086 architecture view */
 .band-biu{fill:url(#g-biu);stroke:var(--signal);stroke-width:1.5;stroke-opacity:.55}

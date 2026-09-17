@@ -21,6 +21,14 @@
   const MEMROWS = 6, PERROW = 8;
   const DEFAULT_SRC = "; Add the numbers 1 to 5, then print a message\nmsg DB 'Sum=$'\n\n      MOV CX, 5       ; loop counter\n      MOV AX, 0\nsum:  ADD AX, CX      ; add, then count down\n      LOOP sum\n      MOV BX, AX      ; keep the total\n      MOV DX, OFFSET msg\n      MOV AH, 09h     ; DOS: print the string\n      INT 21h\n      HLT";
   const SPEEDS = [[0,'Off',0],[1,'Slow',1900],[2,'Normal',1050],[3,'Fast',520],[4,'Fastest',240]];
+  /* The symbol shown on the ALU while it is executing each mnemonic. */
+  const ALU_SYM = {ADD:'+',ADC:'+c',SUB:'−',SBB:'−c',INC:'+1',DEC:'−1',NEG:'−x',CMP:'a−b',
+    MUL:'×',IMUL:'×',DIV:'÷',IMDIV:'÷',IDIV:'÷',AAA:'BCD',AAS:'BCD',DAA:'BCD',DAS:'BCD',AAM:'BCD',AAD:'BCD',
+    AND:'∧',OR:'∨',XOR:'⊕',NOT:'¬',TEST:'a∧b',
+    SHL:'≪',SAL:'≪',SHR:'≫',SAR:'≫',ROL:'↺',ROR:'↻',RCL:'↺c',RCR:'↻c'};
+  /* Every mnemonic the ALU itself performs (arithmetic + logic/shift groups),
+     used both for the "current op" symbol and the ALU operations dialog. */
+  const ALU_GROUPS = ['x86-arith','x86-logic'];
   const DESC = {};
   for (const g of GROUP_IDS) for (const row of INSTR[g]) row[0].split(/\s*[\/,]\s*/).forEach(m => DESC[m.trim()] = row[1]);
   const hx = (v, n) => I8086.hex(v, n);
@@ -31,7 +39,7 @@
   function state(){
     if (!SIM.x86 || !SIM.x86.cpu || !SIM.x86.cpu.prog){
       const cpu = new I8086.CPU();
-      SIM.x86 = {cpu, src: DEFAULT_SRC, err: null, speed: 2, memView: 'code', done: 0, outBefore: 0};
+      SIM.x86 = {cpu, src: DEFAULT_SRC, err: null, speed: 2, memView: 'code', dataSeg: 'DS', done: 0, outBefore: 0};
       try { cpu.assemble(DEFAULT_SRC); } catch (e){ SIM.x86.err = e.message; }
     }
     return SIM.x86;
@@ -45,7 +53,6 @@
     const bytes = ins.bytes.map(b => b[0]), roles = ins.bytes.map(b => b[1]);
     const hexb = bytes.map(b => hx(b, 2)).join(' ');
     const at = ins.addr, physCode = (res.before.cs !== undefined ? res.before.cs : cpu.s.CS) * 16 + at;
-    const dataSeg = cpu.s.DS * 16;
     const step = (path, bus, label, note, hi) => M.push({path, bus, label, note, hi});
     step('w-addr', 'addr', `${hx(physCode, 5)}h`,
       `Fetch: the BIU puts CS × 16 + IP = ${hx(cpu.s.CS, 4)}h × 16 + ${hx(at, 4)}h = ${hx(physCode, 5)}h on the address bus.`, {code:[at, ins.size], seg:['CS','IP'], sum:true});
@@ -53,11 +60,19 @@
       `The ${ins.size} instruction byte${ins.size > 1 ? 's' : ''} come back over the data bus into the queue.`, {code:[at, ins.size], queue:ins.size});
     step('w-q2cu', null, `${hx(bytes[0], 2)} = ${roles[0]}`,
       `Decode: the EU takes the bytes from the queue. The control unit reads ${hexb} as ${ins.text.trim()}.`, {queue:ins.size, cu:true});
-    const reads = [...cpu.reads].filter(a => a >= dataSeg && a < dataSeg + 0x10000).sort((a, b) => a - b);
-    if (reads.length && reads.length <= 8){
-      const off = reads[0] - dataSeg;
-      step('w-addr', 'addr', `${hx(reads[0], 5)}h`, `Operand: the BIU asks memory for the data at DS × 16 + ${hx(off, 4)}h.`, {data:[off, reads.length], seg:['DS'], sum:true});
-      step('w-data-in', 'data', reads.map(a => hx(cpu.mem[a], 2)).join(' '), 'The data comes back over the data bus.', {data:[off, reads.length]});
+    /* Operand reads/writes are logged with the *actual* segment used (DS, SS or
+       ES — not always DS), so the address shown and the bytes highlighted in the
+       memory panel always match the segment the BIU really addressed. */
+    const span = list => { if (!list.length) return null;
+      const seg = list[0].seg, own = list.filter(a => a.seg === seg);
+      const lo = Math.min(...own.map(a => a.off)), hi2 = Math.max(...own.map(a => a.off + a.n));
+      return {seg, lo, len: hi2 - lo}; };
+    const rd = span(cpu.access.filter(a => a.kind === 'r'));
+    if (rd && rd.len > 0 && rd.len <= 16){
+      const base = cpu.s[rd.seg] * 16, addr0 = base + rd.lo, bytes2 = [];
+      for (let k = 0; k < rd.len; k++) bytes2.push(cpu.mem[(addr0 + k) & 0xFFFFF]);
+      step('w-addr', 'addr', `${hx(addr0, 5)}h`, `Operand: the BIU asks memory for the data at ${rd.seg} × 16 + ${hx(rd.lo, 4)}h.`, {data:[rd.lo, rd.len], dseg:rd.seg, seg:[rd.seg], sum:true});
+      step('w-data-in', 'data', bytes2.map(b => hx(b, 2)).join(' '), 'The data comes back over the data bus.', {data:[rd.lo, rd.len], dseg:rd.seg});
     }
     step('w-eu', null, 'operands', 'The operands travel over the internal bus to the ALU.', {alu:true});
     step('w-alu', null, ins.mn, `Execute: the ALU performs ${ins.mn}${res.flagsChanged.length ? ', then the flags are updated' : ''}.`,
@@ -65,11 +80,12 @@
     const regs = res.changed.filter(k => R16.includes(k) || PTRS.includes(k));
     if (regs.length) step('w-wb', null, regs.map(k => `${k} = ${hx(cpu.r[k], 4)}h`).join(', '),
       `Write back: the result goes into ${regs.join(' and ')}.`, {regs, alu:true});
-    const wr = [...cpu.written].filter(a => a >= dataSeg).sort((a, b) => a - b);
-    if (wr.length && wr.length <= 8){
-      const off = wr[0] - dataSeg;
-      step('w-addr', 'addr', `${hx(wr[0], 5)}h`, 'The BIU sends the address of the byte to write.', {data:[off, wr.length], seg:['DS'], sum:true});
-      step('w-data-out', 'data', wr.map(a => hx(cpu.mem[a], 2)).join(' '), 'The data goes out over the data bus into memory.', {data:[off, wr.length]});
+    const wr = span(cpu.access.filter(a => a.kind === 'w'));
+    if (wr && wr.len > 0 && wr.len <= 16){
+      const base = cpu.s[wr.seg] * 16, addr0 = base + wr.lo, bytes2 = [];
+      for (let k = 0; k < wr.len; k++) bytes2.push(cpu.mem[(addr0 + k) & 0xFFFFF]);
+      step('w-addr', 'addr', `${hx(addr0, 5)}h`, `The BIU sends the address of the data to write, at ${wr.seg} × 16 + ${hx(wr.lo, 4)}h.`, {data:[wr.lo, wr.len], dseg:wr.seg, seg:[wr.seg], sum:true});
+      step('w-data-out', 'data', bytes2.map(b => hx(b, 2)).join(' '), 'The data goes out over the data bus into memory.', {data:[wr.lo, wr.len], dseg:wr.seg});
     }
     if (cpu.out.length > S.outBefore) step('w-out', null, JSON.stringify(cpu.out.slice(S.outBefore)).slice(1, -1),
       'The DOS service prints the text.', {out:true});
@@ -85,7 +101,7 @@
     /* ---------- memory ---------- */
     s += R(16, 64, 500, 292, 14, 'm-block');
     s += T(30, 88, 'Memory <tspan class="t-xs t-mut" style="font-weight:500">outside the chip</tspan>', 't t-sm');
-    s += btnS(324, 68, 84, 26, 'Code', 'data-mv="code" style="font-size:12.5px"') + btnS(416, 68, 84, 26, 'Data', 'data-mv="data" style="font-size:12.5px"');
+    s += btnS(300, 68, 84, 26, 'Code', 'data-mv="code" style="font-size:12.5px"') + btnS(392, 68, 108, 26, 'Data', 'data-mv="data" style="font-size:12.5px"');
     for (let c = 0; c < PERROW; c++) s += lbl(144 + c*38, 116, hx(c, 1), 't t-xs t-mut t-mid');
     for (let r = 0; r < MEMROWS; r++){
       const y = 124 + r*36;
@@ -119,7 +135,8 @@
     for (let q = 0; q < 6; q++){ const x = 794 + q*84;
       s += `<g class="qcell" data-q="${q}">${R(x, 132, 76, 42, 6, '')}${T(x + 38, 152, '', 't t-sm t-num t-mid', 'data-qb')}${T(x + 38, 167, '', 't t-xs t-mut t-mid', 'data-qr')}</g>`; }
     s += lbl(794, 194, '', 't t-xs t-mut', 'data-txt="qnote"');
-    s += R(794, 206, 522, 126, 10, 'm-block') + T(806, 226, 'Program', 't t-xs') + lbl(878, 226, 'address · line');
+    s += R(794, 206, 522, 126, 10, 'm-block') + T(806, 226, 'Program', 't t-xs');
+    s += `<foreignObject x="888" y="207" width="418" height="22"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-exsel"><select data-exsel aria-label="Load an example program"><option value="">Example programs…</option></select></div></foreignObject>`;
     s += `<foreignObject x="800" y="232" width="510" height="96"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-listbox"><ol class="x86-list" data-list=""></ol></div></foreignObject>`;
     /* internal bus */
     s += `<path class="bus86" data-s="w-eu" d="M576 386H1306"/>` + lbl(584, 376, 'internal bus, 16 bits');
@@ -133,7 +150,10 @@
     s += W([[684, 386], [684, 430]], 'w-wb');
     s += R(760, 430, 170, 74, 10, 'm-panel', 'data-act="cu"') + T(772, 450, 'Control unit', 't t-xs') + lbl(772, 470, '', 't t-xs t-num', 'data-txt="cu1"') + lbl(772, 490, '', 't t-xs t-mut', 'data-txt="cu2"');
     s += W([[826, 174], [826, 430]], 'w-q2cu');
-    s += P('M764 536H884L924 572L964 536H1084L1020 628H828Z', 'm-acc-soft alu86', 'data-act="alu"') + T(924, 592, 'ALU', 't t-sm t-mid') + T(924, 610, '', 't t-xs t-mid', 'data-txt="aluop"');
+    s += `<g class="ctl" role="button" tabindex="0" data-a="alu" aria-label="ALU: click to see every operation it can perform">` +
+      P('M764 536H884L924 572L964 536H1084L1020 628H828Z', 'm-acc-soft alu86', 'data-act="alu"') +
+      T(924, 566, '', 't t-lg t-mid', 'data-txt="alusym" style="font-family:var(--font-mono)"') +
+      T(924, 592, 'ALU', 't t-sm t-mid') + T(924, 610, '', 't t-xs t-mid', 'data-txt="aluop"') + `</g>`;
     s += W([[844, 504], [844, 536]], 'w-alu');
     s += R(960, 430, 352, 88, 10, 'm-block') + T(972, 450, 'Flags', 't t-xs');
     FLAGS.forEach((f, i) => { const x = 972 + i*38;
@@ -150,8 +170,8 @@
     s += btnS(376, 486, 110, 40, 'Edit', 'data-a="edit" aria-label="Edit the program"');
     s += T(16, 556, 'Animation speed', 't t-xs t-mut');
     SPEEDS.forEach(([v, name], i) => { s += btnS(16 + i*95, 566, 88, 34, name, `data-speed="${v}" aria-label="Animation speed: ${name}" style="font-size:13px"`); });
-    s += T(16, 634, 'Example programs <tspan class="t-xs t-mut">· one per instruction</tspan>', 't t-xs t-mut');
-    s += `<foreignObject x="12" y="642" width="484" height="160"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-exs" data-exs=""></div></foreignObject>`;
+    s += btnS(16, 622, 240, 44, 'Instruction set', 'data-a="iset" aria-label="Open the full 8086 instruction set reference"');
+    s += lbl(16, 684, 'Every documented mnemonic, with what it does', 't t-xs t-mut');
     s += `<foreignObject id="x86-editfo" x="12" y="60" width="478" height="300" style="display:none"><div xmlns="http://www.w3.org/1999/xhtml" class="x86-edit" data-edit=""><textarea spellcheck="false" aria-label="Assembly program"></textarea></div></foreignObject>`;
     return {svg: s, vb: VB, init: el => {
       requestWide(true);
@@ -167,22 +187,23 @@
       const curIns = () => { const c = S.cpu; return !c.halted && c.prog && c.prog.at[c.ip] !== undefined ? c.prog.ins[c.prog.at[c.ip]] : null; };
 
       const drawMem = () => {
-        const cpu = S.cpu, code = S.memView === 'code', seg = code ? cpu.s.CS : cpu.s.DS;
+        const cpu = S.cpu, code = S.memView === 'code', dseg = S.dataSeg || 'DS', seg = code ? cpu.s.CS : cpu.s[dseg];
         $$('[data-maddr]').forEach((e, r) => e.textContent = hx(r*PERROW, 4));
         $$('.memb').forEach((g, i) => { const a = (seg << 4) + i, v = cpu.mem[a];
           g.querySelector('[data-mv]').textContent = hx(v, 2);
-          g.querySelector('title').textContent = `${code ? 'CS' : 'DS'}:${hx(i, 4)}  =  ${hx(a, 5)}h`;
+          g.querySelector('title').textContent = `${code ? 'CS' : dseg}:${hx(i, 4)}  =  ${hx(a, 5)}h`;
           g.classList.toggle('code', code && cpu.prog && i < cpu.prog.end);
           const H = hi.code && code && i >= hi.code[0] && i < hi.code[0] + hi.code[1];
-          const D = hi.data && !code && i >= hi.data[0] && i < hi.data[0] + hi.data[1];
+          const D = hi.data && !code && hi.dseg === dseg && i >= hi.data[0] && i < hi.data[0] + hi.data[1];
           g.classList.toggle('lit', !!(H || D));
           g.classList.toggle('ip', code && !cpu.halted && i === cpu.ip);
         });
         $$('[data-mascii]').forEach((e, r) => { let t = '';
           for (let c = 0; c < PERROW; c++) t += ch(cpu.mem[(seg << 4) + r*PERROW + c]); e.textContent = t; });
         $$('[data-mv="code"],[data-mv="data"]').forEach(b => b.classList.toggle('on', (b.dataset.mv === 'code') === code));
+        const dl = $('[data-mv="data"] text'); if (dl) dl.textContent = `Data (${dseg})`;
         txt('memnote', code ? `Code at CS:0000 · ${cpu.prog ? cpu.prog.end : 0} bytes · the outlined byte is where IP points`
-          : 'Data at DS:0000 · the DB and DW values your program declared');
+          : `Data at ${dseg}:0000 · the bytes the last instruction actually read or wrote from ${dseg}`);
       };
       const drawQueue = () => {
         const cpu = S.cpu, q = [];
@@ -221,7 +242,9 @@
         txt('pa', ins ? `CS × 16 + IP = ${hx((cpu.s.CS << 4) + cpu.ip, 5)}h` : cpu.halted ? 'stopped' : '');
         txt('cu1', ins ? esc(ins.text.trim().slice(0, 22)) : '');
         txt('cu2', ins ? 'next instruction' : '');
-        txt('aluop', moves && moves.ins ? esc(moves.ins.mn) : '');
+        const aluIns = hi.alu && moves && moves.ins ? moves.ins : null;
+        txt('aluop', aluIns ? esc(aluIns.mn) : '');
+        txt('alusym', aluIns ? esc(ALU_SYM[aluIns.mn] || '') : '');
         el.querySelector('[data-act="cu"]').classList.toggle('active', !!hi.cu);
         el.querySelector('[data-act="alu"]').classList.toggle('active', !!hi.alu);
         el.querySelector('[data-act="sum"]').classList.toggle('active', !!hi.sum);
@@ -261,6 +284,11 @@
 
       const showMove = () => {
         const m = moves[mi]; hi = m.hi || {};
+        /* Follow whichever memory the BIU is actually touching this step, so the
+           memory panel always shows the segment being highlighted rather than
+           leaving the person stuck on a view where nothing lights up. */
+        if (hi.code) S.memView = 'code';
+        else if (hi.data){ S.memView = 'data'; if (hi.dseg) S.dataSeg = hi.dseg; }
         const ins = moves.ins;
         const last = mi === moves.length - 1;
         const note = last && S.cpu.halted ? `${m.note} ${S.cpu.note || 'The processor has stopped.'}` : m.note;
@@ -336,14 +364,35 @@
       });
       $$('[data-speed]').forEach(b => onPress(b, () => { S.speed = +b.dataset.speed; sync(); }));
       $$('[data-mv]').forEach(b => { if (b.dataset.mv) onPress(b, () => { S.memView = b.dataset.mv; drawMem(); }); });
-      $('[data-exs]').innerHTML = GROUP_IDS.map(g =>
-        `<div class="x86-exg"><b>${esc(N[g].name)}</b>${INSTR[g].map((r, i) => `<button type="button" data-ex="${g}:${i}">${esc(r[0])}</button>`).join('')}</div>`).join('');
-      $('[data-exs]').addEventListener('click', ev => { const b = ev.target.closest('[data-ex]'); if (!b) return;
-        const [g, i] = b.dataset.ex.split(':');
-        setEditing(false);
-        $$('[data-ex]').forEach(x => x.classList.toggle('on', x === b));
-        load(`; ${INSTR[g][+i][0]} example\n${INSTR[g][+i][2]}`);
-      });
+
+      const loadExample = (g, i) => { setEditing(false); load(`; ${INSTR[g][+i][0]} example\n${INSTR[g][+i][2]}`); };
+
+      /* ---------- top-of-program example dropdown (replaces the old wall of per-instruction buttons) ---------- */
+      const exSel = $('[data-exsel]');
+      exSel.insertAdjacentHTML('beforeend', GROUP_IDS.map(g =>
+        `<optgroup label="${esc(N[g].name)}">${INSTR[g].map((r, i) => `<option value="${g}:${i}">${esc(r[0])}</option>`).join('')}</optgroup>`).join(''));
+      exSel.addEventListener('change', () => { if (!exSel.value) return; const [g, i] = exSel.value.split(':'); loadExample(g, i); });
+
+      /* ---------- shared little reference dialog (used for both the instruction set and the ALU ops) ---------- */
+      const refDialog = (id, title, sub, groups) => {
+        let dlg = document.getElementById(id);
+        if (dlg) return dlg;
+        dlg = document.createElement('dialog'); dlg.id = id; dlg.className = 'x86-ref-dlg';
+        dlg.innerHTML = `<div class="dlg-head"><div><h2>${esc(title)}</h2><p>${esc(sub)}</p></div>` +
+          `<button class="btn icon" type="button" data-close aria-label="Close"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>` +
+          `<div class="tree x86-ref-body">${groups.map(g => `<div class="x86-refg"><h3>${esc(N[g].name)}</h3><table class="x86-reftbl">` +
+            INSTR[g].map((r, i) => `<tr data-ex="${g}:${i}"><td class="mn">${esc(r[0])}${ALU_SYM[r[0].split(/[\s/]/)[0]] ? ` <span class="sym">${esc(ALU_SYM[r[0].split(/[\s/]/)[0]])}</span>` : ''}</td><td>${esc(r[1])}</td></tr>`).join('') +
+            `</table></div>`).join('')}</div>`;
+        document.body.appendChild(dlg);
+        dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
+        dlg.addEventListener('click', ev => { if (ev.target === dlg) dlg.close(); });
+        dlg.querySelector('.x86-ref-body').addEventListener('click', ev => { const tr = ev.target.closest('[data-ex]'); if (!tr) return;
+          const [g, i] = tr.dataset.ex.split(':'); loadExample(g, i); dlg.close(); });
+        return dlg;
+      };
+      onPress($('[data-a="iset"]'), () => refDialog('x86-iset-dialog', '8086 instruction set', 'Every documented instruction, grouped the way the chip groups them. Click one to load it as an example.', GROUP_IDS).showModal());
+      onPress($('[data-a="alu"]'), () => refDialog('x86-alu-dialog', 'ALU operations', 'Everything the arithmetic/logic unit itself can do: arithmetic, logic, shifts and rotates. Click one to load it as an example.', ALU_GROUPS).showModal());
+
       txt('step', S.err ? `<tspan style="fill:var(--pin-pwr);font-weight:700">Cannot run:</tspan> ${esc(S.err)}` : 'Press Step to fetch and run the first instruction.');
       sync(); draw(null);
     }};
