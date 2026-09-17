@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 3.4.0 | 2026-09-12 | 02:19 (08:19) | 8086 architecture moved to the 8086 page and runs real programs with an animated data flow; ALU back to 4-bit |
 | 3.3.0 | 2026-09-11 | 08:55 (14:55) | 8086 shown as BIU/EU architecture with animated flow; lighter corner labels; shifter 0 inputs; gradients; no overlapping text |
 | 3.2.0 | 2026-09-11 | 07:20 (13:20) | 8086 ALU with CX, DX and memory; Back returns to the previous part; level indicator removed |
 | 3.1.0 | 2026-09-11 | 03:26 (09:26) | 8086 mode for the ALU with all 59 operand operations; collapsible details panel |
@@ -22,6 +23,48 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 3.4.0: The 8086 page becomes the working architecture
+
+**Prompt**
+
+- 2026-09-12 (the exact time is not in the saved record yet):
+  > You did a great job. Now work on the 8086 part. Actually take the structure of the 8086 Structure completely to the 8086 chip. Replace the present condition of the 8086 chip with the present structure of the ALU. The ALU should contain 4 bit implementation now.
+  >
+  > Add one more thing to the the present 8086 structure. the incstuction queue should come from the example code as given in 8086 chip now. And show the flow of data with a moving dot (high-lighted). A controller (slider) to match control the speed.
+  >
+  > Hovering over the bus should show the names (Address bus/ data bus / control bus).
+- Later:
+  > continue
+
+**Changes**
+
+*The 8086 page is now the architecture, running real programs*
+- The BIU/EU architecture has moved from the ALU to the Intel 8086 page, replacing the old text-panel emulator. It keeps the program listing, the example programs for all 89 instructions, and the editor.
+- The layout follows the classic 8086 block diagram: memory outside the chip; the BIU with the address adder (Σ), CS, DS, SS, ES and IP, and the 6-byte instruction queue; the address, data and control buses between them; and the EU with the register file, control unit, ALU, flags and the DOS output.
+- **The queue holds the running program's real machine code.** Each cell shows a byte and what it is (opcode, ModR/M, address low, data high …), taken from the program you chose or wrote.
+- Memory shows the assembled program at CS:0000, with the byte IP points at outlined, or your DB and DW data at DS:0000. A button switches between them.
+
+*Animated data flow*
+- Each instruction plays as a series of moves: fetch the address, the bytes come back, decode, read operands, execute, write back, write to memory, print output, and refill the queue after a jump.
+- A bright dot travels along the path carrying the data, labelled with the value it carries, while the parts it touches light up.
+- **Speed**: Off, Slow, Normal, Fast and Fastest. Off applies each instruction at once, with no animation.
+- **Step** moves to the next stage; **Run** plays continuously and turns into Pause.
+
+*Bus names on hover*
+- Hovering or focusing a bus shows its name and a short explanation: the address bus (20 lines, one way), the data bus (16 lines, both ways), and the control bus (read, write, memory or I/O).
+
+*The ALU returns to 4 bits*
+- The ALU page is the simple 4-bit model again, with its nine operations, parallel units and flags. The mode switch is gone, and a note points to the 8086 page for a real 16-bit ALU.
+
+*Emulator: real machine code*
+- The assembler now produces real 8086 machine code and places it in memory at CS:0000, so **IP counts bytes** exactly like the real chip, and CALL, RET and INT push real addresses. This replaces the old simplification where IP counted instructions.
+- Short jumps that cannot reach their label are refused with a clear message, and a JMP too far for one byte becomes a near jump automatically.
+- The assembler also accepts `label+3` style operands.
+- 516 instructions, covering every example program plus a synthetic program that exercises all addressing modes, segment overrides, prefixes and both jump sizes, are checked byte for byte against the Capstone disassembler: opcode, registers, memory operands and jump targets all match.
+- All 89 example programs were also stepped through the page itself, checking that the queue and the bytes in memory always match the real machine code.
+
+---
 
 ### 3.3.0: 8086 architecture and flow, gradients, tidier labels
 

@@ -53,11 +53,10 @@ js/scenes/hardware.js   desk with tower and devices, motherboard, RAM, GPU,
 js/scenes/cpu.js        CPU die, fetch-decode-execute walkthrough, register
 js/scenes/alu.js        working 4-bit ALU, barrel shifter, comparator,
                         and the switch between the two ALU modes
-js/scenes/alu86.js      the 8086 ALU mode: a small 8086 with registers, memory and
-                        every operand operation
 js/scenes/logic.js      gate gallery, single gates, full adder, mux
 js/scenes/chips.js      chip pin diagrams and "Inside the chip" views
-js/scenes/i8086.js      the 8086 emulator screen (HTML, not SVG)
+js/scenes/i8086.js      the 8086 page: the chip's architecture running real
+                        programs, with the animated data flow
 
 js/sim/i8086.js         the 8086 emulator itself: assembler and instructions
 
@@ -67,8 +66,8 @@ build/template.html     HTML used for every generated page
 build/build.mjs         the page generator (also checks chips and contrast)
 build/check-chips.mjs   checks every chip definition
 build/test-8086.mjs     runs every 8086 example and 48 known-result checks
-build/gen-alu86-encodings.mjs, build/test-alu86-encoding.py
-                        check the 8086 ALU view's machine code with the
+build/gen-8086-encodings.mjs, build/test-8086-encoding.py
+                        check the assembler's machine code against the
                         Capstone disassembler (pip install capstone)
 build/site.config.json  your site URL
 ```
@@ -119,19 +118,11 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
 - A 2-to-1 multiplexer and a 4-bit register with a clock.
 - An ALU with two modes, chosen with the switch at the top of the ALU diagram:
   - **Simple 4-bit ALU**: nine operations, parallel units, a result multiplexer and Z/N/C/V flags.
-  - **8086 ALU**: a small working 8086, drawn like the classic 8086 block diagram. Memory is at the top. Below it the BIU holds the address adder (Σ), the segment registers and IP, and the instruction queue. The thick internal bus joins it to the EU, which holds the register file, the control unit, the ALU and the flag register. **Execute** plays the five steps, fetch, decode, operands, execute and write back, lighting each path in turn. The queue shows the instruction's real 8086 machine code, and IP advances by its length. It has:
-    - registers AX, BX, CX and DX, and 16 bytes of memory at DS:0000
-    - A (destination) and B (source), each a register, a memory address or a number, following the 8086's rules
-    - tabs on the left with all 59 operations the 8086 performs on its operands
-    - a preview of which registers and memory bytes will change, and **Execute** to write them back
-    - flags going in and coming out, with undefined flags marked "?"
-    - real 8086 clock cycles, including memory access time
-
-    Results come from the emulator, so the two always agree.
+  It has nine operations, parallel units, a result multiplexer and Z/N/C/V flags. For the 16-bit ALU inside a real processor, see the Intel 8086 page.
 - An 8-bit barrel shifter and a 4-bit magnitude comparator.
 - A fetch-decode-execute walkthrough of a small looping program.
 - 34 real chips with pin diagrams and an "Inside the chip" view: processors, memory, firmware, timing, bus, ALU, shifter, regulators, audio and serial chips.
-- A working Intel 8086 emulator. It covers:
+- The **Intel 8086 page**: the chip's own architecture, running real programs. Memory sits outside the chip; the BIU holds the address adder, segment registers and the 6-byte instruction queue; the EU holds the registers, control unit, ALU and flags. Each instruction plays as a series of moves, with a bright dot travelling along the path carrying the data and the speed buttons setting the pace. Hovering a bus names it (address, data or control). The emulator covers:
   - every documented instruction, with 8086 flag rules
   - all addressing modes, including segment overrides
   - DB/DW data and labels
@@ -139,7 +130,7 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
   - DOS text output through INT 21h
   - step, run and run-to-end, with changed registers, flags and memory highlighted
 
-  In this model the instruction pointer counts instructions, not bytes.
+  Programs are assembled to real 8086 machine code and placed in memory, so IP counts bytes exactly as on the real chip. The encodings are checked against the Capstone disassembler by `build/test-8086-encoding.py`.
 
 ## Going back
 

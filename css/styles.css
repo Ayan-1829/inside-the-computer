@@ -284,7 +284,7 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .g-body{fill:var(--i-sym-fill);stroke:var(--i-sym);stroke-linejoin:round}
 .g-back{fill:none;stroke:var(--i-sym)}
 .g-bub{fill:var(--i-sym-fill);stroke:var(--i-sym)}
-.wire{fill:none;stroke:var(--i-wire);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
+.wire{fill:none;pointer-events:none;stroke:var(--i-wire);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
 .wire.on{stroke:var(--signal)}
 .rail0{fill:none;stroke:var(--i-wire);stroke-width:3;stroke-linecap:round}
 .zero-src rect{fill:var(--i-panel);stroke:var(--i-wire);stroke-width:2}
@@ -455,6 +455,38 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .flag.fin.on text{fill:var(--i-text)}
 .flag.fout.chg rect{stroke:var(--accent);stroke-width:3}
 .btn-s.dis{opacity:.45;cursor:not-allowed}
+/* 8086 page: buses, moving dot, memory, queue, program list */
+.busline{cursor:default}
+.bus-hit{fill:transparent}
+.bus-line{fill:none;stroke:var(--i-sym);stroke-width:7;stroke-linecap:round;opacity:.55;transition:stroke .25s,opacity .25s,stroke-width .25s}
+.bus-name{font-size:13.5px;font-weight:700;fill:var(--i-text-mut);opacity:0;transition:opacity .2s}
+.busline:hover .bus-line,.busline:focus-visible .bus-line{opacity:1;stroke-width:9;stroke:var(--accent)}
+.busline:hover .bus-name,.busline:focus-visible .bus-name,.busline.on .bus-name{opacity:1;fill:var(--i-text)}
+.busline.on .bus-line{opacity:1;stroke:var(--signal);stroke-width:9}
+.flow-dot{fill:url(#g-led);stroke:var(--signal);stroke-width:2;filter:drop-shadow(0 0 6px var(--signal))}
+.flow-lab{font-size:13px;font-weight:700;font-family:var(--font-mono);fill:var(--i-text);paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.memb rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.2;transition:fill .25s,stroke .25s}
+.memb text{font-family:var(--font-mono);font-weight:600;text-anchor:middle;fill:var(--i-text-mut)}
+.memb.code rect{fill:url(#g-block)}
+.memb.code text{fill:var(--i-text)}
+.memb.ip rect{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:4 2}
+.memb.lit rect{fill:url(#g-sig);stroke:var(--signal);stroke-width:2.5}
+.memb.lit text{fill:var(--i-text)}
+.qcell.flush rect{stroke-dasharray:4 3;opacity:.5}
+.x86-listbox{height:78px;overflow:auto}
+.x86-listbox .x86-list{max-height:none;font-size:12.5px;line-height:1.5}
+.x86-listbox .ln{min-width:3.2em;font-size:11.5px}
+.x86-outbox{height:60px;overflow:auto;font-family:var(--font-mono);font-size:13px;line-height:1.45;color:var(--i-text);white-space:pre-wrap;word-break:break-all}
+.x86-outbox.lit{color:var(--accent);font-weight:700}
+.x86-edit{height:300px}
+.x86-edit textarea{width:100%;height:100%;resize:none;font-family:var(--font-mono);font-size:13px;line-height:1.5;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.x86-exs{height:160px;overflow:auto;font-family:var(--font-ui)}
+.x86-exg{margin-bottom:6px}
+.x86-exg b{display:block;font-size:11.5px;color:var(--ink-3);margin:2px 0 3px}
+.x86-exg button{font-family:var(--font-mono);font-size:11.5px;font-weight:700;padding:2px 6px;margin:0 3px 3px 0;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.x86-exg button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.x86-exg button.on{background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border-color:var(--accent);color:var(--on-accent)}
+
 /* 8086 architecture view */
 .band-biu{fill:url(#g-biu);stroke:var(--signal);stroke-width:1.5;stroke-opacity:.55}
 .band-eu{fill:url(#g-eu);stroke:var(--accent);stroke-width:1.5;stroke-opacity:.5}

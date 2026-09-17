@@ -4,9 +4,10 @@
    - Assembles a small program (labels, DB/DW data, all 8086
      addressing modes, BYTE/WORD PTR, segment overrides, OFFSET).
    - Executes every documented 8086 instruction with 8086 flag rules.
-   Simplification: code is not stored as machine code. IP counts
-   instructions (0, 1, 2 …) instead of bytes, so CALL/RET/INT push
-   instruction numbers. Data (DB/DW) and the stack are real memory.
+   Code is assembled to real 8086 machine code (encodeIns below) and
+   placed in memory at CS:0000, so IP counts bytes exactly as on the
+   real chip, and CALL/RET/INT push real addresses. Data (DB/DW) is at
+   DS:0000 and the stack at SS:SP.
    No DOM access: the scene in scenes/i8086.js draws the state.
    ========================================================== */
 var I8086 = (function(){
@@ -26,13 +27,120 @@ var I8086 = (function(){
   class AsmError extends Error { constructor(line, msg){ super(`Line ${line}: ${msg}`); this.line = line; } }
   class RunError extends Error {}
 
+  /* ---------------- machine code ----------------
+     encodeIns(I, prog, sizing) returns [[byte, role], …] for one compiled
+     instruction, using the standard 8086 encodings. With sizing = true, jump
+     offsets are left as 0 (only the length matters). Checked against the
+     Capstone disassembler by build/test-8086-encoding.py. */
+  const REGC = {AX:0,CX:1,DX:2,BX:3,SP:4,BP:5,SI:6,DI:7,AL:0,CL:1,DL:2,BL:3,AH:4,CH:5,DH:6,BH:7};
+  const SREGC = {ES:0,CS:1,SS:2,DS:3}, SEGPFX = {ES:0x26,CS:0x2E,SS:0x36,DS:0x3E};
+  const ALUN = {ADD:0,OR:1,ADC:2,SBB:3,AND:4,SUB:5,XOR:6,CMP:7}, G3 = {NOT:2,NEG:3,MUL:4,IMUL:5,DIV:6,IDIV:7};
+  const SHN = {ROL:0,ROR:1,RCL:2,RCR:3,SHL:4,SAL:4,SHR:5,SAR:7};
+  const JCCN = {JO:0,JNO:1,JB:2,JC:2,JNAE:2,JAE:3,JNB:3,JNC:3,JE:4,JZ:4,JNE:5,JNZ:5,JBE:6,JNA:6,JA:7,JNBE:7,JS:8,JNS:9,JP:10,JPE:10,JNP:11,JPO:11,JL:12,JNGE:12,JGE:13,JNL:13,JLE:14,JNG:14,JG:15,JNLE:15};
+  const LOOPN = {LOOP:0xE2,LOOPE:0xE1,LOOPZ:0xE1,LOOPNE:0xE0,LOOPNZ:0xE0,JCXZ:0xE3};
+  const ONE = {XLAT:0xD7,XLATB:0xD7,LAHF:0x9F,SAHF:0x9E,PUSHF:0x9C,POPF:0x9D,CBW:0x98,CWD:0x99,AAA:0x37,AAS:0x3F,DAA:0x27,DAS:0x2F,
+    MOVSB:0xA4,MOVSW:0xA5,CMPSB:0xA6,CMPSW:0xA7,SCASB:0xAE,SCASW:0xAF,LODSB:0xAC,LODSW:0xAD,STOSB:0xAA,STOSW:0xAB,
+    INTO:0xCE,IRET:0xCF,CLC:0xF8,STC:0xF9,CMC:0xF5,CLD:0xFC,STD:0xFD,CLI:0xFA,STI:0xFB,HLT:0xF4,NOP:0x90,WAIT:0x9B,LOCK:0xF0};
+  function encodeIns(I, prog, sizing){
+    const O = I.ops || [], mn = I.mn, o0 = O[0], o1 = O[1], out = [];
+    const B = (b, role) => out.push([b & 255, role]);
+    const sz = (o0 && o0.size) || (o1 && o1.size) || 16, W = sz === 16 ? 1 : 0;
+    const immv = op => op.t === 'l' ? prog.addr[op.v] : op.v;
+    const IMM = (v, wide) => { v &= 0xFFFF; if (wide){ B(v & 255, 'data low'); B(v >> 8, 'data high'); } else B(v, 'data'); };
+    const direct = op => op && op.t === 'm' && !op.base && !op.idx;
+    const MR = (op, reg) => {
+      if (op.t === 'r'){ B(0xC0 | (reg << 3) | REGC[op.name], 'ModR/M'); return; }
+      if (op.t === 's'){ B(0xC0 | (reg << 3) | SREGC[op.name], 'ModR/M'); return; }
+      const b = op.base, x = op.idx, d = ((op.disp + 0x8000) & 0xFFFF) - 0x8000;
+      if (!b && !x){ B(0x06 | (reg << 3), 'ModR/M'); B(op.disp & 255, 'address low'); B((op.disp >> 8) & 255, 'address high'); return; }
+      const rm = b === 'BX' && x === 'SI' ? 0 : b === 'BX' && x === 'DI' ? 1 : b === 'BP' && x === 'SI' ? 2 : b === 'BP' && x === 'DI' ? 3 : x === 'SI' ? 4 : x === 'DI' ? 5 : b === 'BP' ? 6 : 7;
+      const mod = d === 0 && rm !== 6 ? 0 : d >= -128 && d <= 127 ? 1 : 2;
+      B((mod << 6) | (reg << 3) | rm, 'ModR/M');
+      if (mod === 1) B(d, 'displacement'); else if (mod === 2){ B(d & 255, 'displacement low'); B((d >> 8) & 255, 'displacement high'); }
+    };
+    const REL8 = t => { const end = I.addr + out.length + 1, r = sizing ? 0 : prog.addr[t] - end;
+      if (r < -128 || r > 127) throw new AsmError(I.line, `${mn} can only reach 128 bytes back or 127 bytes forward, but the label is ${r} bytes away`);
+      B(r, 'jump offset'); };
+    const REL16 = t => { const end = I.addr + out.length + 2, r = sizing ? 0 : (prog.addr[t] - end) & 0xFFFF; B(r & 255, 'offset low'); B(r >> 8, 'offset high'); };
+    /* prefixes */
+    if (I.prefix === 'LOCK') B(0xF0, 'prefix');
+    else if (I.prefix) B(I.prefix === 'REPNE' || I.prefix === 'REPNZ' ? 0xF2 : 0xF3, 'prefix');
+    const mem = O.find(x => x && x.t === 'm');
+    if (mem && mem.ovr && mem.ovr !== (mem.base === 'BP' ? 'SS' : 'DS')) B(SEGPFX[mem.ovr], 'prefix');
+    if (ALUN[mn] !== undefined){
+      const n = ALUN[mn];
+      if (o1.t === 'i' || o1.t === 'l'){ const v = immv(o1) & (W ? 0xFFFF : 0xFF);
+        if (o0.t === 'r' && REGC[o0.name] === 0){ B(n*8 + 4 + W, 'opcode'); IMM(v, W); }
+        else { const small = W && (v < 0x80 || v >= 0xFF80); B(W ? (small ? 0x83 : 0x81) : 0x80, 'opcode'); MR(o0, n); IMM(small ? v & 255 : v, W && !small); } }
+      else if (o1.t === 'm'){ B(n*8 + 2 + W, 'opcode'); MR(o1, REGC[o0.name]); }
+      else { B(n*8 + W, 'opcode'); MR(o0, REGC[o1.name]); }
+      return out;
+    }
+    if (G3[mn] !== undefined){ B(0xF6 | W, 'opcode'); MR(o0, G3[mn]); return out; }
+    if (SHN[mn] !== undefined){ B((o1.t === 'r' ? 0xD2 : 0xD0) | W, 'opcode'); MR(o0, SHN[mn]); return out; }
+    if (JCCN[mn] !== undefined){ B(0x70 + JCCN[mn], 'opcode'); REL8(o0.v); return out; }
+    if (LOOPN[mn] !== undefined){ B(LOOPN[mn], 'opcode'); REL8(o0.v); return out; }
+    switch (mn){
+      case 'MOV':
+        if (o0.t === 's'){ B(0x8E, 'opcode'); MR(o1, SREGC[o0.name]); }
+        else if (o1.t === 's'){ B(0x8C, 'opcode'); MR(o0, SREGC[o1.name]); }
+        else if (o1.t === 'i' || o1.t === 'l'){ if (o0.t === 'r'){ B(0xB0 + W*8 + REGC[o0.name], 'opcode'); IMM(immv(o1), W); } else { B(0xC6 | W, 'opcode'); MR(o0, 0); IMM(immv(o1), W); } }
+        else if (o0.t === 'r' && REGC[o0.name] === 0 && direct(o1)){ B(0xA0 | W, 'opcode'); B(o1.disp & 255, 'address low'); B((o1.disp >> 8) & 255, 'address high'); }
+        else if (o1.t === 'r' && REGC[o1.name] === 0 && direct(o0)){ B(0xA2 | W, 'opcode'); B(o0.disp & 255, 'address low'); B((o0.disp >> 8) & 255, 'address high'); }
+        else if (o1.t === 'm'){ B(0x8A | W, 'opcode'); MR(o1, REGC[o0.name]); }
+        else { B(0x88 | W, 'opcode'); MR(o0, REGC[o1.name]); }
+        break;
+      case 'PUSH': if (o0.t === 'r') B(0x50 + REGC[o0.name], 'opcode'); else if (o0.t === 's') B(0x06 | (SREGC[o0.name] << 3), 'opcode'); else { B(0xFF, 'opcode'); MR(o0, 6); } break;
+      case 'POP': if (o0.t === 'r') B(0x58 + REGC[o0.name], 'opcode'); else if (o0.t === 's') B(0x07 | (SREGC[o0.name] << 3), 'opcode'); else { B(0x8F, 'opcode'); MR(o0, 0); } break;
+      case 'XCHG':
+        if (W && o0.t === 'r' && o1.t === 'r' && (REGC[o0.name] === 0 || REGC[o1.name] === 0)) B(0x90 + (REGC[o0.name] === 0 ? REGC[o1.name] : REGC[o0.name]), 'opcode');
+        else { const m = o1.t === 'm' ? o1 : o0, r = m === o0 ? o1 : o0; B(0x86 | W, 'opcode'); MR(m, REGC[r.name]); }
+        break;
+      case 'TEST':
+        if (o1.t === 'i'){ if (o0.t === 'r' && REGC[o0.name] === 0) B(0xA8 | W, 'opcode'); else { B(0xF6 | W, 'opcode'); MR(o0, 0); } IMM(o1.v, W); }
+        else { const m = o1.t === 'm' ? o1 : o0, r = m === o0 ? o1 : o0; B(0x84 | W, 'opcode'); MR(m, REGC[r.name]); }
+        break;
+      case 'INC': case 'DEC': if (W && o0.t === 'r') B((mn === 'INC' ? 0x40 : 0x48) + REGC[o0.name], 'opcode'); else { B(0xFE | W, 'opcode'); MR(o0, mn === 'INC' ? 0 : 1); } break;
+      case 'LEA': B(0x8D, 'opcode'); MR(o1, REGC[o0.name]); break;
+      case 'LDS': B(0xC5, 'opcode'); MR(o1, REGC[o0.name]); break;
+      case 'LES': B(0xC4, 'opcode'); MR(o1, REGC[o0.name]); break;
+      case 'IN':  { const w = o0.size === 16 ? 1 : 0; if (o1.t === 'i'){ B(0xE4 | w, 'opcode'); B(o1.v, 'port'); } else B(0xEC | w, 'opcode'); } break;
+      case 'OUT': { const w = o1.size === 16 ? 1 : 0; if (o0.t === 'i'){ B(0xE6 | w, 'opcode'); B(o0.v, 'port'); } else B(0xEE | w, 'opcode'); } break;
+      case 'JMP': if (o0.t === 'l'){ if (prog.long && prog.long[I.index]){ B(0xE9, 'opcode'); REL16(o0.v); } else { B(0xEB, 'opcode'); REL8(o0.v); } } else { B(0xFF, 'opcode'); MR(o0, 4); } break;
+      case 'CALL': if (o0.t === 'l'){ B(0xE8, 'opcode'); REL16(o0.v); } else { B(0xFF, 'opcode'); MR(o0, 2); } break;
+      case 'RET': case 'RETN': if (O.length){ B(0xC2, 'opcode'); IMM(O[0].v, 1); } else B(0xC3, 'opcode'); break;
+      case 'INT': if ((o0.v & 255) === 3) B(0xCC, 'opcode'); else { B(0xCD, 'opcode'); B(o0.v, 'interrupt number'); } break;
+      case 'AAM': case 'AAD': B(mn === 'AAM' ? 0xD4 : 0xD5, 'opcode'); B(O.length ? O[0].v : 10, 'base'); break;
+      case 'ESC': B(0xD8, 'opcode'); B(0xC0, 'ModR/M'); break;
+      default: if (ONE[mn] !== undefined) B(ONE[mn], 'opcode'); else throw new AsmError(I.line, `cannot encode ${mn}`);
+    }
+    return out;
+  }
+  /* Give every instruction its address. A JMP starts short (2 bytes) and becomes
+     near (3 bytes) if its label is too far; repeat until nothing changes. */
+  function layout(prog){
+    const n = prog.ins.length;
+    prog.long = new Array(n).fill(false);
+    for (let pass = 0; pass < 20; pass++){
+      let a = 0; prog.addr = [];
+      for (let k = 0; k < n; k++){ prog.ins[k].addr = a; prog.addr[k] = a; a += encodeIns(prog.ins[k], prog, true).length; }
+      prog.addr[n] = a;
+      let changed = false;
+      prog.ins.forEach((I, k) => { if (I.mn === 'JMP' && I.ops[0].t === 'l' && !prog.long[k]){
+        const r = prog.addr[I.ops[0].v] - (prog.addr[k] + 2); if (r < -128 || r > 127){ prog.long[k] = true; changed = true; } } });
+      if (!changed) break;
+    }
+    prog.at = {}; prog.end = prog.addr[n];
+    prog.ins.forEach((I, k) => { I.bytes = encodeIns(I, prog, false); I.size = I.bytes.length; prog.at[I.addr] = k; });
+  }
+
   function CPU(){ this.reset(); }
   CPU.prototype.reset = function(){
     this.r = {AX:0,BX:0,CX:0,DX:0,SP:0x0100,BP:0,SI:0,DI:0};
     this.s = {CS:0x0000, DS:0x0100, ES:0x0100, SS:0x0200};
     this.ip = 0; this.flags = 0x0002; this.mem = new Uint8Array(0x100000); this.ports = new Uint8Array(0x10000);
-    this.out = ''; this.halted = false; this.steps = 0; this.written = new Set(); this.note = '';
-    if (this.prog) this.loadData();
+    this.out = ''; this.halted = false; this.steps = 0; this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.note = '';
+    if (this.prog){ this.loadData(); this.loadCode(); }
   };
   CPU.prototype.F = function(n){ return (this.flags >> FB[n]) & 1; };
   CPU.prototype.setF = function(n, v){ if (v) this.flags |= 1 << FB[n]; else this.flags &= ~(1 << FB[n]); };
@@ -47,8 +155,8 @@ var I8086 = (function(){
     const [w, sh] = R8[n]; this.r[w] = (this.r[w] & (sh ? 0x00FF : 0xFF00)) | ((v & 0xFF) << sh);
   };
   CPU.prototype.phys = function(seg, off){ return ((seg << 4) + (off & 0xFFFF)) & 0xFFFFF; };
-  CPU.prototype.rd8 = function(a){ return this.mem[a & 0xFFFFF]; };
-  CPU.prototype.wr8 = function(a, v){ a &= 0xFFFFF; this.mem[a] = v & 0xFF; this.written.add(a); };
+  CPU.prototype.rd8 = function(a){ a &= 0xFFFFF; this.reads.add(a); return this.mem[a]; };
+  CPU.prototype.wr8 = function(a, v){ a &= 0xFFFFF; if (!this.oldvals.has(a)) this.oldvals.set(a, this.mem[a]); this.mem[a] = v & 0xFF; this.written.add(a); };
   CPU.prototype.rdw = function(seg, off){ return this.rd8(this.phys(seg, off)) | (this.rd8(this.phys(seg, off + 1)) << 8); };
   CPU.prototype.wrw = function(seg, off, v){ this.wr8(this.phys(seg, off), v); this.wr8(this.phys(seg, off + 1), v >> 8); };
   CPU.prototype.push = function(v){ this.r.SP = (this.r.SP - 2) & 0xFFFF; this.wrw(this.s.SS, this.r.SP, v); };
@@ -116,12 +224,13 @@ var I8086 = (function(){
       prog.ins.push(null);
     });
     this.prog = prog;
-    try { pending.forEach((p, k) => { prog.ins[k] = this.compile(p); }); }
+    try { pending.forEach((p, k) => { prog.ins[k] = this.compile(p); prog.ins[k].index = k; }); layout(prog); }
     catch (e){ this.prog = null; throw e; }
-    this.loadData();
+    this.loadData(); this.loadCode();
     return prog;
   };
   CPU.prototype.loadData = function(){ for (const [off, v] of this.prog.bytes) this.mem[this.phys(this.s.DS, off)] = v; };
+  CPU.prototype.loadCode = function(){ for (const I of this.prog.ins) I.bytes.forEach(([b], k) => { this.mem[this.phys(this.s.CS, I.addr + k)] = b; }); };
 
   /* operand parsing */
   CPU.prototype.operand = function(tok, ln){
@@ -139,6 +248,7 @@ var I8086 = (function(){
     let inner = t, base = null, idx = null, disp = 0, lab = null;
     if ((m = t.match(/^([A-Za-z_]\w*)\s*(\[.*\])?$/)) && !R16.includes(m[1].toUpperCase())){ lab = m[1]; inner = m[2] ? m[2].slice(1,-1) : ''; }
     else if (/^\[.*\]$/.test(t)) inner = t.slice(1,-1);
+    else if ((m = t.match(/^([A-Za-z_]\w*)\s*([+-]\s*[\w]+)$/)) && !R16.includes(m[1].toUpperCase())){ lab = m[1]; inner = m[2]; }   /* label+3 */
     else throw new AsmError(ln, `cannot understand the operand “${tok}”`);
     if (lab){ const d = this.prog.data[lab.toUpperCase()]; if (!d) throw new AsmError(ln, `unknown label ${lab}`); disp += d.off; if (!size) size = d.size; }
     const terms = inner.replace(/\s+/g,'').replace(/-/g,'+-').split('+').filter(x => x);
@@ -151,13 +261,13 @@ var I8086 = (function(){
       else { const v = num(bare); if (v === null) throw new AsmError(ln, `cannot understand “${term}” in an address`); disp += neg ? -v : v; }
     }
     const dseg = seg || (base === 'BP' ? 'SS' : 'DS');
-    return {t:'m', base, idx, disp, seg:dseg, size, text:tok};
+    return {t:'m', base, idx, disp, seg:dseg, ovr:seg, size, text:tok};
   };
   CPU.prototype.ea = function(op){ let o = op.disp; if (op.base) o += this.r[op.base]; if (op.idx) o += this.r[op.idx]; return o & 0xFFFF; };
   CPU.prototype.get = function(op, sz){
     if (op.t === 'r' || op.t === 's') return this.reg(op.name);
     if (op.t === 'i') return op.v & (sz === 8 ? 0xFF : 0xFFFF);
-    if (op.t === 'l') return op.v;
+    if (op.t === 'l') return this.prog.addr[op.v];
     const off = this.ea(op), sg = this.s[op.seg];
     return (op.size || sz) === 8 ? this.rd8(this.phys(sg, off)) : this.rdw(sg, off);
   };
@@ -187,9 +297,9 @@ var I8086 = (function(){
     };
     const noMemMem = () => { if (O[0] && O[1] && O[0].t === 'm' && O[1].t === 'm') throw new AsmError(ln, `the 8086 cannot use two memory operands in one ${mn}`); };
     const target = () => { if (O.length !== 1) throw new AsmError(ln, `${mn} needs one target label`);
-      if (O[0].t === 'l') return () => O[0].v; if (O[0].t === 'r' && O[0].size === 16) return () => cpu.r[O[0].name];
+      if (O[0].t === 'l') return () => cpu.prog.addr[O[0].v]; if (O[0].t === 'r' && O[0].size === 16) return () => cpu.r[O[0].name];
       throw new AsmError(ln, `${mn} needs a code label (such as “loop:”)`); };
-    const I = {line: ln, text: p.text, mn, prefix: p.prefix};
+    const I = {line: ln, text: p.text, mn, prefix: p.prefix, ops: O};
     const alu2 = (fn, write=true) => { need(2, 'two operands, such as ' + mn + ' AX, BX'); noMemMem();
       if (O[0].t === 'i' || O[0].t === 'l') throw new AsmError(ln, `the first operand of ${mn} cannot be a number`);
       if (O[0].t === 's' || O[1].t === 's') throw new AsmError(ln, `${mn} cannot use segment registers`);
@@ -365,7 +475,7 @@ var I8086 = (function(){
   /* software interrupts: a few DOS / BIOS services, or a handler label named INTn */
   CPU.prototype.interrupt = function(n, why){
     const L = this.prog.code['INT' + n];
-    if (L !== undefined){ this.push(this.flags); this.push(this.s.CS); this.push(this.ip); this.setF('IF', 0); this.setF('TF', 0); this.ip = L; this.note = why || `INT ${hex(n,2)}h: jumped to the handler INT${n}.`; return; }
+    if (L !== undefined){ this.push(this.flags); this.push(this.s.CS); this.push(this.ip); this.setF('IF', 0); this.setF('TF', 0); this.ip = this.prog.addr[L]; this.note = why || `INT ${hex(n,2)}h: jumped to the handler INT${n}.`; return; }
     const ah = this.reg('AH');
     if (n === 0x21 && ah === 0x02){ this.out += String.fromCharCode(this.reg('DL')); this.note = 'INT 21h, AH=02h: DOS prints the character in DL.'; return; }
     if (n === 0x21 && ah === 0x09){ let off = this.r.DX, s = '', g = 0; for (;;){ const c = this.rd8(this.phys(this.s.DS, off++)); if (c === 0x24 || ++g > 2000) break; s += String.fromCharCode(c); }
@@ -381,17 +491,19 @@ var I8086 = (function(){
   CPU.prototype.step = function(){
     if (this.halted) return null;
     const P = this.prog;
-    if (!P || this.ip >= P.ins.length){ this.halted = true; this.note = 'End of the program.'; return null; }
-    const ins = P.ins[this.ip], before = {r:{...this.r}, s:{...this.s}, flags:this.flags};
-    this.written = new Set(); this.note = ''; this.paused = false;
-    this.ip++;
+    if (!P || this.ip >= P.end){ this.halted = true; this.note = 'End of the program.'; return null; }
+    const k = P.at[this.ip];
+    if (k === undefined){ this.halted = true; this.note = `IP = ${hex(this.ip)}h points into the middle of an instruction.`; return null; }
+    const ins = P.ins[k], before = {r:{...this.r}, s:{...this.s}, flags:this.flags, ip:this.ip};
+    this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.note = ''; this.paused = false;
+    this.ip = (ins.addr + ins.size) & 0xFFFF;
     try { ins.run(); } catch (e){ this.halted = true; this.note = e.message; }
     this.steps++;
     const changed = [];
     for (const k in this.r) if (this.r[k] !== before.r[k]) changed.push(k);
     for (const k in this.s) if (this.s[k] !== before.s[k]) changed.push(k);
     const fch = Object.keys(FB).filter(k => ((before.flags >> FB[k]) & 1) !== this.F(k));
-    return {ins, before, changed, flagsChanged: fch};
+    return {ins, before, changed, flagsChanged: fch, jumped: this.ip !== ((ins.addr + ins.size) & 0xFFFF)};
   };
-  return {CPU, hex, AsmError, R16, FB};
+  return {CPU, hex, AsmError, R16, FB, encodeIns};
 })();
