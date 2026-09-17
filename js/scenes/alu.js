@@ -21,7 +21,21 @@ function aluEval(A, B, op, lop, sop){
 }
 const OPSYM = {ADD:'+', SUB:'−', AND:'AND', OR:'OR', XOR:'XOR', CMP:'−'};
 
-SCENES.alu = (n) => {
+/* The ALU view has two modes, chosen with the switch at the top:
+   "Simple 4-bit ALU" (below) and "8086 ALU" (scenes/alu86.js). */
+function aluModeSwitch(cx, mode){
+  return btnS(cx - 176, 18, 180, 40, 'Simple 4-bit ALU', `data-mode="simple" aria-pressed="${mode === 'simple'}" aria-label="Show the simple 4-bit ALU"`) +
+         btnS(cx + 8, 18, 170, 40, '8086 ALU', `data-mode="8086" aria-pressed="${mode === '8086'}" aria-label="Show the 8086 ALU with every 8086 operation"`);
+}
+function bindModeSwitch(el){
+  const cur = SIM['alu:mode'] || 'simple';
+  el.querySelectorAll('[data-mode]').forEach(b => { b.classList.toggle('on', b.dataset.mode === cur);
+    onPress(b, () => { const m = b.dataset.mode; if (m === cur) return;
+      SIM['alu:mode'] = m; if (m === 'simple') requestWide(false); rebuildScene(); }); });
+}
+SCENES.alu = (n) => (SIM['alu:mode'] === '8086' ? alu86Scene(n) : aluSimpleScene(n));
+
+function aluSimpleScene(n){
   let s = '';
   /* operation decoder column */
   s += hot('alu-control',[30,84,112,540], R(30,84,112,540,14,'m-panel') + T(86,114,'Operation','t t-sm t-mid') + T(86,134,'decoder','t t-sm t-mid'),{rx:18});
@@ -73,7 +87,9 @@ SCENES.alu = (n) => {
   s += T(420,130,'','t t-sm t-mut','data-txt="da"') + T(790,130,'','t t-sm t-mut','data-txt="db"');
   ALU_OPS.forEach((op,i) => { s += btnS(38,148+i*50,96,42,op,`data-op="${op}" aria-label="Operation ${op}"`); });
   s += T(930,686,'','t t-sm t-end','data-txt="expr"');
+  s += aluModeSwitch(551, 'simple');
   return {svg:s, init: el => {
+    bindModeSwitch(el);
     const sim = bindSim(el, n.id, {a3:0,a2:1,a1:1,a0:0,b3:0,b2:0,b1:1,b0:0,op:'ADD',lop:'AND',sop:'SHL',res:8}, st => {
       const A = bitsOf(st,'a'), B = bitsOf(st,'b'), e = aluEval(A,B,st.op,st.lop,st.sop);
       if (st.op !== 'CMP') st.res = e.r;
@@ -104,9 +120,8 @@ SCENES.alu = (n) => {
     el.querySelectorAll('[data-op]').forEach(b => onPress(b, () => { const op = b.dataset.op; sim.st.op = op;
       if (['AND','OR','XOR','NOT'].includes(op)) sim.st.lop = op; if (op === 'SHL' || op === 'SHR') sim.st.sop = op; sim.upd(false); }));
   }};
-};
+}
 
-/* ---------------- 8-bit barrel shifter ---------------- */
 SCENES.shifter = (n) => {
   const cx = i => 275 + i*70, rows = [150, 250, 360, 470], outY = 520, K = [1,2,4];
   let s = `<g class="bg">${T(240,132,'Input','t t-end')}${T(240,552,'Output','t t-end')}${T(88,200,'Shift by','t t-sm t-mut')}</g>`;

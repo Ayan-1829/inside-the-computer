@@ -51,7 +51,9 @@ js/scenes/common.js     drawing helpers: gates, switches, wires, LEDs
 js/scenes/hardware.js   desk with tower and devices, motherboard, RAM, GPU,
                         storage, PSU, cooling, I/O
 js/scenes/cpu.js        CPU die, fetch-decode-execute walkthrough, register
-js/scenes/alu.js        working 4-bit ALU, barrel shifter, comparator
+js/scenes/alu.js        working 4-bit ALU, barrel shifter, comparator,
+                        and the switch between the two ALU modes
+js/scenes/alu86.js      the 8086 ALU mode: every 8086 operand operation
 js/scenes/logic.js      gate gallery, single gates, full adder, mux
 js/scenes/chips.js      chip pin diagrams and "Inside the chip" views
 js/scenes/i8086.js      the 8086 emulator screen (HTML, not SVG)
@@ -111,7 +113,9 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
 - Seven single-gate circuits with live truth tables.
 - A full adder where the signal moves through one layer of gates at a time, with a slow-motion toggle.
 - A 2-to-1 multiplexer and a 4-bit register with a clock.
-- A working 4-bit ALU with nine operations, parallel units, a result multiplexer and Z/N/C/V flags.
+- An ALU with two modes, chosen with the switch at the top of the ALU diagram:
+  - **Simple 4-bit ALU**: nine operations, parallel units, a result multiplexer and Z/N/C/V flags.
+  - **8086 ALU**: 8-bit or 16-bit A and B, and tabs on the left with all 59 operations the 8086 performs on its operands. The tabs are arithmetic, multiply/divide, logic, shift/rotate, decimal adjust, move/convert, flags, and all 16 jump conditions. It shows the flags going in and coming out (undefined flags are marked "?"), the high half or remainder where there is one, and real 8086 clock-cycle counts. Results come from the emulator, so the two always agree.
 - An 8-bit barrel shifter and a 4-bit magnitude comparator.
 - A fetch-decode-execute walkthrough of a small looping program.
 - 34 real chips with pin diagrams and an "Inside the chip" view: processors, memory, firmware, timing, bus, ALU, shifter, regulators, audio and serial chips.
@@ -124,6 +128,14 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
   - step, run and run-to-end, with changed registers, flags and memory highlighted
 
   In this model the instruction pointer counts instructions, not bytes.
+
+## Hiding the details panel
+
+On wide screens, **Hide details** (right of the breadcrumb) gives the diagram the full width of the window, and **Show details** brings the panel back. The choice is remembered between visits.
+
+Most diagrams are limited by the height of the window, so they grow only a little. The 8086 ALU is drawn wider on purpose: with the panel hidden it is 30–50% larger. It hides the panel automatically, and gives it back when you switch to the simple ALU or leave, unless you pressed the button yourself.
+
+On phones the panel sits below the diagram, so the button is not shown. There, **Zoom diagram** on the 8086 ALU opens at the operations on the left.
 
 ## Moving parts around
 

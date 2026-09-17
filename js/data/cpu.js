@@ -26,13 +26,13 @@ def('decoder',{name:'Instruction decoder',parent:'cpu',level:3,tip:'Turns instru
  rel:[['control-unit','Hands it the decoded instruction'],['registers','Selects which registers are used']]});
 
 def('alu',{name:'ALU',parent:'cpu',level:3,scene:'alu',model:true,tip:'Arithmetic Logic Unit: does the calculations',
- try:'This is a working 4-bit ALU. Click the bits of A and B, then choose an operation. Every unit calculates at the same time; the result multiplexer passes on only the one you picked, and the flag logic describes the result. Click any block to explore it.',
+ try:'Use the switch at the top of the diagram to choose a mode. <b>Simple 4-bit ALU</b>: click the bits of A and B and pick one of nine operations; every unit calculates at the same time and the result multiplexer passes on the one you picked. <b>8086 ALU</b>: 8-bit or 16-bit A and B, and tabs on the left with all 59 operations the 8086 performs on its operands, including multiply, divide, decimal adjust, flag instructions and all 16 jump conditions. You can also set the flags going in, see which flags change, and see how many clock cycles the real chip needs. The 8086 mode hides this panel to give the diagram the full width; press <b>Show details</b> to bring it back.',
  short:'The Arithmetic Logic Unit: the calculator inside every CPU core.',
  what:'The ALU is a circuit that performs arithmetic (add, subtract) and logic operations (AND, OR, XOR, NOT) on binary numbers. A modern core has several ALUs working side by side.',
  does:'It takes two numbers (operands) from registers plus an operation code from the control unit, computes the result, usually within one clock cycle, and sets flags such as zero or carry.',
  why:'Almost every instruction, from adding prices to comparing passwords to moving a game character, eventually becomes simple ALU operations.',
  ex:[['74181 (1970)','A classic 4-bit ALU on a single chip'],['Integer execution units','Several per core in current desktop CPUs'],['Pocket calculator','Its chip contains a small ALU too']],
- specs:[['Width','64 bits in modern PC CPUs'],['Operations','add, subtract, AND, OR, XOR, NOT, shift, compare'],['Speed','most operations take 1 clock cycle'],['Outputs','result + flags (zero, carry, negative, overflow)']],
+ specs:[['Width','64 bits in modern PC CPUs; 16 bits in the 8086'],['Operations','add, subtract, AND, OR, XOR, NOT, shift, compare; the 8086 mode shows all 59 of its operand operations'],['Speed','most operations take 1 clock cycle'],['Outputs','result + flags (zero, carry, negative, overflow)']],
  fact:'Computers subtract by adding: to calculate A − B, the ALU inverts the bits of B, adds 1, and adds the result to A. This is called two’s complement.',
  rel:[['registers','Supply its inputs and store its results'],['control-unit','Chooses the operation'],['cache','Keeps its data close by'],['i8086','Try every 8086 arithmetic and logic instruction']]});
 

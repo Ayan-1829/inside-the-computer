@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 3.1.0 | 2026-09-11 | 03:26 (09:26) | 8086 mode for the ALU with all 59 operand operations; collapsible details panel |
 | 3.0.1 | 2026-09-11 | 02:55 (08:55) | Complete icon set and web manifest, refreshed preview image, clearer Power supply label, full package |
 | 3.0.0 | 2026-09-11 | 02:35 (08:35) | Working 8086 emulator, 34 real chips with pinouts and internal views, text labels, 1.5 s tooltips |
 | 2.1.0 | 2026-09-10 | 20:34 (02:34 next day) | Larger text, WCAG contrast in both themes, draggable parts, input and output devices |
@@ -19,6 +20,43 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 3.1.0: 8086 ALU mode and a collapsible details panel
+
+**Prompt**
+
+- 2026-09-11, shortly after 3.0.1 (the exact time is not in the saved record yet):
+  > It's great that you built. But observe the simple ALU system. You have given (there are two inputs, A and  B, and some arithmetic and logic operations); I want to implement the 8086 like that. You can create two options for that. One for simple CPU operations (at present) and another one for 8086 (in the left operation tabs, include all the operations that the 8086 can perform). To make the canvas bigger (better visibility, you can collapse the description tab.
+
+**Changes**
+
+*Two ALU modes*
+- A switch at the top of the ALU diagram chooses **Simple 4-bit ALU** (unchanged) or **8086 ALU**.
+- In 8086 mode, eight tabs on the left hold all 59 operations the 8086 performs on its operands:
+  - arithmetic: ADD, ADC, SUB, SBB, CMP, INC, DEC, NEG
+  - multiply and divide: MUL, IMUL, DIV, IDIV
+  - logic: AND, OR, XOR, NOT, TEST
+  - shift and rotate: SHL/SAL, SHR, SAR, ROL, ROR, RCL, RCR
+  - decimal adjust: DAA, DAS, AAA, AAS, AAM, AAD
+  - move and convert: MOV, XCHG, CBW, CWD
+  - flags: CLC, STC, CMC, CLD, STD, CLI, STI, LAHF, SAHF
+  - all 16 jump conditions, tested after CMP A, B
+- The string, stack, input/output and program-flow instructions need memory or a running program, so they stay in the 8086 emulator.
+- A and B can be 8-bit (AL, BL) or 16-bit (AX, BX). Click bits or use Random. Instructions that always use one size (DAA, AAA, CBW …) lock the width and say so.
+- You can set the nine flags going in. This matters for ADC, SBB, RCL, RCR, CMC, DAA and the others that read flags.
+- Flags coming out: changed flags are outlined, and flags the 8086 manual lists as undefined are shown as "?".
+- The result row shows whether the result is stored. For CMP and TEST it is not; for jumps it shows whether the jump is taken. A second row shows the high half (MUL), the remainder (DIV), B after XCHG, or DX after CWD.
+- Eight units light up along the data path: adder, logic, shifter, multiply/divide, decimal adjust, move/extend, condition test and flag logic.
+- Real 8086 clock cycles are shown, for example 3 for ADD, 118–133 for a 16-bit MUL, and 8 + 4 per bit for shifts by CL.
+- A plain-English explanation is shown for each result, including divide errors, shift counts of 0 and signed versus unsigned jumps.
+- Results come from the tested emulator, so the ALU view and the emulator always agree. 28 results were also checked by hand against documented 8086 behaviour, and all 118 operation and width combinations were checked for layout.
+
+*Collapsible details panel*
+- A new **Hide details** / **Show details** button to the right of the breadcrumb gives the diagram the full window width. The choice is remembered.
+- The 8086 ALU view is drawn wider (1300 units), so it is 30–50% larger with the panel hidden. It hides the panel automatically, and restores it when you switch back or leave, unless you chose yourself.
+- On phones the button is hidden (the panel sits below). Zoom diagram on the 8086 ALU opens at the operations.
+
+---
 
 ### 3.0.1: Complete file set with site icons
 

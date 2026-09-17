@@ -45,8 +45,9 @@
 <link rel="stylesheet" href="../css/styles.css">
 <script>
   /* Set the theme before first paint to avoid a flash */
-  (function(){ var t = null; try { t = localStorage.getItem('itc-theme'); } catch(e){}
-    document.documentElement.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); })();
+  (function(){ var t = null, p = null; try { t = localStorage.getItem('itc-theme'); p = localStorage.getItem('itc-panel'); } catch(e){}
+    document.documentElement.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    if (p === 'hidden') document.documentElement.classList.add('panel-hidden'); })();
 </script>
 </head>
 <body>
@@ -69,6 +70,8 @@
     <button class="btn icon" id="btn-home" type="button" aria-label="Go to the whole computer and reset">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.2 10 3.5l7 5.7V16a1 1 0 0 1-1 1h-3.5v-5h-5v5H4a1 1 0 0 1-1-1Z"/></svg></button>
     <nav class="crumbs" aria-label="Breadcrumb"><ol id="crumbs"><li><a href="../index.html" data-go="computer">Computer</a></li><li><a href="cpu.html" data-go="cpu">CPU</a></li><li><a href="i8086.html" data-go="i8086">Intel 8086</a></li><li><a href="x86-control.html" data-go="x86-control" aria-current="page">Control transfer</a></li></ol></nav>
+    <button class="btn panel-btn" id="btn-panel" type="button" aria-controls="panel" aria-expanded="true">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M12.5 3.5v13"/></svg><span>Hide details</span></button>
   </div>
 
   <main class="main">
@@ -113,6 +116,7 @@
 <script src="../js/scenes/hardware.js"></script>
 <script src="../js/scenes/cpu.js"></script>
 <script src="../js/scenes/alu.js"></script>
+<script src="../js/scenes/alu86.js"></script>
 <script src="../js/scenes/logic.js"></script>
 <script src="../js/scenes/chips.js"></script>
 <script src="../js/scenes/i8086.js"></script>

@@ -48,7 +48,7 @@ function buildLayer(ownId){
     return {svg: div, init: sc.init, drag: false, focus: sc.focus};
   }
   const svg = document.createElementNS(SVGNS,'svg');
-  svg.setAttribute('viewBox','0 0 1000 700');
+  svg.setAttribute('viewBox','0 0 ' + (sc.vb || [1000,700]).join(' '));   /* scenes may be wider than 1000 */
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
   svg.setAttribute('class','layer scene');
   svg.setAttribute('role','group');
@@ -73,6 +73,7 @@ function findHot(svg, id, stopAt){
 function swapLayer(own, animate){
   const old = layer, oldOwn = curOwner;
   layersEl.querySelectorAll('.leaving').forEach(e => e.remove());
+  if (panelAuto && own !== oldOwn) requestWide(false);          /* give back a panel that a wide scene hid */
   const {svg, init, drag, focus} = buildLayer(own);
   sceneFocus = focus || null;
   stage.classList.toggle('is-html', svg.tagName !== 'svg');   /* HTML scenes (the 8086 emulator) size themselves */
@@ -80,7 +81,7 @@ function swapLayer(own, animate){
     if (old) old.remove();
     layersEl.appendChild(svg);
   } else {
-    const dir = isAncestor(oldOwn, own) ? 'in' : isAncestor(own, oldOwn) ? 'out' : 'fade';
+    const dir = own === oldOwn ? 'fade' : isAncestor(oldOwn, own) ? 'in' : isAncestor(own, oldOwn) ? 'out' : 'fade';
     if (dir === 'in'){
       const t = findHot(old, own, oldOwn);
       if (t){ t.classList.add('sel'); old.classList.add('zooming'); old.style.transform = zoomTo(t, old); }
@@ -133,7 +134,11 @@ function applyFocus(){
 }
 
 /* ---------- magnified diagram on phones ---------- */
-function centerScroll(){ if (stage.classList.contains('magnified')) scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2; }
+function centerScroll(){
+  if (!stage.classList.contains('magnified')) return;
+  /* a scene can ask to start at its left edge (the 8086 ALU keeps its operations there) */
+  scroller.scrollLeft = layer && layer.dataset.scrollStart === 'left' ? 0 : (scroller.scrollWidth - scroller.clientWidth) / 2;
+}
 zoomBtn.addEventListener('click', () => {
   const on = stage.classList.toggle('magnified');
   zoomBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -192,7 +197,7 @@ function go(id, opts = {}){
 function hintFor(n){
   const tap = coarse.matches ? 'Tap' : 'Click';
   if (n.scene === 'gate' || n.scene === 'adder' || n.scene === 'mux') return `${tap} the switches to change the inputs`;
-  if (n.scene === 'alu') return `${tap} the bits and pick an operation`;
+  if (n.scene === 'alu') return SIM['alu:mode'] === '8086' ? '' : `${tap} the bits and pick an operation`;
   if (n.scene === 'shifter' || n.scene === 'comparator') return `${tap} the bits to change the numbers`;
   if (n.scene === 'registers') return 'Set the D switches, then press Clock';
   if (n.scene === 'control') return 'Press Next step or Run';
@@ -379,6 +384,38 @@ layersEl.addEventListener('keydown', e => {
 });
 layersEl.addEventListener('focusin', e => { const h = e.target.closest && e.target.closest('.hot'); if (h && e.target === h){ setHover(h); scheduleTip(h); } });
 layersEl.addEventListener('focusout', hideTip);
+
+/* Rebuild the current scene in place (used when a scene switches mode) */
+window.rebuildScene = function(){
+  swapLayer(curOwner, true);
+  applyFocus();
+  hintEl.textContent = hintFor(N[curOwner]); hintEl.hidden = !hintEl.textContent;
+};
+
+/* ---------- collapsible details panel ----------
+   "Hide details" gives the diagram the full width. The choice is remembered.
+   A wide scene (the 8086 ALU) can ask for the full width with requestWide(true);
+   a panel hidden that way comes back when you leave, unless you chose yourself. */
+const panelBtn = $('#btn-panel');
+let panelAuto = false, panelUserChose = false;
+function setPanelHidden(hide){
+  html.classList.toggle('panel-hidden', hide);
+  if (!panelBtn) return;
+  panelBtn.setAttribute('aria-expanded', hide ? 'false' : 'true');
+  panelBtn.querySelector('span').textContent = hide ? 'Show details' : 'Hide details';
+}
+window.requestWide = function(on){
+  if (on){ if (!html.classList.contains('panel-hidden') && !panelUserChose){ panelAuto = true; setPanelHidden(true); } }
+  else if (panelAuto){ panelAuto = false; setPanelHidden(false); }
+};
+if (panelBtn){
+  setPanelHidden(html.classList.contains('panel-hidden'));
+  panelBtn.addEventListener('click', () => {
+    const hide = !html.classList.contains('panel-hidden');
+    panelAuto = false; panelUserChose = true; setPanelHidden(hide);
+    try { localStorage.setItem('itc-panel', hide ? 'hidden' : 'shown'); } catch(_){}
+  });
+}
 
 /* ---------- links & buttons ---------- */
 document.addEventListener('click', e => {
