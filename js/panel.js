@@ -25,14 +25,17 @@ function metaDesc(id){
   return s.length > 158 ? s.slice(0,157).replace(/\s+\S*$/,'') + '…' : s;
 }
 
-function miniDip(pins){
-  var per = pins/2, pitch = 80/per, s = '';
-  for (var i=0;i<per;i++){ var x = 6+pitch*(i+.5)-2.5; s += '<rect x="'+x+'" y="4" width="5" height="8" rx="1" fill="var(--i-metal)"/><rect x="'+x+'" y="40" width="5" height="8" rx="1" fill="var(--i-metal)"/>'; }
+var DATASHEET = 'Pin diagrams follow the classic manufacturer datasheets, and the inside views are simplified block diagrams. Always check the datasheet for your exact part before wiring a circuit.';
+function miniDip(pins, to220){
+  if (to220) return '<svg viewBox="0 0 92 52" aria-hidden="true"><rect x="30" y="2" width="32" height="12" rx="2" fill="var(--i-metal)"/><rect x="28" y="10" width="36" height="24" rx="3" fill="var(--i-chip)"/>' +
+    [36,46,56].map(function(x){ return '<rect x="'+(x-2)+'" y="34" width="4" height="16" rx="1" fill="var(--i-metal)"/>'; }).join('') + '</svg>';
+  var per = pins/2, pitch = 80/per, pw = Math.min(5, pitch - 1.2), s = '';
+  for (var i=0;i<per;i++){ var x = 6+pitch*(i+.5)-pw/2; s += '<rect x="'+x+'" y="4" width="'+pw+'" height="8" rx="1" fill="var(--i-metal)"/><rect x="'+x+'" y="40" width="'+pw+'" height="8" rx="1" fill="var(--i-metal)"/>'; }
   return '<svg viewBox="0 0 92 52" aria-hidden="true">' + s + '<rect x="6" y="11" width="80" height="30" rx="4" fill="var(--i-chip)"/><path d="M6 20a6 6 0 0 1 0 12Z" fill="var(--i-chip-edge)"/></svg>';
 }
 function icCard(id, href){
-  var c = CHIPS[id], pins = c.labels.length;
-  return link(href, id, 'ic-card', miniDip(pins) + '<div><b>' + c.part + '</b><span>' + c.desc + (c.gate && c.gate !== 'NOT' ? ' gates' : '') + ' in one ' + pins + '-pin package</span><em>View the pinout</em></div>');
+  var c = CHIPS[id], pins = c.labels.length, pkg = c.pkg || ('DIP-' + pins);
+  return link(href, id, 'ic-card', miniDip(pins, c.to220) + '<div><b>' + c.part + '</b><span>' + c.desc + (c.gate && c.gate !== 'NOT' ? ' gates' : '') + ' · ' + pkg + '</span><em>' + (c.inside ? 'Pinout and inside view' : 'View the pinout') + '</em></div>');
 }
 function truthTable(n){
   var g = n.gate, one = g === 'NOT', rows = one ? [[0],[1]] : [[0,0],[0,1],[1,0],[1,1]];
@@ -73,12 +76,22 @@ function panelHTML(id, href){
       return d.length ? '<p class="p-sub">' + title + '</p><div class="chips">' + d.map(function(c){ return link(href, c, 'chip', '<i class="' + (kind === 'input' ? 'in' : 'out') + '"></i>' + N[c].name); }).join('') + '</div>' : ''; };
     h += sec('Connected devices', grp('input', 'Input: information goes into the computer') + grp('output', 'Output: results come out of the computer'));
   }
-  var chipKid = n.children.filter(function(c){ return N[c].ic; })[0];
-  if (chipKid) h += sec('Real chip', icCard(chipKid, href) + '<p class="note"><b>Real-world illustration.</b> ' + ACCURACY + '</p>');
+  var chipKids = n.children.filter(function(c){ return N[c].ic; });
+  if (chipKids.length){
+    var logicOnly = chipKids.every(function(c){ return /^74/.test(CHIPS[c].part); });
+    h += sec(chipKids.length > 1 ? 'Real chips' : 'Real chip', '<div class="ic-list">' + chipKids.map(function(c){ return icCard(c, href); }).join('') + '</div>' +
+      '<p class="note"><b>Real-world illustration.</b> ' + (logicOnly ? ACCURACY : DATASHEET) + '</p>');
+  }
+  if (n.instr){
+    h += sec('Instructions in this group', '<table class="instr"><thead><tr><th>Instruction</th><th>What it does</th></tr></thead><tbody>' +
+      INSTR[n.instr].map(function(r){ return '<tr><td><code>' + r[0] + '</code></td><td>' + r[1] + '</td></tr>'; }).join('') + '</tbody></table>');
+  }
   if (n.chipNote) h += sec('Real chip', '<p>' + n.chipNote + '</p><p class="note"><b>Real-world illustration.</b> ' + ACCURACY + '</p>');
   if (n.ic){
-    var c = CHIPS[id], concept = N[n.parent].name.toLowerCase();
-    h += sec('Concept vs. physical chip', '<div class="cmp"><div><b>The concept</b>A ' + concept + ' is an idea: a rule you can write as a truth table or draw as a symbol.</div><div><b>The physical part</b>The ' + c.part + ' is a real component with pins, a 5 V supply, a speed limit and a price.</div></div><p class="note"><b>Accuracy note.</b> ' + ACCURACY + '</p>');
+    var c = CHIPS[id], par = N[n.parent], concept = par.name.toLowerCase(), isGate = !!par.gate;
+    h += sec('Concept vs. physical chip', '<div class="cmp"><div><b>The concept</b>' + (isGate ? 'A ' + concept + ' is an idea: a rule you can write as a truth table or draw as a symbol.' : 'The ' + concept + ' is a job inside a computer, described by what goes in and what comes out.') +
+      '</div><div><b>The physical part</b>The ' + c.part + ' is a real component with pins, a supply voltage, a speed limit and a price.</div></div>' +
+      '<p class="note"><b>Accuracy note.</b> ' + (/^74/.test(c.part) ? ACCURACY + ' ' : '') + DATASHEET + '</p>');
   }
   if (n.ex.length) h += sec('Real-life examples', '<ul class="ex">' + n.ex.map(function(e){ return '<li><b>' + e[0] + '</b><span>' + e[1] + '</span></li>'; }).join('') + '</ul>');
   if (n.specs.length) h += sec('Key specifications', '<dl class="specs">' + n.specs.map(function(s){ return '<dt>' + s[0] + '</dt><dd>' + s[1] + '</dd>'; }).join('') + '</dl>');

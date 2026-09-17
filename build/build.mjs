@@ -7,10 +7,12 @@
                            description, canonical URL, Open Graph tags,
                            JSON-LD and the full panel text pre-rendered
      sitemap.xml, robots.txt, favicon.svg
+   Also checks that the other site icons and site.webmanifest are present.
    Usage:   node build/build.mjs
             SITE_URL=https://your.domain/ node build/build.mjs
    The site URL can also be set in build/site.config.json.
    ========================================================== */
+import { checkChips } from './check-chips.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -23,7 +25,7 @@ if (!SITE.endsWith('/')) SITE += '/';
 
 /* Load the same data + panel code the browser uses */
 const ctx = vm.createContext({ console });
-for (const f of ['js/core.js','js/data/hardware.js','js/data/devices.js','js/data/cpu.js','js/data/alu.js','js/data/logic.js','js/data/chips.js','js/panel.js'])
+for (const f of ['js/core.js','js/data/hardware.js','js/data/devices.js','js/data/cpu.js','js/data/i8086.js','js/data/alu.js','js/data/logic.js','js/data/chips.js','js/panel.js'])
   vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 vm.runInContext('linkTree()', ctx);
 const { N, ORDER } = ctx;
@@ -47,11 +49,20 @@ const lum = h => { const c = [1,3,5].map(i => parseInt(h.slice(i,i+2),16)/255).m
 const ratio = (a,b) => { const [x,y] = [lum(a), lum(b)].sort((p,q) => q-p); return (x+.05)/(y+.05); };
 const TEXT_PAIRS = [['ink','surface'],['ink-2','surface'],['ink-3','surface'],['ink-3','bg'],['accent','surface'],['out','surface'],['lbl-ink','lbl-bg'],
   ['i-text','i-panel'],['i-text','i-block'],['i-text','i-case'],['i-text','i-metal'],['i-text','i-metal-lt'],['i-text-mut','i-panel'],['i-text-mut','i-block'],
-  ['i-text-mut','i-case'],['i-text-mut','surface'],['i-text-inv','i-board'],['i-text-inv','i-chip'],['i-text-inv','i-metal-2'],['i-text-inv','i-screen'],['i-die-text','i-die-block']];
+  ['i-text-mut','i-case'],['i-text-mut','surface'],['i-text-inv','i-board'],['i-text-inv','i-chip'],['i-text-inv','i-metal-2'],['i-text-inv','i-screen'],['i-die-text','i-die-block'],
+  ['on-accent','accent'],['lbl-hi','surface'],['lbl-hi-inv','i-board'],['pin-in','surface'],['pin-out','surface'],['pin-bi','surface'],['pin-pwr','surface'],['pin-nc','surface'],['pin-in','bg'],['pin-out','bg']];
 const weak = [];
 for (const [name, t] of [['light', light], ['dark', dark]])
   for (const [a,b] of TEXT_PAIRS){ const r = ratio(t[a], t[b]); if (r < 4.5) weak.push(`${name}: --${a} on --${b} is ${r.toFixed(2)}:1`); }
 if (weak.length) console.warn('Contrast warnings (text should be at least 4.5:1):\n  ' + weak.join('\n  '));
+
+const chipErrors = checkChips(ROOT);
+if (chipErrors.length){ console.error('Chip definition errors:\n  ' + chipErrors.join('\n  ')); process.exit(1); }
+
+/* site icons: static files kept in the project root (see README, "Site icons") */
+const ICONS = ['favicon.svg','favicon.ico','favicon-16x16.png','favicon-32x32.png','apple-touch-icon.png','android-chrome-192x192.png','android-chrome-512x512.png','maskable-512x512.png','site.webmanifest'];
+const missingIcons = ICONS.filter(f => f !== 'favicon.svg' && !fs.existsSync(path.join(ROOT, f)));
+if (missingIcons.length) console.warn('Missing icon files (browsers will fall back to favicon.svg): ' + missingIcons.join(', '));
 
 const tpl = fs.readFileSync(path.join(ROOT, 'build/template.html'), 'utf8');
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

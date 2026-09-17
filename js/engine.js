@@ -19,7 +19,7 @@ const coarse = matchMedia('(pointer: coarse)');
 const HTTP = /^https?:$/.test(location.protocol);
 const ROOT = new URL(html.dataset.root || './', location.href);
 const SITE = html.dataset.site || ROOT.href;
-let cur = null, curOwner = null, layer = null;
+let cur = null, curOwner = null, layer = null, sceneFocus = null;
 const LASTKEY = {}, LIVE = {};
 
 const urlFor = id => new URL(id === 'computer' ? (HTTP ? './' : 'index.html') : `parts/${id}.html`, ROOT).href;
@@ -39,6 +39,14 @@ window.setLive = function(key, h){
 /* ---------- layers & zoom ---------- */
 function buildLayer(ownId){
   const n = N[ownId], sc = SCENES[n.scene](n);
+  if (sc.html !== undefined){                          /* HTML scene (e.g. the 8086 emulator) */
+    const div = document.createElement('div');
+    div.className = 'layer scene html-scene';
+    div.setAttribute('role','group');
+    div.setAttribute('aria-label', n.name + ', interactive');
+    div.innerHTML = sc.html;
+    return {svg: div, init: sc.init, drag: false, focus: sc.focus};
+  }
   const svg = document.createElementNS(SVGNS,'svg');
   svg.setAttribute('viewBox','0 0 1000 700');
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
@@ -46,7 +54,7 @@ function buildLayer(ownId){
   svg.setAttribute('role','group');
   svg.setAttribute('aria-label', n.name + ', interactive diagram');
   svg.innerHTML = sc.svg;
-  return {svg, init: sc.init, drag: !!sc.drag};
+  return {svg, init: sc.init, drag: !!sc.drag, focus: sc.focus};
 }
 /* Transform that makes `target` fill the visible stage. The layer scales about its own
    centre, which differs from the visible centre when the diagram is magnified and scrolled. */
@@ -65,7 +73,9 @@ function findHot(svg, id, stopAt){
 function swapLayer(own, animate){
   const old = layer, oldOwn = curOwner;
   layersEl.querySelectorAll('.leaving').forEach(e => e.remove());
-  const {svg, init, drag} = buildLayer(own);
+  const {svg, init, drag, focus} = buildLayer(own);
+  sceneFocus = focus || null;
+  stage.classList.toggle('is-html', svg.tagName !== 'svg');   /* HTML scenes (the 8086 emulator) size themselves */
   if (!old || !animate){
     if (old) old.remove();
     layersEl.appendChild(svg);
@@ -105,6 +115,7 @@ function swapLayer(own, animate){
 }
 function applyFocus(){
   const svg = layer;
+  if (sceneFocus){ sceneFocus(svg, cur); if (svg.tagName !== 'svg') return; }
   svg.classList.remove('focus-mode');
   svg.querySelectorAll('.focused,.focus-anc').forEach(e => e.classList.remove('focused','focus-anc'));
   svg.querySelectorAll('.lbl.focused').forEach(e => e.classList.remove('focused'));
@@ -132,7 +143,7 @@ zoomBtn.addEventListener('click', () => {
 
 /* ---------- touch targets: make every control at least 44 CSS px ---------- */
 function padTargets(svg){
-  if (!svg || !svg.isConnected) return;
+  if (!svg || !svg.isConnected || svg.tagName !== 'svg') return;
   svg.querySelectorAll('.tap-pad').forEach(e => e.remove());
   if (!coarse.matches && innerWidth > 600) return;
   const m = svg.getScreenCTM(); if (!m) return;
@@ -168,6 +179,7 @@ function go(id, opts = {}){
   const oN = N[own];
   badge.classList.toggle('show', !!oN.model);
   hintEl.textContent = hintFor(oN);
+  hintEl.hidden = !hintEl.textContent;
   $('#btn-back').disabled = id === 'computer';
   if (!opts.fromHistory){
     if (HTTP){ const u = urlFor(id); if (u !== location.href) history[opts.replace ? 'replaceState' : 'pushState']({id}, '', u); }
@@ -184,7 +196,8 @@ function hintFor(n){
   if (n.scene === 'shifter' || n.scene === 'comparator') return `${tap} the bits to change the numbers`;
   if (n.scene === 'registers') return 'Set the D switches, then press Clock';
   if (n.scene === 'control') return 'Press Next step or Run';
-  if (n.scene === 'ic') return `${tap} a button to highlight its pins`;
+  if (n.scene === 'ic') return CHIPS[n.id].inside ? `${tap} a button to highlight pins, or open Inside the chip` : `${tap} a button to highlight its pins`;
+  if (n.scene === 'i8086') return '';
   if (n.scene === 'pc' || n.scene === 'board') return `${tap} a part to open it, or drag it to move it`;
   return `${tap} a part to zoom in`;
 }
@@ -305,6 +318,24 @@ function hotAt(t){
   if (lb) return layer.querySelector(`.hot[data-id="${lb.dataset.for}"]`);
   return t.closest ? t.closest('.hot') : null;
 }
+/* Tooltips appear after the pointer rests on a part for 1.5 seconds */
+const TIP_DELAY = 1500;
+let tipTimer = null, tipFor = null, tipXY = null;
+function scheduleTip(el, x, y){
+  tipXY = x === undefined ? null : [x, y];
+  if (tipFor === el){ if (tip.classList.contains('show') && tipXY) placeTip(el, x, y); return; }
+  clearTimeout(tipTimer); tip.classList.remove('show'); tipFor = el;
+  tipTimer = setTimeout(() => { if (tipFor === el) showTip(el, ...(tipXY || [])); }, TIP_DELAY);
+}
+function placeTip(el, x, y){
+  const sr = stage.getBoundingClientRect();
+  if (x === undefined){ const r = el.getBoundingClientRect(); x = r.left + r.width/2; y = r.bottom; }
+  const tw = tip.offsetWidth || 240, th = tip.offsetHeight || 54;
+  let lx = x - sr.left + 14, ly = y - sr.top + 18;
+  if (lx + tw > sr.width - 8) lx = x - sr.left - tw - 14;
+  if (ly + th > sr.height - 8) ly = y - sr.top - th - 14;
+  tip.style.left = Math.max(8, lx) + 'px'; tip.style.top = Math.max(8, ly) + 'px';
+}
 function showTip(el, x, y){
   const n = N[el.dataset.id]; if (!n) return;
   tip.innerHTML = `<b>${n.name}</b><span>${n.tip || ''}</span>`;
@@ -317,19 +348,19 @@ function showTip(el, x, y){
   tip.style.left = Math.max(8, lx) + 'px'; tip.style.top = Math.max(8, ly) + 'px';
   tip.classList.add('show');
 }
-function hideTip(){ tip.classList.remove('show'); setHover(null); }
+function hideTip(){ clearTimeout(tipTimer); tipFor = null; tip.classList.remove('show'); setHover(null); }
 
 layersEl.addEventListener('pointermove', e => {
   if (e.pointerType === 'touch') return;
   if (drag && drag.moved) return;
   const h = layer ? hotAt(e.target) : null;
-  if (h && layer.contains(h) && !e.target.closest('.ctl,.bitc')){ setHover(h); showTip(h, e.clientX, e.clientY); }
+  if (h && layer.contains(h) && !e.target.closest('.ctl,.bitc')){ setHover(h); scheduleTip(h, e.clientX, e.clientY); }
   else hideTip();
 });
 layersEl.addEventListener('pointerleave', hideTip);
 layersEl.addEventListener('click', e => {
   if (!layer || !layer.contains(e.target)) return;
-  if (e.target.closest('.ctl,.bitc')) return;
+  if (e.target.closest('.ctl,.bitc,.html-scene')) return;
   if (suppressClick){ suppressClick = false; return; }
   const h = hotAt(e.target);
   if (h){ go(h.dataset.id); return; }
@@ -346,7 +377,7 @@ layersEl.addEventListener('keydown', e => {
     setOffset(wrap, o[0] + dirs[e.key][0]*14, o[1] + dirs[e.key][1]*14, true);
   }
 });
-layersEl.addEventListener('focusin', e => { const h = e.target.closest && e.target.closest('.hot'); if (h && e.target === h){ setHover(h); showTip(h); } });
+layersEl.addEventListener('focusin', e => { const h = e.target.closest && e.target.closest('.hot'); if (h && e.target === h){ setHover(h); scheduleTip(h); } });
 layersEl.addEventListener('focusout', hideTip);
 
 /* ---------- links & buttons ---------- */

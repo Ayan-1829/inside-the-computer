@@ -10,6 +10,9 @@ SCENES.cpu = () => {
     ${T(175,490,'CPU package','t t-sm t-mut t-mid')}${T(175,510,'(lid removed)','t t-xs t-mut t-mid')}
     <path class="ln-dash" d="M225 305 L330 90 M225 405 L330 640"/>
     ${R(330,90,610,550,12,'m-die')}${T(635,668,'One core, simplified floorplan','t t-sm t-mut t-mid')}</g>`;
+  /* the classic Intel 8086: opens the working emulator */
+  s += hot('i8086',[56,548,238,68], `${R(56,548,238,68,12,'ib')}${R(82,556,5,7,1,'m-pin')}${R(82,601,5,7,1,'m-pin')}${R(92,556,5,7,1,'m-pin')}${R(92,601,5,7,1,'m-pin')}${R(102,556,5,7,1,'m-pin')}${R(102,601,5,7,1,'m-pin')}${R(112,556,5,7,1,'m-pin')}${R(112,601,5,7,1,'m-pin')}${R(122,556,5,7,1,'m-pin')}${R(122,601,5,7,1,'m-pin')}${R(132,556,5,7,1,'m-pin')}${R(132,601,5,7,1,'m-pin')}${R(76,561,66,42,5,'m-ic')}${T(109,587,'8086','t t-xs t-inv t-mid')}
+    ${T(156,578,'Intel 8086','t t-sm')}${T(156,600,'Run real 8086 code','t t-xs t-mut')}`, {rx:14, pad:4});
   const blk = (id,x,y,w,h,label,art) => hot(id,[x,y,w,h], R(x,y,w,h,8,'m-die-block')+T(x+14,y+26,label,'t t-die')+art,{rx:10,pad:5});
   s += blk('control-unit',350,110,180,150,'Control unit',
     `${R(370,160,44,26,5,'m-die-cell')}${R(430,160,44,26,5,'m-die-cell')}${R(400,208,44,26,5,'m-die-cell')}

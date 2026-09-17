@@ -34,7 +34,7 @@ def('alu',{name:'ALU',parent:'cpu',level:3,scene:'alu',model:true,tip:'Arithmeti
  ex:[['74181 (1970)','A classic 4-bit ALU on a single chip'],['Integer execution units','Several per core in current desktop CPUs'],['Pocket calculator','Its chip contains a small ALU too']],
  specs:[['Width','64 bits in modern PC CPUs'],['Operations','add, subtract, AND, OR, XOR, NOT, shift, compare'],['Speed','most operations take 1 clock cycle'],['Outputs','result + flags (zero, carry, negative, overflow)']],
  fact:'Computers subtract by adding: to calculate A − B, the ALU inverts the bits of B, adds 1, and adds the result to A. This is called two’s complement.',
- rel:[['registers','Supply its inputs and store its results'],['control-unit','Chooses the operation'],['cache','Keeps its data close by']]});
+ rel:[['registers','Supply its inputs and store its results'],['control-unit','Chooses the operation'],['cache','Keeps its data close by'],['i8086','Try every 8086 arithmetic and logic instruction']]});
 
 def('registers',{name:'Registers',parent:'cpu',level:3,scene:'registers',model:true,tip:'Tiny, ultra-fast storage slots',
  try:'Set the four D switches, then press <b>Clock</b>. All four flip-flops copy their inputs at the same instant and keep that value until the next clock pulse, even if you change the switches.',

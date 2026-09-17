@@ -145,18 +145,20 @@ function bindSim(el, id, init, compute, opts={}){
   return {st, upd};
 }
 
-/* ---------- name labels (pills) ----------
-   Put labels in a final <g class="labels"> so they are painted on top of every
-   component. data-for links a label to its part: hovering or clicking the label
-   acts on the part, and the label follows the part when it is dragged. */
+/* ---------- name labels ----------
+   Plain text names, placed in a final <g class="labels"> so they are painted on
+   top of every component. o.tone:'inv' uses light text for dark surfaces.
+   data-for links a label to its part: hovering or clicking the label acts on the
+   part, the label lights up when the part is hovered, and it follows the part
+   when dragged. o.dot:'in'|'out' adds a small input/output marker. */
 const plainLen = s => s.replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,'x').length;
 function LB(x, y, text, o={}){
-  const size = o.size || 16, dot = o.dot ? 16 : 0;
-  const w = Math.round(plainLen(text) * size * 0.6 + 22 + dot), h = size + 14;
-  const x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w/2;
-  return `<g class="lbl"${o.for ? ` data-for="${o.for}"` : ''}>${R(x0, y-h/2, w, h, h/2, '')}` +
-    (o.dot ? `<circle class="lbl-dot ${o.dot}" cx="${x0+15}" cy="${y}" r="5.5"/>` : '') +
-    `<text x="${x0 + 11 + dot}" y="${y + size*0.36}" style="font-size:${size}px">${text}</text></g>`;
+  const size = o.size || 16, anchor = o.anchor || 'middle';
+  /* y is the vertical centre of the text */
+  const half = plainLen(text) * size * 0.29;
+  const dot = o.dot ? `<circle class="lbl-dot ${o.dot}" cx="${anchor === 'start' ? x + 5 : anchor === 'end' ? x - half*2 - 11 : x - half - 11}" cy="${y}" r="5"/>` : '';
+  const tx = anchor === 'start' && o.dot ? x + 16 : x;
+  return `<g class="lbl${o.tone === 'inv' ? ' inv' : ''}"${o.for ? ` data-for="${o.for}"` : ''}>${dot}<text x="${tx}" y="${y + size*0.36}" text-anchor="${anchor}" style="font-size:${size}px">${text}</text></g>`;
 }
 const LAYER = labels => `<g class="labels">${labels}</g>`;
 /* Wrap a part so the user can drag it */

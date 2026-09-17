@@ -30,13 +30,18 @@
 <meta name="twitter:description" content="{{DESC}}">
 <meta name="twitter:image" content="{{SITE}}og-image.png">
 
+<link rel="icon" href="{{ROOT}}favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="{{ROOT}}favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ROOT}}favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ROOT}}favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="{{ROOT}}apple-touch-icon.png">
+<link rel="manifest" href="{{ROOT}}site.webmanifest">
 <link rel="sitemap" type="application/xml" href="{{SITE}}sitemap.xml">
 <script type="application/ld+json" id="ld-page">{{JSONLD}}</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;600;700&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ROOT}}css/styles.css">
 <script>
   /* Set the theme before first paint to avoid a flash */
@@ -98,15 +103,19 @@
 <script src="{{ROOT}}js/data/hardware.js"></script>
 <script src="{{ROOT}}js/data/devices.js"></script>
 <script src="{{ROOT}}js/data/cpu.js"></script>
+<script src="{{ROOT}}js/data/i8086.js"></script>
 <script src="{{ROOT}}js/data/alu.js"></script>
 <script src="{{ROOT}}js/data/logic.js"></script>
 <script src="{{ROOT}}js/data/chips.js"></script>
 <script src="{{ROOT}}js/panel.js"></script>
+<script src="{{ROOT}}js/sim/i8086.js"></script>
 <script src="{{ROOT}}js/scenes/common.js"></script>
 <script src="{{ROOT}}js/scenes/hardware.js"></script>
 <script src="{{ROOT}}js/scenes/cpu.js"></script>
 <script src="{{ROOT}}js/scenes/alu.js"></script>
 <script src="{{ROOT}}js/scenes/logic.js"></script>
+<script src="{{ROOT}}js/scenes/chips.js"></script>
+<script src="{{ROOT}}js/scenes/i8086.js"></script>
 <script src="{{ROOT}}js/engine.js"></script>
 </body>
 </html>
