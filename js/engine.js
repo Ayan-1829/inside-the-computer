@@ -220,6 +220,7 @@ function go(id, opts = {}){
   stripEl.innerHTML = stripHTML(id, urlFor);
   const c = stripEl.querySelector('.cur'); if (c) stripEl.scrollLeft = c.offsetLeft - 40;
   updateMeta(id);
+  html.dataset.level = N[id].level;      /* each level of the site has its own hue */
   const oN = N[own];
   badge.classList.toggle('show', !!oN.model);
   hintEl.textContent = hintFor(oN);

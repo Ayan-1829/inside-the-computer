@@ -139,7 +139,7 @@ var I8086 = (function(){
     this.r = {AX:0,BX:0,CX:0,DX:0,SP:0x0100,BP:0,SI:0,DI:0};
     this.s = {CS:0x0000, DS:0x0100, ES:0x0100, SS:0x0200};
     this.ip = 0; this.flags = 0x0002; this.mem = new Uint8Array(0x100000); this.ports = new Uint8Array(0x10000);
-    this.out = ''; this.halted = false; this.steps = 0; this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.access = []; this.note = '';
+    this.out = ''; this.halted = false; this.steps = 0; this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.note = '';
     if (this.prog){ this.loadData(); this.loadCode(); }
   };
   CPU.prototype.F = function(n){ return (this.flags >> FB[n]) & 1; };
@@ -159,12 +159,8 @@ var I8086 = (function(){
   CPU.prototype.wr8 = function(a, v){ a &= 0xFFFFF; if (!this.oldvals.has(a)) this.oldvals.set(a, this.mem[a]); this.mem[a] = v & 0xFF; this.written.add(a); };
   CPU.prototype.rdw = function(seg, off){ return this.rd8(this.phys(seg, off)) | (this.rd8(this.phys(seg, off + 1)) << 8); };
   CPU.prototype.wrw = function(seg, off, v){ this.wr8(this.phys(seg, off), v); this.wr8(this.phys(seg, off + 1), v >> 8); };
-  /* Records which *segment register* (by name, e.g. 'DS', 'SS', 'ES') an access
-     really used, so the scene can show the correct memory page and highlight the
-     correct bytes — a plain physical address alone cannot tell CS/DS/SS/ES apart. */
-  CPU.prototype.logAcc = function(kind, seg, off, n){ this.access.push({kind, seg, off: off & 0xFFFF, n}); };
-  CPU.prototype.push = function(v){ this.r.SP = (this.r.SP - 2) & 0xFFFF; this.logAcc('w', 'SS', this.r.SP, 2); this.wrw(this.s.SS, this.r.SP, v); };
-  CPU.prototype.pop = function(){ this.logAcc('r', 'SS', this.r.SP, 2); const v = this.rdw(this.s.SS, this.r.SP); this.r.SP = (this.r.SP + 2) & 0xFFFF; return v; };
+  CPU.prototype.push = function(v){ this.r.SP = (this.r.SP - 2) & 0xFFFF; this.wrw(this.s.SS, this.r.SP, v); };
+  CPU.prototype.pop = function(){ const v = this.rdw(this.s.SS, this.r.SP); this.r.SP = (this.r.SP + 2) & 0xFFFF; return v; };
 
   /* ---------------- assembler ---------------- */
   function splitOps(s){
@@ -272,16 +268,14 @@ var I8086 = (function(){
     if (op.t === 'r' || op.t === 's') return this.reg(op.name);
     if (op.t === 'i') return op.v & (sz === 8 ? 0xFF : 0xFFFF);
     if (op.t === 'l') return this.prog.addr[op.v];
-    const off = this.ea(op), sg = this.s[op.seg], s2 = (op.size || sz);
-    this.logAcc('r', op.seg, off, s2 === 8 ? 1 : 2);
-    return s2 === 8 ? this.rd8(this.phys(sg, off)) : this.rdw(sg, off);
+    const off = this.ea(op), sg = this.s[op.seg];
+    return (op.size || sz) === 8 ? this.rd8(this.phys(sg, off)) : this.rdw(sg, off);
   };
   CPU.prototype.put = function(op, v, sz){
     if (op.t === 'r' || op.t === 's'){ this.setReg(op.name, v); return; }
     if (op.t !== 'm') throw new RunError('Cannot write to a constant.');
-    const off = this.ea(op), sg = this.s[op.seg], s2 = (op.size || sz);
-    this.logAcc('w', op.seg, off, s2 === 8 ? 1 : 2);
-    if (s2 === 8) this.wr8(this.phys(sg, off), v); else this.wrw(sg, off, v);
+    const off = this.ea(op), sg = this.s[op.seg];
+    if ((op.size || sz) === 8) this.wr8(this.phys(sg, off), v); else this.wrw(sg, off, v);
   };
 
   /* ---------------- flag helpers ---------------- */
@@ -340,10 +334,9 @@ var I8086 = (function(){
     const strOp = (kind, sz) => {
       const d = () => (cpu.F('DF') ? -1 : 1) * (sz / 8), acc = sz === 8 ? 'AL' : 'AX';
       const once = () => {
-        const si = cpu.r.SI, di = cpu.r.DI, n = sz === 8 ? 1 : 2,
-              rdS = () => { cpu.logAcc('r', 'DS', si, n); return sz === 8 ? cpu.rd8(cpu.phys(cpu.s.DS, si)) : cpu.rdw(cpu.s.DS, si); },
-              rdD = () => { cpu.logAcc('r', 'ES', di, n); return sz === 8 ? cpu.rd8(cpu.phys(cpu.s.ES, di)) : cpu.rdw(cpu.s.ES, di); },
-              wrD = v => { cpu.logAcc('w', 'ES', di, n); return sz === 8 ? cpu.wr8(cpu.phys(cpu.s.ES, di), v) : cpu.wrw(cpu.s.ES, di, v); };
+        const si = cpu.r.SI, di = cpu.r.DI, rdS = () => sz === 8 ? cpu.rd8(cpu.phys(cpu.s.DS, si)) : cpu.rdw(cpu.s.DS, si),
+              rdD = () => sz === 8 ? cpu.rd8(cpu.phys(cpu.s.ES, di)) : cpu.rdw(cpu.s.ES, di),
+              wrD = v => sz === 8 ? cpu.wr8(cpu.phys(cpu.s.ES, di), v) : cpu.wrw(cpu.s.ES, di, v);
         if (kind === 'MOVS'){ wrD(rdS()); cpu.r.SI = (si + d()) & 0xFFFF; cpu.r.DI = (di + d()) & 0xFFFF; }
         if (kind === 'CMPS'){ cpu.sub(rdS(), rdD(), 0, sz); cpu.r.SI = (si + d()) & 0xFFFF; cpu.r.DI = (di + d()) & 0xFFFF; }
         if (kind === 'SCAS'){ cpu.sub(cpu.reg(acc), rdD(), 0, sz); cpu.r.DI = (di + d()) & 0xFFFF; }
@@ -373,19 +366,18 @@ var I8086 = (function(){
         { const sz = sizeOf(O[0], O[1]); run = () => cpu.put(O[0], cpu.get(O[1], sz), sz); } break;
       case 'PUSH': need(1, 'one 16-bit operand');
         if (O[0].size === 8 || O[0].t === 'i') throw new AsmError(ln, 'the 8086 can only push 16-bit registers or memory words');
-        run = () => { if (O[0].t === 'r' && O[0].name === 'SP'){ cpu.r.SP = (cpu.r.SP - 2) & 0xFFFF; cpu.logAcc('w', 'SS', cpu.r.SP, 2); cpu.wrw(cpu.s.SS, cpu.r.SP, cpu.r.SP); } else cpu.push(cpu.get(O[0], 16)); }; break;
+        run = () => { if (O[0].t === 'r' && O[0].name === 'SP'){ cpu.r.SP = (cpu.r.SP - 2) & 0xFFFF; cpu.wrw(cpu.s.SS, cpu.r.SP, cpu.r.SP); } else cpu.push(cpu.get(O[0], 16)); }; break;
       case 'POP': need(1, 'one 16-bit operand');
         if (O[0].size === 8 || O[0].t === 'i') throw new AsmError(ln, 'POP needs a 16-bit register or memory word');
         if (O[0].t === 's' && O[0].name === 'CS') throw new AsmError(ln, 'POP CS is not a valid instruction');
         run = () => cpu.put(O[0], cpu.pop(), 16); break;
       case 'XCHG': need(2, 'two operands'); noMemMem();
         { const sz = sizeOf(O[0], O[1]); run = () => { const a = cpu.get(O[0], sz), b = cpu.get(O[1], sz); cpu.put(O[0], b, sz); cpu.put(O[1], a, sz); }; } break;
-      case 'XLAT': case 'XLATB': run = () => { const off = (cpu.r.BX + cpu.reg('AL')) & 0xFFFF; cpu.logAcc('r', 'DS', off, 1); cpu.setReg('AL', cpu.rd8(cpu.phys(cpu.s.DS, off))); }; break;
+      case 'XLAT': case 'XLATB': run = () => cpu.setReg('AL', cpu.rd8(cpu.phys(cpu.s.DS, cpu.r.BX + cpu.reg('AL')))); break;
       case 'LEA': need(2, 'a register and a memory operand'); if (O[1].t !== 'm' || O[0].t !== 'r' || O[0].size !== 16) throw new AsmError(ln, 'LEA needs a 16-bit register and a memory operand');
         run = () => cpu.setReg(O[0].name, cpu.ea(O[1])); break;
       case 'LDS': case 'LES': need(2, 'a register and a memory operand'); if (O[1].t !== 'm') throw new AsmError(ln, `${mn} needs a memory operand`);
-        run = () => { const off = cpu.ea(O[1]), sg = cpu.s[O[1].seg]; cpu.logAcc('r', O[1].seg, off, 2); cpu.logAcc('r', O[1].seg, off + 2, 2);
-          cpu.setReg(O[0].name, cpu.rdw(sg, off)); cpu.s[mn === 'LDS' ? 'DS' : 'ES'] = cpu.rdw(sg, off + 2); }; break;
+        run = () => { const off = cpu.ea(O[1]), sg = cpu.s[O[1].seg]; cpu.setReg(O[0].name, cpu.rdw(sg, off)); cpu.s[mn === 'LDS' ? 'DS' : 'ES'] = cpu.rdw(sg, off + 2); }; break;
       case 'LAHF': run = () => cpu.setReg('AH', (cpu.flags & 0xD5) | 0x02); break;
       case 'SAHF': run = () => { cpu.flags = (cpu.flags & 0xFF00) | (cpu.reg('AH') & 0xD5) | 0x02; }; break;
       case 'PUSHF': run = () => cpu.push(cpu.flags | 0xF000); break;
@@ -486,8 +478,8 @@ var I8086 = (function(){
     if (L !== undefined){ this.push(this.flags); this.push(this.s.CS); this.push(this.ip); this.setF('IF', 0); this.setF('TF', 0); this.ip = this.prog.addr[L]; this.note = why || `INT ${hex(n,2)}h: jumped to the handler INT${n}.`; return; }
     const ah = this.reg('AH');
     if (n === 0x21 && ah === 0x02){ this.out += String.fromCharCode(this.reg('DL')); this.note = 'INT 21h, AH=02h: DOS prints the character in DL.'; return; }
-    if (n === 0x21 && ah === 0x09){ const start = this.r.DX; let off = start, s = '', g = 0; for (;;){ const c = this.rd8(this.phys(this.s.DS, off++)); if (c === 0x24 || ++g > 2000) break; s += String.fromCharCode(c); }
-      this.logAcc('r', 'DS', start, Math.max(1, g + 1)); this.out += s; this.note = 'INT 21h, AH=09h: DOS prints the string at DS:DX up to the $ sign.'; return; }
+    if (n === 0x21 && ah === 0x09){ let off = this.r.DX, s = '', g = 0; for (;;){ const c = this.rd8(this.phys(this.s.DS, off++)); if (c === 0x24 || ++g > 2000) break; s += String.fromCharCode(c); }
+      this.out += s; this.note = 'INT 21h, AH=09h: DOS prints the string at DS:DX up to the $ sign.'; return; }
     if ((n === 0x21 && ah === 0x4C) || n === 0x20){ this.halted = true; this.note = 'The program asked DOS to end it.'; return; }
     if (n === 0x10 && ah === 0x0E){ this.out += String.fromCharCode(this.reg('AL')); this.note = 'INT 10h, AH=0Eh: the BIOS prints the character in AL.'; return; }
     if (n === 3){ this.paused = true; this.note = 'INT 3: breakpoint. Press Step or Run to continue.'; return; }
@@ -503,7 +495,7 @@ var I8086 = (function(){
     const k = P.at[this.ip];
     if (k === undefined){ this.halted = true; this.note = `IP = ${hex(this.ip)}h points into the middle of an instruction.`; return null; }
     const ins = P.ins[k], before = {r:{...this.r}, s:{...this.s}, flags:this.flags, ip:this.ip};
-    this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.access = []; this.note = ''; this.paused = false;
+    this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.note = ''; this.paused = false;
     this.ip = (ins.addr + ins.size) & 0xFFFF;
     try { ins.run(); } catch (e){ this.halted = true; this.note = e.message; }
     this.steps++;

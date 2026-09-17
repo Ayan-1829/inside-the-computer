@@ -91,7 +91,7 @@ build/site.config.json  your site URL
 
 Chips with 24 or more pins are drawn upright, like a datasheet. Run `node build/check-chips.mjs` to check your entry.
 
-**Change colours or text sizes.** Edit the variables at the top of `css/styles.css`. There is one block for light mode and one for dark mode. The green-and-yellow gradients use the `--g-…` variables. Diagrams use them through shared SVG gradients (`fill:url(#g-panel)` and so on), defined once near the top of `build/template.html`. Diagram text sizes are the `.t`, `.t-sm`, `.t-xs` and `.t-lg` rules.
+**Change colours or text sizes.** Edit the variables at the top of `css/styles.css`. There is one block for light mode and one for dark mode. The green-and-amber gradients use the `--g-…` variables. Each level of the site has its own hue in `--lv-1` to `--lv-5`; the page picks one through `--section`, from the `data-level` attribute on `<html>`. The 8086 page uses `--biu`, `--eu`, `--ram` and the three bus colours `--bus-a`, `--bus-d` and `--bus-c`. The type in the 8086 diagram is set by the `.s86 .ttl`, `.lab`, `.sn`, `.val`, `.asm` and `.story` rules near the bottom of the file. Diagrams use them through shared SVG gradients (`fill:url(#g-panel)` and so on), defined once near the top of `build/template.html`. Diagram text sizes are the `.t`, `.t-sm`, `.t-xs` and `.t-lg` rules.
 
 The build checks that every text colour pair reaches a 4.5:1 contrast ratio in both themes. It prints a warning naming any pair that falls short.
 
@@ -122,15 +122,30 @@ After changing the emulator or the 8086 examples, run `node build/test-8086.mjs`
 - An 8-bit barrel shifter and a 4-bit magnitude comparator.
 - A fetch-decode-execute walkthrough of a small looping program.
 - 34 real chips with pin diagrams and an "Inside the chip" view: processors, memory, firmware, timing, bus, ALU, shifter, regulators, audio and serial chips.
-- The **Intel 8086 page**: the chip's own architecture, running real programs. Memory sits outside the chip; the BIU holds the address adder, segment registers and the 6-byte instruction queue; the EU holds the registers, control unit, ALU and flags. Each instruction plays as a series of moves, with a bright dot travelling along the path carrying the data and the speed buttons setting the pace. Hovering a bus names it (address, data or control). The emulator covers:
+- The **Intel 8086 page**: the chip's own architecture, running real programs.
+  The page is four columns that never overlap: the example programs and the
+  flow of the loaded program on the left, the chip in the middle, the three
+  buses in their own channel, and RAM with the physical-address sum and the
+  story of the current move on the right. Memory sits outside the chip; the
+  BIU holds the address adder, the segment registers and the 6-byte queue;
+  the EU holds the registers, control unit, ALU and flags.
+
+  The whole run is planned before it is shown, so the flow list can name every
+  move in advance. Pick a move to jump to it, or press Play and watch a bright
+  dot carry the data along the address, data or control bus, each in its own
+  colour. Clicking a row of RAM opens the opcode encoding for that instruction.
+  The emulator covers:
   - every documented instruction, with 8086 flag rules
   - all addressing modes, including segment overrides
   - DB/DW data and labels
   - string operations with REP
   - DOS text output through INT 21h
-  - step, run and run-to-end, with changed registers, flags and memory highlighted
+  - step, run and jump-to-move, with changed registers, flags and memory
+    highlighted
 
-  Programs are assembled to real 8086 machine code and placed in memory, so IP counts bytes exactly as on the real chip. The encodings are checked against the Capstone disassembler by `build/test-8086-encoding.py`.
+  Programs are assembled to real 8086 machine code and placed in memory, so IP
+  counts bytes exactly as on the real chip. The encodings are checked against
+  the Capstone disassembler by `build/test-8086-encoding.py`.
 
 ## Going back
 

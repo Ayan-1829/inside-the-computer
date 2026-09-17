@@ -1,14 +1,19 @@
 /* ==========================================================
    Design tokens
-   Paper #EDF0EC · Ink #15211C · Solder-mask green #16654F
-   LED amber #E39A12 (used only for "on" / logic 1 / charge)
+   The palette is green: deep green as the primary, amber for
+   anything switched on, and a green circuit board. On top of that
+   each section of the site carries its own hue, set by --section
+   from the level on <html>, and the 8086 page gives the BIU, the
+   EU, RAM and the three buses colours of their own.
+   Every text pair below is checked for 4.5:1 contrast by
+   build/build.mjs in both themes.
    ========================================================== */
 :root{
   --font-ui:"Schibsted Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-read:"Newsreader", Georgia, "Times New Roman", serif;
   --font-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  --bg:#EDF0EC; --surface:#FFFFFF; --surface-2:#F5F7F4;
+  --bg:#EDF0EC; --surface:#FFFFFF; --surface-2:#F5F7F4; --meta-bg:#DEE3DB;
   --ink:#15211C; --ink-2:#3C4943; --ink-3:#56635C;
   --line:#C9D2CC; --line-2:#E0E6E2;
   --accent:#16654F; --accent-2:#0F4E3C; --accent-ink:#FFFFFF;
@@ -17,6 +22,14 @@
   --out:#2F5FC4;
   --grid-dot:rgba(21,33,28,.10);
   --shadow:0 1px 2px rgba(21,33,28,.05), 0 12px 32px -18px rgba(21,33,28,.28);
+
+  /* one hue per level of the site; --section follows the page */
+  --lv-1:#16654F; --lv-2:#0E6B75; --lv-3:#2F5FC4; --lv-4:#6B4AA8; --lv-5:#9A5A1E;
+  --section:var(--lv-1);
+  --section-soft:rgba(22,101,79,.10);
+  /* the parts of the 8086 page */
+  --biu:#9A6510; --eu:#16654F; --ram:#1C6E7E;
+  --bus-a:#2F5FC4; --bus-d:#12775C; --bus-c:#A96A0E; --ram-done:#EAF2EC;
 
   /* illustration materials (checked for contrast with build-time script) */
   --i-case:#D5DCD7; --i-case-edge:#76837C; --i-cavity:#B4BFB8;
@@ -44,7 +57,7 @@
   --g-biu-a:rgba(227,154,18,.16); --g-biu-b:rgba(227,154,18,.04); --g-eu-a:rgba(22,101,79,.12); --g-eu-b:rgba(22,101,79,.03);
 }
 [data-theme="dark"]{
-  --bg:#0F1613; --surface:#151E1A; --surface-2:#1B2621;
+  --bg:#0F1613; --surface:#151E1A; --surface-2:#1B2621; --meta-bg:#090E0C;
   --ink:#E6EDE9; --ink-2:#B3C0B9; --ink-3:#98A69F;
   --line:#33413B; --line-2:#26312C;
   --accent:#4DC39C; --accent-2:#7BD9B9; --accent-ink:#0B1A14;
@@ -53,6 +66,12 @@
   --out:#86A9FF;
   --grid-dot:rgba(228,235,231,.07);
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 36px -20px rgba(0,0,0,.7);
+
+  --lv-1:#4DC39C; --lv-2:#4FC8D8; --lv-3:#86A9FF; --lv-4:#B79BFF; --lv-5:#FFB23A;
+  --section:var(--lv-1);
+  --section-soft:rgba(77,195,156,.12);
+  --biu:#FFC46B; --eu:#4DC39C; --ram:#5FC8DC;
+  --bus-a:#86A9FF; --bus-d:#4DC39C; --bus-c:#FFB23A; --ram-done:#17302A;
 
   --i-case:#2A3530; --i-case-edge:#6A7C73; --i-cavity:#0D1411;
   --i-board:#1F5443; --i-board-edge:#45907A; --i-trace:#3F8A70;
@@ -73,10 +92,22 @@
   --g-panel-a:#1E2B25; --g-panel-b:#17221D; --g-block-a:#27362F; --g-block-b:#1F2C26;
   --g-on-a:#6ADAB3; --g-on-b:#3AA884; --g-brand-a:#5AD0A8; --g-brand-b:#2A8F6E;
   --g-sig-a:rgba(255,178,58,.36); --g-sig-b:rgba(255,178,58,.10);
-  --g-acc-a:rgba(77,195,156,.22); --g-acc-b:rgba(255,178,58,.16);
-  --g-flag-a:#FFCB6B; --g-flag-b:#F0A021; --g-board-a:#276552; --g-board-b:#1A4839;
-  --g-biu-a:rgba(255,178,58,.12); --g-biu-b:rgba(255,178,58,.03); --g-eu-a:rgba(77,195,156,.11); --g-eu-b:rgba(77,195,156,.02);
+  --g-acc-a:rgba(77,195,156,.20); --g-acc-b:rgba(255,178,58,.18);
+  --g-flag-a:#FFCB6B; --g-flag-b:#E9A52A; --g-board-a:#2B6857; --g-board-b:#1A4638;
+  --g-biu-a:rgba(255,178,58,.14); --g-biu-b:rgba(255,178,58,.03); --g-eu-a:rgba(77,195,156,.12); --g-eu-b:rgba(77,195,156,.02);
 }
+
+/* each level of the site takes its own hue */
+[data-level="1"]{--section:var(--lv-1);--section-soft:rgba(22,101,79,.10)}
+[data-level="2"]{--section:var(--lv-2);--section-soft:rgba(14,107,117,.10)}
+[data-level="3"]{--section:var(--lv-3);--section-soft:rgba(47,95,196,.10)}
+[data-level="4"]{--section:var(--lv-4);--section-soft:rgba(107,74,168,.10)}
+[data-level="5"]{--section:var(--lv-5);--section-soft:rgba(154,90,30,.10)}
+[data-theme="dark"][data-level="1"]{--section-soft:rgba(77,195,156,.13)}
+[data-theme="dark"][data-level="2"]{--section-soft:rgba(79,200,216,.13)}
+[data-theme="dark"][data-level="3"]{--section-soft:rgba(134,169,255,.13)}
+[data-theme="dark"][data-level="4"]{--section-soft:rgba(183,155,255,.13)}
+[data-theme="dark"][data-level="5"]{--section-soft:rgba(255,178,58,.13)}
 
 *{box-sizing:border-box}
 .svg-defs{position:absolute;width:0;height:0;overflow:hidden}   /* not display:none, or some browsers drop the gradients */
@@ -115,7 +146,7 @@ button{font:inherit;color:inherit}
 .crumbs li+li::before{content:"";width:7px;height:7px;border-right:1.5px solid var(--ink-3);border-top:1.5px solid var(--ink-3);transform:rotate(45deg);margin:0 10px 0 6px;opacity:.7}
 .crumbs a,.crumbs button{text-decoration:none;display:inline-block;border:0;background:none;padding:6px 6px;border-radius:8px;font-size:16px;font-weight:500;color:var(--ink-2);cursor:pointer}
 .crumbs a:hover,.crumbs button:hover{color:var(--accent);background:var(--accent-soft)}
-.crumbs li:last-child a,.crumbs li:last-child button{color:var(--ink);font-weight:700;cursor:default;background:none}
+.crumbs li:last-child a,.crumbs li:last-child button{color:var(--ink);font-weight:700;cursor:default;background:none;box-shadow:inset 0 -2px 0 var(--section)}
 
 /* ---------- Main grid ---------- */
 .main{display:grid;grid-template-columns:minmax(0,68fr) minmax(330px,32fr);gap:16px;padding:0 24px 24px;min-height:0}
@@ -153,7 +184,8 @@ button{font:inherit;color:inherit}
 /* ---------- Info panel ---------- */
 .panel{min-height:0;overflow-y:auto;border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg, var(--g-panel-a) 0%, var(--g-panel-a) 40%, var(--g-panel-b) 100%);box-shadow:var(--shadow);scroll-behavior:smooth}
 .panel-inner{padding:26px 28px 40px}
-.p-level{margin:0 0 8px;font-size:15px;font-weight:600;color:var(--accent)}
+.p-level{margin:0 0 8px;font-size:15px;font-weight:700;color:var(--section);display:inline-flex;align-items:center;gap:7px}
+.p-level::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--section)}
 .p-title{margin:0;font-size:clamp(32px,2.8vw,44px);font-weight:800;letter-spacing:-.025em;line-height:1.04}
 .p-short{margin:10px 0 0;font-family:var(--font-read);font-size:21.5px;line-height:1.4;color:var(--ink-2)}
 .p-badge{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);font-size:14.5px;font-weight:600;color:var(--ink-2)}
@@ -251,8 +283,8 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .m-board{fill:url(#g-board);stroke:var(--i-board-edge);stroke-width:2}
 .m-chip{fill:var(--i-chip);stroke:var(--i-chip-edge);stroke-width:1.5}
 .m-plastic{fill:var(--i-chip-edge);stroke:var(--i-chip);stroke-width:1}
-.m-slot{fill:#20262A;stroke:#0f1416;stroke-width:1}
-[data-theme="dark"] .m-slot{fill:#0a0d0c;stroke:#2b3531}
+.m-slot{fill:#241C3C;stroke:#120C22;stroke-width:1}
+[data-theme="dark"] .m-slot{fill:#0B0716;stroke:#372C58}
 .m-metal{fill:var(--i-metal);stroke:var(--i-metal-edge);stroke-width:1.5}
 .m-metal2{fill:var(--i-metal-2);stroke:var(--i-metal-edge);stroke-width:1.5}
 .m-metal-lt{fill:var(--i-metal-lt);stroke:var(--i-metal-edge);stroke-width:1.5}
@@ -278,7 +310,7 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .arr{fill:none;stroke:var(--i-wire);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .arr-h{fill:var(--i-wire)}
 .arr.on{stroke:var(--signal)} .arr-h.on{fill:var(--signal)}
-.m-cable{fill:none;stroke:#2d3431;stroke-width:12;stroke-linecap:round;opacity:.85}
+.m-cable{fill:none;stroke:#2B2246;stroke-width:12;stroke-linecap:round;opacity:.85}
 
 /* logic */
 .g-body{fill:var(--i-sym-fill);stroke:var(--i-sym);stroke-linejoin:round}
@@ -296,11 +328,11 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .sw-knob{fill:var(--i-panel);stroke:var(--i-sym);stroke-width:2;transition:transform .2s ease}
 .sw.on .sw-knob{transform:translateX(26px);fill:var(--signal);stroke:var(--signal)}
 .sw-val{font-size:14px;font-weight:700;fill:var(--i-text);pointer-events:none;text-anchor:middle;transition:transform .2s ease}
-.sw.on .sw-val{transform:translateX(26px);fill:#3b2600}
+.sw.on .sw-val{transform:translateX(26px);fill:var(--signal-ink)}
 .sw:hover .sw-track{stroke:var(--accent)}
 .led-c{fill:var(--i-block);stroke:var(--i-sym);stroke-width:2;transition:fill .2s}
 .led-c.on{fill:var(--signal);stroke:var(--signal)}
-.led-c.on + .led-v{fill:#3b2600}
+.led-c.on + .led-v{fill:var(--signal-ink)}
 .led-v{font-size:15px;font-weight:700;text-anchor:middle;fill:var(--i-text);pointer-events:none}
 .btn-s rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:all .15s}
 .btn-s text{font-size:16px;font-weight:600;fill:var(--i-text);text-anchor:middle;pointer-events:none}
@@ -352,7 +384,6 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .scene.focus-mode .focused .hot{opacity:1}
 .scene.focus-mode .focused>.hl{opacity:1;stroke-dasharray:6 6}
 
-
 /* ---------- signal flow, gate evaluation ---------- */
 .flow{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round;stroke-dasharray:3 13;opacity:0;pointer-events:none;transition:opacity .2s}
 .wire.on + .flow{opacity:.8;animation:flow .9s linear infinite}
@@ -376,7 +407,7 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .flag rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s}
 .flag text{font-size:16.5px;font-weight:700;text-anchor:middle;fill:var(--i-text)}
 .flag.on rect{fill:url(#g-flag);stroke:var(--signal)}
-.flag.on text{fill:#3b2600}
+.flag.on text{fill:var(--signal-ink)}
 .pill rect{fill:var(--i-block);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .2s,stroke .2s}
 .pill text{font-size:16.5px;font-weight:700;text-anchor:middle;fill:var(--i-text-mut)}
 .pill.on rect{fill:var(--accent);stroke:var(--accent)}
@@ -390,7 +421,6 @@ dialog::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
 .colhl.on{opacity:1}
 .m-acc-soft.active{stroke-width:3}
 .cu-arr .arr{stroke-width:2.4}
-
 
 /* ---------- name labels: drawn last so they sit on top of every component ---------- */
 .labels{transition:opacity .4s}
@@ -446,56 +476,19 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .ipin.in{fill:var(--pin-in)} .ipin.out{fill:var(--pin-out)} .ipin.bi{fill:var(--pin-bi)} .ipin.pwr{fill:var(--pin-pwr)}
 .chip-body-in{fill:var(--i-block);stroke:var(--i-chip-edge);stroke-width:2}
 .pin-dot{fill:var(--i-wire)}
-.flag.keep rect{opacity:.35}.flag.keep text{opacity:.5}
-/* 8086 ALU: clickable flags going in, changed flags coming out, locked width buttons */
-.flag.fin{cursor:pointer}
-.flag.fin:hover rect{stroke:var(--accent)}
-.flag.fin:not(.on) rect{fill:var(--i-panel)}
-.flag.fin.on rect{fill:var(--signal-soft);stroke:var(--signal)}
-.flag.fin.on text{fill:var(--i-text)}
-.flag.fout.chg rect{stroke:var(--accent);stroke-width:3}
 .btn-s.dis{opacity:.45;cursor:not-allowed}
 /* 8086 page: buses, moving dot, memory, queue, program list */
 .busline{cursor:default}
 .bus-hit{fill:transparent}
 .bus-line{fill:none;stroke:var(--i-sym);stroke-width:7;stroke-linecap:round;opacity:.55;transition:stroke .25s,opacity .25s,stroke-width .25s}
-.bus-name{font-size:13.5px;font-weight:700;fill:var(--i-text-mut);opacity:0;transition:opacity .2s}
 .busline:hover .bus-line,.busline:focus-visible .bus-line{opacity:1;stroke-width:9;stroke:var(--accent)}
-.busline:hover .bus-name,.busline:focus-visible .bus-name,.busline.on .bus-name{opacity:1;fill:var(--i-text)}
 .busline.on .bus-line{opacity:1;stroke:var(--signal);stroke-width:9}
 .flow-dot{fill:url(#g-led);stroke:var(--signal);stroke-width:2;filter:drop-shadow(0 0 6px var(--signal))}
+.flow-track{fill:none;stroke:var(--signal);stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
 .flow-lab{font-size:13px;font-weight:700;font-family:var(--font-mono);fill:var(--i-text);paint-order:stroke;stroke:var(--surface);stroke-width:4px}
-.memb rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.2;transition:fill .25s,stroke .25s}
-.memb text{font-family:var(--font-mono);font-weight:600;text-anchor:middle;fill:var(--i-text-mut)}
-.memb.code rect{fill:url(#g-block)}
-.memb.code text{fill:var(--i-text)}
-.memb.ip rect{stroke:var(--accent);stroke-width:2.5;stroke-dasharray:4 2}
-.memb.lit rect{fill:url(#g-sig);stroke:var(--signal);stroke-width:2.5}
-.memb.lit text{fill:var(--i-text)}
 .qcell.flush rect{stroke-dasharray:4 3;opacity:.5}
-.x86-listbox{height:78px;overflow:auto}
-.x86-listbox .x86-list{max-height:none;font-size:12.5px;line-height:1.5}
-.x86-listbox .ln{min-width:3.2em;font-size:11.5px}
-.x86-outbox{height:60px;overflow:auto;font-family:var(--font-mono);font-size:13px;line-height:1.45;color:var(--i-text);white-space:pre-wrap;word-break:break-all}
+.x86-outbox{height:60px;overflow:auto;font-family:var(--font-mono);font-size:14px;line-height:1.45;color:var(--i-text);white-space:pre-wrap;word-break:break-all}
 .x86-outbox.lit{color:var(--accent);font-weight:700}
-.x86-edit{height:300px}
-.x86-edit textarea{width:100%;height:100%;resize:none;font-family:var(--font-mono);font-size:13px;line-height:1.5;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.x86-exsel select{width:100%;height:22px;font-family:var(--font-ui);font-size:12.5px;font-weight:600;padding:0 6px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
-.x86-exsel select:hover{border-color:var(--accent)}
-
-/* Instruction-set / ALU-operations reference dialogs */
-dialog.x86-ref-dlg{width:min(880px,calc(100vw - 32px))}
-.x86-ref-body{padding:6px 22px 22px;overflow:auto;max-height:calc(min(80vh,760px) - 80px)}
-.x86-refg{margin-top:16px}
-.x86-refg:first-child{margin-top:0}
-.x86-refg h3{margin:0 0 6px;font-size:15px;font-weight:700;color:var(--accent)}
-.x86-reftbl{width:100%;border-collapse:collapse;font-size:14.5px}
-.x86-reftbl tr{cursor:pointer;transition:background .12s}
-.x86-reftbl tr:hover{background:var(--accent-soft)}
-.x86-reftbl td{padding:6px 8px;border-bottom:1px solid var(--line-2);vertical-align:top}
-.x86-reftbl td.mn{font-family:var(--font-mono);font-weight:700;color:var(--ink);white-space:nowrap;width:1%}
-.x86-reftbl td.mn .sym{display:inline-block;min-width:1.6em;margin-left:6px;padding:0 4px;border-radius:5px;background:var(--surface-2);color:var(--accent);font-weight:700;text-align:center}
-.x86-reftbl td:last-child{color:var(--ink-2)}
 
 /* 8086 architecture view */
 .band-biu{fill:url(#g-biu);stroke:var(--signal);stroke-width:1.5;stroke-opacity:.55}
@@ -505,26 +498,7 @@ dialog.x86-ref-dlg{width:min(880px,calc(100vw - 32px))}
 .qcell rect{fill:url(#g-panel);stroke:var(--i-panel-edge);stroke-width:1.2;transition:fill .25s,stroke .25s}
 .qcell.empty rect{stroke-dasharray:3 3;opacity:.6}
 .qcell.on:not(.empty) rect{fill:url(#g-sig);stroke:var(--signal);stroke-width:2}
-[data-seg].use rect{stroke:var(--accent);stroke-width:2.2}
 .alu86.active{stroke:var(--signal);stroke-width:3}
-.step-badge circle{fill:var(--i-panel);stroke:var(--i-wire);stroke-width:1.6;transition:fill .25s,stroke .25s}
-.step-badge text{font-size:12.5px;font-weight:800;text-anchor:middle;fill:var(--i-text-mut)}
-.step-badge.on circle{fill:url(#g-flag);stroke:var(--signal)}
-.step-badge.on text{fill:#3b2600}
-[data-hibox].lit > rect{stroke:var(--signal);stroke-width:2.5}
-.flag.fin.chg rect{stroke:var(--accent);stroke-width:3}
-.flag.fin.und rect{stroke-dasharray:4 3}
-[data-half].will{stroke:var(--signal);stroke-width:2.5;stroke-dasharray:5 3}
-[data-half].flash{fill:var(--signal-soft);stroke:var(--signal);stroke-dasharray:none}
-/* 8086 machine: registers and memory */
-.memc{cursor:pointer}
-.memc rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1.5;transition:fill .25s,stroke .25s}
-.memc text{font-family:var(--font-mono);font-weight:600;text-anchor:middle;fill:var(--i-text);pointer-events:none}
-.memc:hover rect{stroke:var(--accent)}
-.memc.pick rect{stroke:var(--accent);stroke-dasharray:4 3}
-.memc.sel rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
-.memc.will rect,[data-reg].will rect{stroke:var(--signal);stroke-width:2.5;stroke-dasharray:5 3}
-.memc.flash rect,[data-reg].flash rect{fill:var(--signal-soft);stroke:var(--signal);stroke-dasharray:none}
 [data-reg] rect{transition:fill .3s,stroke .3s}
 
 /* ---------- mobile parts strip & touch pads ---------- */
@@ -558,7 +532,7 @@ dialog.x86-ref-dlg{width:min(880px,calc(100vw - 32px))}
   .strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;margin:-4px 0 0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .strip::-webkit-scrollbar{display:none}
   .strip .chip{flex:none;min-height:44px;padding:10px 15px;background:var(--surface)}
-  .strip .chip.cur{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .strip .chip.cur{border-color:var(--section);background:var(--section-soft);color:var(--section)}
   .strip .strip-label{flex:none;align-self:center;font-size:13px;font-weight:600;color:var(--ink-3);padding:0 2px 0 4px}
   .btn{height:44px;min-width:44px}
   .btn.icon{width:44px}
@@ -584,58 +558,139 @@ dialog.x86-ref-dlg{width:min(880px,calc(100vw - 32px))}
   .cmp{grid-template-columns:1fr}
 }
 
-/* ---------- 8086 emulator (HTML scene) ---------- */
+/* ---------- generic HTML scene ---------- */
 .html-scene{overflow:auto;padding:18px 18px 18px;font-family:var(--font-ui);color:var(--ink)}
-.x86{display:flex;flex-direction:column;gap:12px;min-width:0}
-.x86-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-right:190px}   /* keep clear of the model badge */
-.x86-bar .btn{height:40px}
 .btn-p{background:linear-gradient(160deg, var(--g-on-a), var(--g-on-b));border-color:var(--accent);color:var(--on-accent,#fff)}
 .btn.btn-p:hover,.btn.btn-p:focus-visible{color:var(--on-accent);background:linear-gradient(160deg, var(--g-on-a), var(--g-on-b));border-color:var(--accent)}
 .btn-p:hover:not(:disabled){filter:brightness(1.08)}
-.x86 .btn:disabled{opacity:.45;cursor:not-allowed}
-.x86-steps{margin-left:auto;font-size:14px;color:var(--ink-3);font-weight:600}
-.x86-grid{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1fr) minmax(0,1.28fr);gap:10px}
-.x86-box{background:linear-gradient(180deg, var(--g-panel-a), var(--g-panel-b));border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-width:0}
-.x86-box h4{margin:2px 0 8px;font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--ink-3);text-transform:uppercase}
-.x86-box h4:not(:first-child){margin-top:12px}
-.x86-list{list-style:none;margin:0;padding:0;max-height:300px;overflow:auto;font-family:var(--font-mono);font-size:13.5px;line-height:1.55}
-.x86-list li{display:flex;gap:8px;padding:0 6px;border-radius:6px;white-space:pre}
-.x86-list .ln{color:var(--ink-3);min-width:1.6em;text-align:right;user-select:none}
-.x86-list li.cur{background:var(--signal-soft);box-shadow:inset 3px 0 0 var(--signal)}
-.x86-list li.err{background:rgba(178,74,58,.15);box-shadow:inset 3px 0 0 var(--pin-pwr)}
-.x86-prog textarea{width:100%;height:300px;resize:vertical;font-family:var(--font-mono);font-size:13.5px;line-height:1.55;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.x86-regs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.rg{border:1px solid var(--line);border-radius:8px;padding:4px 6px;display:flex;flex-direction:column;align-items:flex-start;transition:background .25s,border-color .25s}
-.rg.wide{grid-column:span 2;display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:baseline}
-.rg.wide small{grid-column:2;font-size:11.5px;color:var(--ink-3)}
-.rg span{font-size:12.5px;font-weight:700;color:var(--ink-3)}
-.rg b{font-family:var(--font-mono);font-size:15px;font-weight:700}
-.rg b i{font-style:normal}
-.rg.ch,.fl.ch{background:var(--signal-soft);border-color:var(--signal)}
-.x86-flags{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px}
-.fl{border:1px solid var(--line);border-radius:7px;text-align:center;padding:3px 0}
-.fl span{display:block;font-size:11.5px;font-weight:700;color:var(--ink-3)}
-.fl b{font-family:var(--font-mono);font-size:15px;color:var(--ink-3)}
-.fl.on b{color:var(--ink)}
-.x86-mem,.x86-stack{font-family:var(--font-mono);font-size:12.5px;line-height:1.6;overflow-x:auto}
-.mr{display:flex;gap:3px;white-space:nowrap}
-.mr span{color:var(--ink-3);min-width:3.6em}
-.mr i{font-style:normal;padding:0 1px;border-radius:3px}
-.mr i.ch{background:var(--signal-soft);box-shadow:0 0 0 1px var(--signal)}
-.mr em{font-style:normal;color:var(--ink-3);margin-left:4px}
-.x86-out{margin:0;min-height:1.6em;padding:6px 8px;border-radius:8px;background:var(--i-screen);color:#E7FFF3;font-family:var(--font-mono);font-size:13.5px;white-space:pre-wrap;word-break:break-all}
-.x86-msg{margin:0;padding:10px 12px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:15px;line-height:1.5;min-height:3.2em}
-.x86-msg code,.x86-desc b{font-family:var(--font-mono)}
-.x86-msg .ln-tag{font-size:12.5px;font-weight:700;color:var(--ink-3)}
-.x86-msg .bad{color:var(--pin-pwr)}
-.x86-ref{background:linear-gradient(180deg, var(--g-panel-a), var(--g-panel-b));border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.x86-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.x86-tabs a{padding:6px 11px;border-radius:999px;border:1px solid var(--line);font-size:14.5px;font-weight:600;color:var(--ink-2);text-decoration:none}
-.x86-tabs a.on{background:linear-gradient(160deg, var(--g-on-a), var(--g-on-b));border-color:var(--accent);color:var(--on-accent,#fff)}
-.x86-ops{display:flex;flex-wrap:wrap;gap:6px}
-.x86-ops .op{font-family:var(--font-mono);font-size:13.5px;font-weight:700;padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
-.x86-ops .op:hover,.x86-ops .op.on{border-color:var(--accent);background:var(--accent-soft)}
-.x86-desc{margin:10px 0 0;font-size:15px;color:var(--ink-2)}
-@media (max-width:1180px){ .x86-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .x86-grid .x86-prog{grid-row:span 2} }
-@media (max-width:980px){ .x86-bar{padding-right:0} }
-@media (max-width:640px){ .html-scene{padding:12px 10px 12px} .x86-grid{grid-template-columns:1fr} .x86-grid .x86-prog{grid-row:auto} .x86-list{max-height:220px} }
+
+/* ==========================================================
+   The 8086 page (scenes/i8086.js)
+   Everything is namespaced under .s86 so the other diagrams,
+   which share class names like .flag, are left alone.
+   ========================================================== */
+.s86 .ttl{font-size:23px;font-weight:700;fill:var(--i-text)}
+.s86 .lab{font-size:17.5px;font-weight:600;fill:var(--i-text-mut);letter-spacing:.02em}
+.s86 .sn{font-size:18.5px;font-weight:600;fill:var(--i-text)}
+.s86 .sig{font-size:24px;font-weight:700;fill:var(--i-text)}
+.s86 .val{font-family:var(--font-mono);font-size:18.5px;font-weight:700;fill:var(--i-text)}
+.s86 [data-txt="cu"]{font-size:15.5px}   /* the control unit's own box is too narrow for the general value size */
+.s86 .asm{font-family:var(--font-mono);font-size:17px;font-weight:600;fill:var(--i-text)}
+.s86 .story{font-size:19.5px;font-weight:500;fill:var(--i-text-mut)}
+.s86 .acc{fill:var(--accent)}
+.s86 .val.t-mut{fill:var(--i-text-mut);font-weight:600}
+.s86 .rule86{stroke:var(--i-panel-edge);stroke-width:1.2}
+/* the BIU, the EU and RAM each carry their own colour */
+.s86 .band-biu{stroke:var(--biu);stroke-opacity:.75;stroke-width:1.8}
+.s86 .band-eu{stroke:var(--eu);stroke-opacity:.7;stroke-width:1.8}
+.s86 .biu-t{fill:var(--biu)} .s86 .eu-t{fill:var(--eu)} .s86 .ram-t{fill:var(--ram)}
+.s86 .ram-panel{stroke:var(--ram);stroke-opacity:.6;stroke-width:1.8}
+
+/* the three bus colours, used by the trunk lines, the key and the dot */
+.s86 .b-addr{--bc:var(--bus-a)} .s86 .b-data{--bc:var(--bus-d)}
+.s86 .b-ctrl{--bc:var(--bus-c)} .s86 .b-int{--bc:var(--eu)}
+.s86 .bus-line{stroke:var(--bc);stroke-width:6;opacity:.5}
+.s86 .busline:hover .bus-line,.s86 .busline:focus-visible .bus-line{opacity:.95;stroke-width:8;stroke:var(--bc)}
+.s86 .busline.on .bus-line{opacity:1;stroke:var(--bc);stroke-width:9;filter:drop-shadow(0 0 7px var(--bc))}
+.s86 .bus-key{stroke:var(--bc);stroke-width:5;stroke-linecap:round}
+.s86 .flow-lab{text-anchor:middle;font-size:14px}
+.s86 .flow-dot{fill:var(--bc,var(--signal));stroke:var(--surface);stroke-width:1.5;filter:drop-shadow(0 0 8px var(--bc,var(--signal)))}
+.s86 .flow-track{fill:none;stroke:var(--bc,var(--signal));stroke-width:3.6;stroke-linecap:round;stroke-linejoin:round;opacity:.9;filter:drop-shadow(0 0 5px var(--bc,var(--signal)));transition:opacity .15s}
+
+/* wiring inside the chip */
+.s86 .w86{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round;opacity:.75}
+.s86 .w86.a{stroke:var(--bus-a)} .s86 .w86.d{stroke:var(--bus-d)} .s86 .w86.c{stroke:var(--bus-c)}
+.s86 .w86.t{stroke-width:1.4;opacity:.55}
+.s86 .bus86{stroke:var(--eu);stroke-width:7;opacity:.45}
+
+/* blocks that light up while a move is on screen */
+.s86 .m-block.lit{fill:url(#g-sig);stroke:var(--signal);stroke-width:2.4}
+.s86 [data-half].lit{fill:url(#g-sig);stroke:var(--signal);stroke-width:2.4}
+.s86 .m-acc-soft.active,.s86 .m-block.active{stroke:var(--signal);stroke-width:3}
+.s86 .qcell.flush rect{stroke-dasharray:4 3;opacity:.45}
+.s86 .flag rect{stroke-width:1.2}
+.s86 .flag .fn{font-size:11.5px;font-weight:700;text-anchor:middle;fill:var(--i-text-mut)}
+.s86 .flag .fv{font-size:16.5px;font-weight:700;text-anchor:middle;fill:var(--i-text)}
+.s86 .flag.on .fn{fill:var(--signal-ink)}
+.s86 .flag.chg rect{stroke:var(--accent);stroke-width:2.6}
+
+/* the rows of RAM */
+.s86 .crow,.s86 .drow{cursor:default}
+.s86 .crow{cursor:pointer}
+.s86 .crow rect,.s86 .drow rect{fill:var(--i-panel);stroke:var(--i-panel-edge);stroke-width:1;transition:fill .22s,stroke .22s}
+.s86 .crow:hover rect{stroke:var(--accent)}
+.s86 .crow.done rect{fill:var(--ram-done)}
+.s86 .crow.cur rect{stroke:var(--accent);stroke-width:2.2}
+.s86 .crow.lit rect,.s86 .drow.lit rect{fill:url(#g-sig);stroke:var(--signal);stroke-width:2.4}
+.s86 .btn-s text{font-size:17.5px}   /* Play/Step/Reset, which carry no inline font-size of their own */
+
+/* the narration box (bottom right) and the control-strip buttons (left) are UI
+   around the simulation, not part of the chip itself — shaded a touch darker
+   than the chip's own blocks so that reads at a glance */
+.s86 .m-block.meta{fill:var(--meta-bg)}
+.s86 .btn-s rect{fill:var(--meta-bg)}
+.s86 .btn-s.on rect{fill:url(#g-on)}      /* the selected speed button still gets its green fill */
+
+/* ---- the panels drawn with HTML inside foreignObject ---- */
+/* the example picker, collapsed to a single combo box showing only the current pick */
+.x86-cur{height:64px;box-sizing:border-box;display:flex;align-items:stretch}
+.x86-curbox{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;font-family:var(--font-ui);background:var(--meta-bg);border:1px solid var(--line);border-radius:12px;padding:8px 14px;box-sizing:border-box;cursor:pointer}
+.x86-curbox:hover{border-color:var(--accent)}
+.x86-cur:focus-visible .x86-curbox{border-color:var(--accent);outline:none}
+.x86-curtxt{display:flex;flex-direction:column;gap:2px;overflow:hidden;min-width:0}
+.x86-curtxt b{font-size:19px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x86-curtxt em{font-style:normal;font-size:15.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x86-curchev{width:20px;height:20px;flex:none;color:var(--ink-3)}
+
+/* the full example list, shown only inside the overlay dropdown */
+.x86-exs-ov{max-height:600px;overflow:auto;padding-right:6px}
+.x86-exg{margin-bottom:10px}
+.x86-exg b{display:block;font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin:2px 0 5px}
+.x86-exg button{font-family:var(--font-mono);font-size:15.5px;font-weight:700;padding:4px 8px;margin:0 5px 5px 0;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.x86-exg button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.x86-exg button.on{background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border-color:var(--accent);color:var(--on-accent)}
+.x86-exg button.big{display:block;width:100%;margin:0 0 6px;text-align:left;font-family:var(--font-ui);font-size:17px;font-weight:600;padding:8px 10px;line-height:1.3}
+.x86-exg button.big em{display:block;font-style:normal;font-size:15.5px;font-weight:500;color:var(--ink-3);margin-top:2px}
+.x86-exg button.big.on em{color:var(--on-accent);opacity:.85}
+
+.x86-flow{height:488px;overflow:auto;font-family:var(--font-ui);background:var(--meta-bg);border:1px solid var(--line);border-radius:12px;padding:4px 10px 8px;box-sizing:border-box}
+.x86-flow .fg{display:flex;align-items:center;gap:7px;margin:10px 0 4px;font-size:16px;color:var(--ink-3)}
+.x86-flow .fg .fn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
+/* the assembly instruction stands out — bigger, bold, in the accent colour */
+.x86-flow .fg code{font-family:var(--font-mono);font-size:19.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.x86-flow .fg i{margin-left:auto;font-style:normal;font-family:var(--font-mono);font-size:14px}
+/* the micro-step list under it stays muted, so the instruction itself reads first */
+.x86-flow .fl{display:flex;align-items:center;gap:7px;width:100%;text-align:left;font-size:16.5px;font-weight:400;line-height:1.34;padding:5px 7px;margin:1px 0 0 20px;width:calc(100% - 20px);border:0;border-radius:7px;background:none;color:var(--ink-3);cursor:pointer}
+.x86-flow .fl:hover{background:var(--accent-soft);color:var(--ink)}
+.x86-flow .fl .fb{flex:none;width:8px;height:8px;border-radius:50%;background:var(--bc,var(--accent))}
+.x86-flow .fl.past{color:var(--ink-3);opacity:.55}
+.x86-flow .fl.on{background:var(--signal-soft);color:var(--ink);font-weight:700;box-shadow:inset 3px 0 0 var(--signal)}
+.x86-flow .x86-bad{margin:4px 0;font-size:16.5px;color:var(--pin-pwr)}
+
+.x86-outbox{height:42px;overflow:auto;font-family:var(--font-mono);font-size:17px;line-height:1.4;color:var(--i-text);white-space:pre-wrap;word-break:break-all}
+.x86-outbox.lit{color:var(--accent);font-weight:700}
+
+.s86 .scrim86{fill:rgba(8,6,24,.5)}
+.x86-ov{height:750px;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 18px;box-shadow:var(--shadow);font-family:var(--font-ui)}
+.x86-ov .ovh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.x86-ov h3{margin:0;font-size:21.5px;font-weight:700}
+.x86-ov .ovh button,.x86-ov .prim{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:6px 14px;font-size:16px;font-weight:600;cursor:pointer}
+.x86-ov .ovh button:hover{border-color:var(--accent);color:var(--accent)}
+.x86-ov .prim{background:linear-gradient(160deg,var(--g-on-a),var(--g-on-b));border-color:var(--accent);color:var(--on-accent)}
+.x86-ov .orow{display:grid;grid-template-columns:126px 1fr 200px;gap:16px;width:100%;text-align:left;align-items:center;padding:5px 10px;border:0;border-radius:8px;background:none;color:var(--ink);font-size:17px;cursor:pointer}
+.x86-ov .orow.head{color:var(--ink-3);font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:default}
+.x86-ov .orow:not(.head):hover{background:var(--accent-soft)}
+.x86-ov .orow.sel{background:var(--signal-soft);font-weight:700}
+.x86-ov .mono{font-family:var(--font-mono);font-size:15.5px}
+.x86-ov .dim{color:var(--ink-3)}
+.x86-ov .acc{color:var(--accent)}
+.x86-ov .olist{flex:1;overflow:auto;min-height:0}
+.x86-ov .odet{margin-top:10px;background:var(--surface-2);border-radius:12px;padding:10px 14px;font-size:17.5px;line-height:1.55;color:var(--ink-2)}
+.x86-ov .odet p{margin:0 0 5px}
+.x86-ov .odet p:last-child{margin:0}
+.x86-ov .x86-ta{flex:1;width:100%;resize:none;font-family:var(--font-mono);font-size:16px;line-height:1.6;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.x86-ov .ovf{display:flex;align-items:center;gap:14px;margin-top:12px;font-size:15px;color:var(--ink-3)}
+
+.x86-exs-ov::-webkit-scrollbar,.x86-flow::-webkit-scrollbar{width:8px}
+.x86-exs-ov::-webkit-scrollbar-thumb,.x86-flow::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.x86-exs-ov,.x86-flow{scrollbar-width:thin;scrollbar-color:var(--line) transparent}

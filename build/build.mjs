@@ -79,7 +79,7 @@ function render(id){
     ? 'computer components, parts of a computer, computer architecture, how a CPU works, ALU, arithmetic logic unit, logic gates, truth table, full adder, multiplexer, barrel shifter, flip-flop, 7400 series, RAM, cache, GPU, SSD, power supply, motherboard, digital logic, interactive learning'
     : [n.name, ...n.children.map(c => N[c].name), N[n.parent]?.name, BASE_KEYWORDS].filter(Boolean).join(', ');
   const vals = {
-    ROOT: rootRel, SITE, ID: id, HOME: href('computer'),
+    ROOT: rootRel, SITE, ID: id, LEVEL: String(n.level), HOME: href('computer'),
     TITLE: esc(call('metaTitle', id)), DESC: esc(call('metaDesc', id)), KEYWORDS: esc(keywords),
     CANONICAL: canonical, OGTYPE: home ? 'website' : 'article',
     JSONLD: JSON.stringify(call('jsonLD', id, SITE)).replace(/</g,'\\u003c'),

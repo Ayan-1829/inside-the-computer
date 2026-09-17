@@ -10,6 +10,8 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 3.5.1 | 2026-09-16 | — | Larger text on the 8086 page; theme back to green, with a colour of its own for each level and for each part of the 8086 |
+| 3.5.0 | 2026-09-15 | — | 8086 page redrawn from the reference block diagram, with example selection and the whole flow on the left; vibrant violet-and-tangerine theme |
 | 3.4.0 | 2026-09-12 | 02:19 (08:19) | 8086 architecture moved to the 8086 page and runs real programs with an animated data flow; ALU back to 4-bit |
 | 3.3.0 | 2026-09-11 | 08:55 (14:55) | 8086 shown as BIU/EU architecture with animated flow; lighter corner labels; shifter 0 inputs; gradients; no overlapping text |
 | 3.2.0 | 2026-09-11 | 07:20 (13:20) | 8086 ALU with CX, DX and memory; Back returns to the previous part; level indicator removed |
@@ -23,6 +25,124 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 3.5.1: Bigger type on the 8086, and green again with a colour per section
+
+**Prompt**
+
+- 2026-09-16:
+  > Make the text a bit bigger in 8086. Give me only the updated files without a zip.
+  >
+  > Change the overall theme to greenish as before. But different sections may have different colours
+
+**Changes**
+
+**Larger type on the 8086 page.** Every size in the diagram went up by roughly
+one to two points: headings 15.5 → 17.5, labels 12.5 → 14, block names 13 → 14.5,
+values 12.5 → 14, the story text 13 → 14.5, and the lists on the left with them.
+Four pieces of the layout had to move to keep the larger text clear of
+everything else:
+
+- the flag cells are taller (34 → 40) so the name and the digit no longer touch;
+- the assembly column in RAM starts further in, and an instruction longer than
+  26 characters is shortened, so it can never run into the machine code;
+- the output box says "INT 21h" rather than "DOS · INT 21h";
+- the wires in and out of the address adder were moved right, from x 520/534/548
+  to 578/592/606, so they no longer cross the words "Address adder" and
+  "Segment registers".
+
+Checked by sweeping all 97 example programs and every move of each — 2,107
+states in all — and testing every pair of text boxes for overlap. None.
+
+**Green again, with a colour for each section.** The palette from 3.4.0 is back
+unchanged: deep green primary, amber for anything switched on, green circuit
+board. The site icons and the preview image are the 3.4.0 ones again.
+
+On top of that, each level of the site now carries its own hue, held in
+`--section` and set from `data-level` on `<html>`: green for Level 1, teal for
+Level 2, blue for Level 3, violet for Level 4 and amber-brown for Level 5. It
+shows on the level line in the details panel, the underline on the current
+breadcrumb and the current chip in the mobile strip. `build/build.mjs` writes
+the level into the page and `go()` in `js/engine.js` keeps it in step when the
+page changes without a reload.
+
+The 8086 page gives its own parts their own colours too: the BIU amber, the EU
+green, RAM teal, and the address, data and control buses blue, green and amber.
+
+The build's contrast check passes with no warnings in either theme, and all
+143 8086 checks still pass.
+
+---
+
+### 3.5.0: The 8086 block diagram, a visible flow, and a vibrant theme
+
+**Prompt**
+
+- 2026-09-15:
+  > Modify the present 8086 part with the given 8086.html. Try to avoid overlapping components, sections, and text. Add an extra feature above the 8086.html refference that is: example code selection and the corresponding flow on the left.
+  >
+  > Modify the whole theme for the zipped project (use more vibrant colours).
+
+**Changes**
+
+**The 8086 page (`js/scenes/i8086.js`, rewritten)**
+
+The page now follows the reference block diagram. It is laid out as four
+columns that never share space, so no box, label or number sits on top of
+another one:
+
+1. **Example programs, then the flow.** Eight complete stories are offered
+   first, each short enough that the whole run fits in one list, followed by
+   the per-instruction examples grouped as before. Under them is the new
+   flow: every move the program will make, grouped by instruction, with the
+   address of each instruction and a coloured dot showing which bus that move
+   uses. The current move is highlighted, past moves are dimmed, and clicking
+   any line jumps straight to that moment.
+2. **The chip.** The BIU holds the memory interface, the Σ address adder, the
+   five segment registers and the six queue slots; the EU holds the control
+   unit, the internal 16-bit bus, the register file with its AH/AL halves,
+   the ALU, the result, the nine flags and the screen output.
+3. **The three buses**, each in its own colour in its own channel, with a key
+   underneath. Hovering or focusing one still names it.
+4. **RAM outside the chip**: the assembled program in the code segment, one
+   row per instruction with its address, assembly and machine code, and the
+   bytes of the data segment with their labels and characters. Under it the
+   physical-address sum, and under that the story of the current move.
+
+Other changes on the page:
+
+- The whole run is planned before it is shown, so **Step** now moves one move
+  at a time in either direction, the flow list can be used to jump, and
+  Reset returns to the first move instead of reassembling.
+- Each move carries the state of the chip that goes with it, so the registers,
+  flags, queue and memory shown always match the sentence being read.
+- The physical-address strip spells out segment × 10h + offset for every
+  address the chip forms, whether it came from CS:IP, DS:EA or SS:SP.
+- Clicking a row of RAM, or the **Instruction set** button, opens the opcode
+  encoding reference at the matching entry.
+- **Write your own** opens the assembler in the same overlay.
+- Speed is now Instant, Slow, Normal or Fast; Instant skips the dot entirely.
+
+**The theme (`css/styles.css`, `build/template.html`, `build/build.mjs`, `site.webmanifest`)**
+
+Every colour token was replaced with a more vivid set: electric violet as the
+primary, tangerine for anything switched on, and a teal-cyan circuit board.
+The three 8086 buses each keep their own hue (blue, green, orange) as new
+`--bus-a`, `--bus-d` and `--bus-c` tokens. The favicon, the manifest and the
+`theme-color` tags follow the new palette. Every site icon (favicon.ico, the
+16, 32, 180, 192 and 512 pixel PNGs and the maskable icon) was redrawn in the
+new violet, and the preview image was retaken from the rebuilt home page.
+
+The build's contrast check passes with no warnings in either theme, all 143
+8086 checks still pass, and about 95 lines of CSS left over from the previous
+8086 layout were removed.
+
+**One correction**: the ALU page still told the reader to "use the switch at
+the top of the diagram to choose a mode". That switch was removed in 3.4.0,
+so the text now describes the 4-bit ALU as it actually is and points at the
+Intel 8086 page for the 16-bit one.
+
+---
 
 ### 3.4.0: The 8086 page becomes the working architecture
 
