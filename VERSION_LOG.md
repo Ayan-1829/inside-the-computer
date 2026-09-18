@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.17.0 | 2026-09-18 | — | Site-wide: fixed the transition flicker on mobile between parts — a page-level smooth-scroll was animating at the same time as the diagram's own cross-fade, competing for the same frames; the transitioning layer now hints the browser to composite it ahead of time; meta-tag lookups on every navigation are now cached instead of re-queried |
 | 5.16.0 | 2026-09-18 | — | Site-wide: the "turn your phone sideways" banner removed again — it didn't look right and wasn't reliably dismissible in a mobile browser |
 | 5.15.0 | 2026-09-18 | — | Site-wide: a dismissible "turn your phone sideways" banner on narrow touch screens held in portrait |
 | 5.14.0 | 2026-09-18 | — | Site-wide: the stale white-chip favicon/app-install icons replaced with the real black-chip-on-green mark, and the logo's "AS" given an actual gold gradient instead of a flat fill |
@@ -57,6 +58,17 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.17.0: Finding the real cause of the mobile transition flicker
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> When the app is opened in mobile browsers, changing pages (entering the tree-CPU to ALU, ALU to Logic gates) flickers the screen. A smooth transition is needed. Make sure unnecessary calls, loads are avoid and smooth trasition is ensured
+
+**Changes**
+- This site never actually reloads the page for internal navigation — `go()` swaps an SVG/HTML layer in place and updates the URL with `pushState`, with a custom cross-fade/zoom CSS transition between the old and new diagram. That part was already working as intended.
+- **Found the real cause of the flicker**: clicking a link inside the details panel (the "Inside it" list, on mobile — where the panel sits below the diagram) triggered the diagram's cross-fade AND a separate `stage.scrollIntoView({behavior:'smooth'})` page-scroll *at the same time* — two competing animations fighting for the same frames, which is what actually read as flicker on a mobile device. That scroll is now instant (`behavior:'auto'`); the diagram's own cross-fade still provides the sense of motion on its own.
+- The transitioning layer now carries `will-change:opacity,transform` and `backface-visibility:hidden`, so mobile browsers promote it to its own compositor layer ahead of the transition instead of partway through it — the other common cause of a visible flash on weaker mobile GPUs.
+- **Unnecessary calls**: `updateMeta()` (title, description, canonical, Open Graph, Twitter, JSON-LD) was re-running `document.querySelector` for seven separate elements on every single navigation, even though none of them are ever removed from the page. They're now looked up once and reused by reference.
 
 ### 5.16.0: The rotate-phone banner, removed
 

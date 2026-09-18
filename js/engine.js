@@ -296,15 +296,27 @@ function renderPanel(id){
   inner.querySelectorAll('[data-live]').forEach(e => { if (LIVE[e.dataset.live]) e.innerHTML = LIVE[e.dataset.live]; });
   if (LASTKEY[id] !== undefined) syncTable(id, LASTKEY[id]);
 }
-function setMeta(sel, attr, val){ const e = document.querySelector(sel); if (e) e.setAttribute(attr, val); }
+/* looked up once, not re-queried from the whole document on every single
+   navigation -- these elements are fixed in the page and never removed */
+const METAEL = {
+  desc: document.querySelector('meta[name="description"]'),
+  canon: document.querySelector('link[rel="canonical"]'),
+  ogTitle: document.querySelector('meta[property="og:title"]'),
+  ogDesc: document.querySelector('meta[property="og:description"]'),
+  ogUrl: document.querySelector('meta[property="og:url"]'),
+  twTitle: document.querySelector('meta[name="twitter:title"]'),
+  twDesc: document.querySelector('meta[name="twitter:description"]'),
+  ld: $('#ld-page'),
+};
+const setMeta = (e, attr, val) => { if (e) e.setAttribute(attr, val); };
 function updateMeta(id){
   const t = metaTitle(id), d = metaDesc(id), u = canonicalFor(id);
   document.title = t;
-  setMeta('meta[name="description"]','content',d);
-  setMeta('link[rel="canonical"]','href',u);
-  setMeta('meta[property="og:title"]','content',t); setMeta('meta[property="og:description"]','content',d); setMeta('meta[property="og:url"]','content',u);
-  setMeta('meta[name="twitter:title"]','content',t); setMeta('meta[name="twitter:description"]','content',d);
-  const ld = $('#ld-page'); if (ld) ld.textContent = JSON.stringify(jsonLD(id, SITE));
+  setMeta(METAEL.desc,'content',d);
+  setMeta(METAEL.canon,'href',u);
+  setMeta(METAEL.ogTitle,'content',t); setMeta(METAEL.ogDesc,'content',d); setMeta(METAEL.ogUrl,'content',u);
+  setMeta(METAEL.twTitle,'content',t); setMeta(METAEL.twDesc,'content',d);
+  if (METAEL.ld) METAEL.ld.textContent = JSON.stringify(jsonLD(id, SITE));
 }
 
 /* ---------- draggable parts ----------
@@ -599,7 +611,11 @@ document.addEventListener('click', e => {
   const fromPanel = panel.contains(a) || stripEl.contains(a), inDialog = a.closest('dialog');
   if (inDialog) $('#overview').close();
   go(a.dataset.go);
-  if ((fromPanel || inDialog) && innerWidth <= 980 && !stripEl.contains(a)) stage.scrollIntoView({behavior: reduce.matches ? 'auto' : 'smooth', block:'start'});
+  /* jump straight there, instantly -- the diagram's own cross-fade already
+     provides the sense of motion, and animating the page scroll *at the same
+     time* as that cross-fade was two competing animations fighting for the
+     same frames, which is what actually read as a flicker on mobile */
+  if ((fromPanel || inDialog) && innerWidth <= 980 && !stripEl.contains(a)) stage.scrollIntoView({behavior:'auto', block:'start'});
 });
 $('#btn-back').addEventListener('click', goBack);
 $('#btn-home').addEventListener('click', () => {
