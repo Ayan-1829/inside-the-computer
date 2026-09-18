@@ -64,7 +64,12 @@ function zoomTo(target, lay){
   const s = Math.max(1.5, Math.min(6, Math.min(sr.width/Math.max(r.width,1), sr.height/Math.max(r.height,1)) * .75));
   const cx = lr.left + lr.width/2, cy = lr.top + lr.height/2, vx = sr.left + sr.width/2, vy = sr.top + sr.height/2;
   const tx = vx - cx - s*(r.left + r.width/2 - cx), ty = vy - cy - s*(r.top + r.height/2 - cy);
-  return `translate(${tx}px, ${ty}px) scale(${s})`;
+  /* translateZ(0) keeps the layer on its own GPU-composited surface through
+     this inline transform too -- an inline style completely replaces the
+     CSS transform (it doesn't merge with it), so without this the CSS
+     translateZ(0) hint above would quietly disappear for exactly the zoom
+     transitions where mobile browsers most need it */
+  return `translate(${tx}px, ${ty}px) scale(${s}) translateZ(0)`;
 }
 function findHot(svg, id, stopAt){
   let n = N[id];
@@ -105,15 +110,33 @@ function swapLayer(own, animate){
       layersEl.appendChild(svg);
     }
     svg.getBoundingClientRect();
-    requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('enter-in','enter-fade')));
     setTimeout(() => old.remove(), 700);
   }
   layer = svg; curOwner = own;
-  if (init) init(svg, N[own]);
-  if (drag) restoreOffsets(svg, own);
-  tools.classList.toggle('show', drag && hasOffsets(own));
-  svg.dataset.drag = drag ? '1' : '';
-  centerScroll();
+  /* everything below reads or writes the DOM, and for a scene-heavy diagram
+     it can take longer than a single frame -- profiling on a throttled
+     mobile CPU found this exact block blocking the main thread for over
+     100ms right after the new layer was inserted. A single requestAnimationFrame
+     wasn't enough to dodge it: that callback runs in the *same* frame as the
+     rAF below that starts the crossfade (both get queued in this same tick),
+     so the heavy work still delayed that frame's paint by as much as before --
+     it just moved the freeze from "before insertion" to "after insertion,
+     before the fade is visible". Chaining it with setTimeout(...,0) off the
+     back of the class-removal rAF instead lets that frame paint the fade's
+     first step *before* this work ever runs. */
+  const settle = () => {
+    if (init) init(svg, N[own]);
+    if (drag) restoreOffsets(svg, own);
+    tools.classList.toggle('show', drag && hasOffsets(own));
+    svg.dataset.drag = drag ? '1' : '';
+    centerScroll();
+  };
+  if (animate && old){
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      svg.classList.remove('enter-in','enter-fade');
+      setTimeout(settle, 0);
+    }));
+  } else settle();
   setTimeout(() => padTargets(svg), animate ? 720 : 0);
 }
 /* Set (only) by a direct click/Enter on a specific hotspot, so that when several
@@ -252,19 +275,33 @@ function go(id, opts = {}){
   if (id === cur && layer) return;
   cur = id;
   const own = ownerOf(id);
-  if (own !== curOwner) swapLayer(own, opts.animate !== false && !!layer && !reduce.matches);
-  applyFocus();
-  tipPinned = false; hideTip(); setSelected(null);
-  renderPanel(id);
-  crumbsEl.innerHTML = crumbsHTML(id, urlFor);
-  crumbsEl.parentElement.scrollLeft = crumbsEl.parentElement.scrollWidth;
-  stripEl.innerHTML = stripHTML(id, urlFor);
-  const c = stripEl.querySelector('.cur'); if (c) stripEl.scrollLeft = c.offsetLeft - 40;
-  updateMeta(id);
-  html.dataset.level = N[id].level;      /* each level of the site has its own hue */
-  const oN = N[own];
-  hintEl.textContent = hintFor(oN);
-  hintEl.hidden = !hintEl.textContent;
+  const changingLayer = own !== curOwner;
+  const animated = opts.animate !== false && !!layer && !reduce.matches;
+  if (changingLayer) swapLayer(own, animated);
+  /* renderPanel/crumbs/strip below rebuild a good chunk of DOM (esp. the detail
+     panel) -- on a throttled CPU that was enough, on its own, to reproduce the
+     exact same crossfade-blocking freeze that swapLayer's settle() used to
+     cause, just one level up. Same fix, same reason: when there's an actual
+     layer crossfade playing, defer this work behind the same rAF+rAF+setTimeout
+     chain so it runs after that frame has painted the fade's first step,
+     instead of before it. */
+  const rest = () => {
+    applyFocus();
+    tipPinned = false; hideTip(); setSelected(null);
+    renderPanel(id);
+    crumbsEl.innerHTML = crumbsHTML(id, urlFor);
+    crumbsEl.parentElement.scrollLeft = crumbsEl.parentElement.scrollWidth;
+    stripEl.innerHTML = stripHTML(id, urlFor);
+    const c = stripEl.querySelector('.cur'); if (c) stripEl.scrollLeft = c.offsetLeft - 40;
+    updateMeta(id);
+    html.dataset.level = N[id].level;      /* each level of the site has its own hue */
+    const oN = N[own];
+    hintEl.textContent = hintFor(oN);
+    hintEl.hidden = !hintEl.textContent;
+  };
+  if (changingLayer && animated){
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(rest, 0)));
+  } else rest();
   /* the trail of visited parts, kept in step with the browser history */
   if (opts.fromHistory){ if (trail.length > 1 && trail[trail.length - 2] === id) trail.pop(); else trail.push(id); }
   else if (opts.replace || !trail.length) trail = [id];

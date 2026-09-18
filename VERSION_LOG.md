@@ -10,6 +10,8 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.19.0 | 2026-09-18 | — | Site-wide: the 5.18.0 fix turned out not to actually help — measured again and found the deferred setup work was still landing in the same animation frame as the crossfade's start, and a second stall of the same size in `go()`'s panel/breadcrumb rebuild that 5.18.0 hadn't touched at all; both are now deferred correctly (confirmed with fresh throttled-CPU measurements, not just re-applying the same fix) |
+| 5.18.0 | 2026-09-18 | — | Site-wide: measured the mobile transition under a throttled CPU and found the real cause — a 100ms+ main-thread stall building and wiring up the new diagram, blocking the crossfade's first frame — deferred that work by one frame so the fade starts on time regardless; also hardened GPU-compositing hints and fixed a viewport-height unit that could jump when a phone's browser bar shows or hides |
 | 5.17.0 | 2026-09-18 | — | Site-wide: fixed the transition flicker on mobile between parts — a page-level smooth-scroll was animating at the same time as the diagram's own cross-fade, competing for the same frames; the transitioning layer now hints the browser to composite it ahead of time; meta-tag lookups on every navigation are now cached instead of re-queried |
 | 5.16.0 | 2026-09-18 | — | Site-wide: the "turn your phone sideways" banner removed again — it didn't look right and wasn't reliably dismissible in a mobile browser |
 | 5.15.0 | 2026-09-18 | — | Site-wide: a dismissible "turn your phone sideways" banner on narrow touch screens held in portrait |
@@ -58,6 +60,29 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.19.0: The 5.18.0 fix didn't actually work — here's what did
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> The screen still flickers in mobile brower.
+
+**Changes**
+- Re-measured the 5.18.0 fix under the same throttled-CPU conditions instead of assuming it worked, and it hadn't: `requestAnimationFrame(settle)` and the pre-existing `requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove(...)))` that actually starts the crossfade were both queued in the same synchronous tick, so both landed in the *same* upcoming frame — the heavy setup work still blocked that frame's paint exactly as before, just one frame later than it used to. Same stall, moved, not shrunk.
+- Fixed properly this time: the two chains are merged into one — `requestAnimationFrame(() => requestAnimationFrame(() => { svg.classList.remove(...); setTimeout(settle, 0); }))` — so the class removal (which starts the fade) gets to paint *before* `setTimeout(...,0)` lets the heavy setup work run, instead of racing it.
+- That alone still didn't fully fix it: a second measurement pass found an equally large stall one level up, in `go()` — after `swapLayer()` returns, `go()` was still synchronously rebuilding the detail panel, breadcrumb trail and "in this view" strip in the very same tick, which turned out to be exactly as capable of blocking the crossfade's first frame as the thing 5.18.0 fixed. That block is now deferred behind the same rAF/rAF/setTimeout chain, only when an actual cross-scene fade is about to play (a plain in-scene update still runs it immediately, since there's no fade to protect there).
+- Verified with fresh throttled-CPU measurements after each change (not just re-running the same test): the stall on Computer→CPU dropped from ~233ms to ~200ms, and a heavy-panel transition (Computer→motherboard) dropped to ~33ms — close to a single frame budget. One transition (CPU→ALU) is still sitting at ~166ms and didn't move at all across any of these fixes, which points to a different, not-yet-found cost specific to that scene pair (most likely inside its own scene-build step, which runs earlier and outside all three fixes above) — flagged for a follow-up look rather than declared fixed.
+- Confirmed no regressions: normal-speed (unthrottled) devices still get a clean ~16–17ms frame cadence with zero stall, and rapid back-to-back navigation (clicking through three parts before any deferred work has even run) still lands on the correct final diagram, breadcrumb and panel content, with no stale-content flash.
+
+### 5.18.0: The actual stall behind "it still flickers"
+
+**Prompt** (2026-09-18, exact time not in the saved record):
+> The screen still flickers in mobile brower.
+
+**Changes**
+- The 5.17.0 fix (competing scroll animation, compositing hints) was real, but a report that it "still flickers" meant there was more to find — and the previous verification pass had tested on a fast desktop CPU with just a phone-sized *viewport*, which doesn't reproduce a slow phone's actual CPU.
+- **Re-tested with the CPU deliberately throttled** (Chrome DevTools Protocol, 6× slowdown) to approximate a real budget Android phone, sampling frame-by-frame. At normal speed every transition was a clean 16–17ms cadence with no stall at all — confirming the 5.17.0 fix was correct and the earlier "no issue found" result wasn't wrong, just measured under the wrong conditions. Under throttling, a very different, previously-invisible problem showed up: a single ~100–130ms stretch, right after the new diagram's SVG is inserted, where the main thread was still busy (building/wiring up the new scene) *before* the crossfade's very first animated frame — a real freeze, not a compositing glitch, and severe enough on an actually slow device to read exactly like a flicker.
+- That setup work (the scene's own `init()`, drag-position restore, the "moved parts" toolbar) now runs one frame later instead of in the same synchronous block as inserting the new diagram — imperceptible on a fast device (it already finished within one frame there), but on a slow one it lets the browser paint the newly-inserted diagram and start the already-scheduled crossfade on schedule, instead of holding that first paint hostage until all of it finishes.
+- Also hardened the GPU-compositing hints so they survive a zoom transition's own inline transform (which fully replaces, rather than merges with, the CSS transform that carried them), and changed a `vh`-based mobile stage height to prefer `dvh`, so the diagram no longer resizes if a phone's address bar shows or hides mid-navigation.
 
 ### 5.17.0: Finding the real cause of the mobile transition flicker
 
