@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.20.0 | 2026-09-19 | — | Site-wide: added a lightweight visit/duration tracker (`js/analytics.js`) that reports to a private Google Sheet through a Cloudflare Worker proxy, so the real write-access secret never appears in this (public) repo — the page only knows a public Worker URL and this project's name |
 | 5.19.0 | 2026-09-18 | — | Site-wide: the 5.18.0 fix turned out not to actually help — measured again and found the deferred setup work was still landing in the same animation frame as the crossfade's start, and a second stall of the same size in `go()`'s panel/breadcrumb rebuild that 5.18.0 hadn't touched at all; both are now deferred correctly (confirmed with fresh throttled-CPU measurements, not just re-applying the same fix) |
 | 5.18.0 | 2026-09-18 | — | Site-wide: measured the mobile transition under a throttled CPU and found the real cause — a 100ms+ main-thread stall building and wiring up the new diagram, blocking the crossfade's first frame — deferred that work by one frame so the fade starts on time regardless; also hardened GPU-compositing hints and fixed a viewport-height unit that could jump when a phone's browser bar shows or hides |
 | 5.17.0 | 2026-09-18 | — | Site-wide: fixed the transition flicker on mobile between parts — a page-level smooth-scroll was animating at the same time as the diagram's own cross-fade, competing for the same frames; the transitioning layer now hints the browser to composite it ahead of time; meta-tag lookups on every navigation are now cached instead of re-queried |
@@ -60,6 +61,17 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.20.0: Basic visit analytics, without leaking a secret into a public repo
+
+**Prompt** (2026-09-19, exact time not in the saved record):
+> I want to attach a google sheet that will record who visits this website and how much time he spends. Also I want that sheet to track my other projects too... I need to push my modified code too. So I cannot share the secret keys or authentication details.
+
+**Changes**
+- `js/analytics.js` added: on page load it sends a `visit_start` beacon, then on tab-hide/page-unload sends `visit_end` with the session's duration in seconds, via `navigator.sendBeacon` (works reliably even as the page closes). Project identity comes from the `<script>` tag's `data-project` attribute, so this exact file can be copied unchanged into other projects — nothing in the script itself is project-specific.
+- The data lands in a personal Google Sheet, one tab per project plus an auto-maintained Summary tab, via a Google Apps Script Web App bound to that Sheet.
+- **The actual problem to solve**: a repo this public can't hold a real secret in its client-side JS — anyone can view-source it. Rather than embed the Sheet's write-access secret directly (which would've been visible to every visitor and searchable in this repo's history), a small Cloudflare Worker now sits in between: the page only ever knows the Worker's public URL and this project's name, and the Worker is the only place that holds the real secret (as an encrypted environment variable, injected server-side, never returned to the client).
+- `build/template.html` gained one `<script>` tag (using the existing `{{ROOT}}` path-prefix pattern so it resolves correctly at every page depth) — confirmed on rebuild it resolves to `js/analytics.js` at the root and `../js/analytics.js` for nested `parts/*.html` pages.
 
 ### 5.19.0: The 5.18.0 fix didn't actually work — here's what did
 
