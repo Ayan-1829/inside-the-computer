@@ -14,11 +14,17 @@
 
   const style = document.createElement('style');
   style.textContent = `
-.fbk-btn{position:fixed;right:16px;bottom:3px;z-index:20;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;
-  border:1px solid var(--line,#d5dcd8);background:var(--surface,#fff);color:var(--ink-2,#3b4743);font:600 12px var(--font-ui,system-ui,sans-serif);cursor:pointer}
-.fbk-btn:hover,.fbk-btn:focus-visible{border-color:var(--accent,#0f6b4f);color:var(--accent,#0f6b4f)}
-.fbk-btn svg{width:14px;height:14px;flex:none}
-@media (max-width:980px){.fbk-btn{bottom:12px;height:38px;padding:0 15px;font-size:14px;box-shadow:0 6px 18px -8px rgba(0,0,0,.4)}.fbk-btn svg{width:17px;height:17px}}
+.fbk-btn{position:fixed;right:16px;bottom:4px;z-index:20;display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 20px;border-radius:999px;
+  border:2px solid var(--accent,#0f6b4f);background:var(--accent,#0f6b4f);color:var(--accent-ink,#fff);font:700 15px var(--font-ui,system-ui,sans-serif);cursor:pointer;
+  box-shadow:0 0 0 4px var(--accent-soft,rgba(15,107,79,.12)),0 10px 24px -8px rgba(0,0,0,.55);transition:transform .15s,box-shadow .15s,filter .15s;
+  animation:fbk-pulse 2.4s ease-out 1.5s 3}
+:root[data-theme="dark"] .fbk-btn{box-shadow:0 0 0 4px var(--accent-soft,rgba(77,195,156,.12)),0 0 22px -2px var(--accent-glow,rgba(77,195,156,.42)),0 8px 24px -8px rgba(255,255,255,.3)}
+.fbk-btn:hover,.fbk-btn:focus-visible{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 0 0 6px var(--accent-glow,rgba(15,107,79,.4)),0 14px 28px -8px rgba(0,0,0,.6)}
+:root[data-theme="dark"] .fbk-btn:hover,:root[data-theme="dark"] .fbk-btn:focus-visible{box-shadow:0 0 0 6px var(--accent-glow,rgba(77,195,156,.42)),0 0 30px 0 var(--accent-glow,rgba(77,195,156,.42))}
+.fbk-btn svg{width:19px;height:19px;flex:none}
+@keyframes fbk-pulse{0%{box-shadow:0 0 0 4px var(--accent-soft,rgba(15,107,79,.12)),0 0 0 0 var(--accent-glow,rgba(15,107,79,.4))}100%{box-shadow:0 0 0 4px var(--accent-soft,rgba(15,107,79,.12)),0 0 0 18px rgba(0,0,0,0)}}
+@media (prefers-reduced-motion:reduce){.fbk-btn{animation:none}}
+@media (max-width:980px){.fbk-btn{bottom:14px;height:46px;padding:0 22px;font-size:16px}.fbk-btn svg{width:21px;height:21px}}
 .fbk-dlg{width:min(440px,calc(100vw - 32px));padding:0;border:1px solid var(--line,#d5dcd8);border-radius:20px;background:var(--surface,#fff);color:var(--ink,#16201c);
   box-shadow:0 30px 80px -30px rgba(0,0,0,.5);font-family:var(--font-ui,system-ui,sans-serif)}
 .fbk-dlg::backdrop{background:rgba(10,18,15,.45);backdrop-filter:blur(2px)}
