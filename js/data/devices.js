@@ -78,6 +78,16 @@ def('gamepad',{name:'Game controller',parent:'computer',level:2,device:'input',t
  fact:'Because a controller also receives data to drive its vibration motors and lights, it is technically both an input and an output device.',
  rel:[['usb','Connects by USB or Bluetooth'],['joystick','A single-stick alternative']]});
 
+def('power-button',{name:'Power button',parent:'computer',level:2,device:'input',tip:'Input device: tells the computer to switch on or off',
+ short:'A small push switch on the case that sends a signal to the motherboard to switch the computer on or off.',
+ what:'The power button is a momentary push switch, wired by a thin two-wire cable to the front-panel header on the motherboard (the pins labelled PWR_SW). It does not carry the computer’s power; it only sends a signal.',
+ does:'Pressing it briefly connects the PWR_SW# signal to ground. The motherboard, which stays awake on the power supply’s +5VSB standby power, notices this and tells the power supply to turn on its main outputs. Later presses ask the operating system to shut down or sleep, and holding the button for several seconds forces the power off.',
+ why:'Because the button only sends a signal, the computer can decide how to react: start up, wake, sleep, shut down cleanly or force off. It is also why a computer that looks switched off is not truly dead: the power button circuit, keyboard wake-up and network wake-up all run on standby power.',
+ ex:[['Case front-panel button','Wired to the PWR_SW header'],['Laptop power key','Read by a small embedded controller'],['Power switch on the PSU','A separate rocker that cuts the AC power completely']],
+ specs:[['Type','Momentary (push-to-make) switch'],['Signal','PWR_SW#, active low (pulled to ground)'],['Wiring','2-pin front-panel header on the motherboard'],['Runs on','+5VSB standby power from the PSU']],
+ fact:'Holding the power button for several seconds cuts the power even if the computer has frozen, because that override is done by hardware on the motherboard, not by the operating system.',
+ rel:[['motherboard','Reads the PWR_SW# signal'],['psu','Switched on by the motherboard’s PS_ON# signal'],['bios','The firmware that runs once power is up']]});
+
 def('webcam',{name:'Webcam',parent:'computer',level:2,device:'input',tip:'Input device: camera for video calls',
  short:'A small camera that sends live video to the computer.',
  what:'A webcam is a small digital camera with a lens, an image sensor (usually CMOS) and often a built-in microphone.',

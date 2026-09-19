@@ -16,7 +16,17 @@ SCENES.pc = () => {
   s += `<g transform="translate(${TX} ${TY}) scale(${S})">`;
   s += `<g class="bg">${R(262,668,60,10,3,'m-case')}${R(698,668,60,10,3,'m-case')}
     ${R(240,60,540,612,18,'m-case')}${R(262,82,476,568,8,'m-cavity')}
-    ${C(759,112,9,'m-panel')}${R(752,140,14,4,2,'m-accent')}${R(262,520,476,130,6,'m-case')}</g>`;
+    ${R(752,140,14,4,2,'m-accent')}${R(262,520,476,130,6,'m-case')}</g>`;
+  s += `<rect data-flow="tower" x="240" y="60" width="540" height="612" style="opacity:0;pointer-events:none"/>`;
+  /* wall power: the cord leaves the power supply and ends at a plug (the first stop of the power-on walkthrough) */
+  s += `<g class="bg" data-flow="ac"><title>Wall power (AC)</title>
+    <path class="m-cable" d="M330 620V690" style="stroke-width:5"/>
+    <path class="pw-glow pw-sb" d="M330 620V690" style="stroke-width:2.5"/>
+    ${R(318,688,24,16,3,'m-chip')}${R(324,704,4,8,1,'m-metal')}${R(332,704,4,8,1,'m-metal')}</g>`;
+  /* the power button on the case: pressing it starts the power-on walkthrough (see engine.js) */
+  s += hot('power-button',[750,103,18,18],
+    `${C(759,112,9,'m-panel')}<path d="M759 106.5V112M754.8 108.4A6 6 0 1 0 763.2 108.4" style="fill:none;stroke:var(--accent);stroke-width:1.7;stroke-linecap:round"/>`,
+    {pad:3, rx:11, hit:true});
   s += `</g>`;
 
   /* cables from the devices to the tower, each ending at the I/O port (hidden once parts are moved) */
@@ -30,7 +40,7 @@ SCENES.pc = () => {
      shared bus from the I/O port through RAM to the CPU, and the CPU's
      link down to the GPU. */
   let traces = '';
-  [[308,190,450,190],[500,265,500,378]].forEach(p => traces += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
+  [[308,210,425,210],[475,290,475,378],[525,282,552,282],[578,191,578,256]].forEach(p => traces += `<polyline class="ln-trace" points="${p.join(',')}"/>`);
   s += hot('motherboard',[300,100,330,400], R(300,100,330,400,6,'m-board') + traces, {flat:true});
   /* One cable per part that actually needs power, routed to where that part
      sits, rather than two generic curves to nowhere in particular. The
@@ -39,16 +49,37 @@ SCENES.pc = () => {
     <path class="m-cable" d="M460 545 C 500 528, 560 512, 610 498" style="stroke-width:7"/>
     <path class="m-cable" d="M330 545 C 320 480, 370 440, 430 415" style="stroke-width:6"/>
     <path class="m-cable" d="M482 572 C 510 574, 538 576, 562 579" style="stroke-width:5"/>
+    <path class="pw-glow pw-sb-mb" d="M460 545 C 500 528, 560 512, 610 498" style="stroke-width:3"/>
+    <path class="pw-glow pw-main" d="M330 545 C 320 480, 370 440, 430 415" style="stroke-width:2.5"/>
+    <path class="pw-glow pw-main" d="M482 572 C 510 574, 538 576, 562 579" style="stroke-width:2"/>
   </g>`;
+  /* Parts the power-on walkthrough passes through on the board itself: the wire from the
+     power button (PWR_SW#), the power-control logic (in the chipset), the firmware chip
+     and the 24-pin connector where the PSU's control signals arrive. The invisible
+     "via" points only mark corners for the walkthrough's dot to follow. */
+  s += `<path class="m-cable" d="M759 121V362H620V282H604" style="stroke-width:2.5"/>
+    <path class="pw-glow pw-sw" d="M759 121V362H620V282H604" style="stroke-width:1.6"/>
+    <circle data-flow="via-w1" cx="759" cy="362" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-w2" cx="620" cy="362" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-w3" cx="620" cy="282" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-cable" cx="470" cy="543" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-cable2" cx="531" cy="520" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-gpu1" cx="330" cy="545" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-gpu2" cx="354" cy="465" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-gpu3" cx="430" cy="415" r="1" style="opacity:0;pointer-events:none"/>
+    <circle data-flow="via-sto" cx="482" cy="572" r="1" style="opacity:0;pointer-events:none"/>`;
+  s += hot('bios',[556,165,44,26], R(556,165,44,26,3,'m-chip') + C(564,172,2,'m-metal-lt'), {pad:3});
+  s += hot('chipset',[552,256,52,52], R(552,256,52,52,6,'m-metal2') + [0,1,2,3].map(i => `<line class="ln-thin" x1="${564+i*10}" y1="264" x2="${564+i*10}" y2="300"/>`).join(''), {pad:3});
+  s += hot('atx-power',[588,450,34,44], R(588,450,34,44,3,'m-slot') + [0,1,2].map(i => R(594,456+i*12,22,8,1,'m-metal-lt')).join(''), {pad:3});
   let ports = ''; [120,146,172,198].forEach(y => ports += R(273,y,30,18,3,'m-slot')); ports += C(288,232,6,'m-slot') + C(288,250,6,'m-slot');
   s += DW('io', hot('io',[268,110,40,152], R(268,110,40,152,5,'m-metal') + ports));
   /* RAM sits between the I/O port and the CPU, then the cooling fan right
      beside the CPU -- a clean left-to-right line that also matches the
      order data actually takes: in from I/O, staged in RAM, processed by
      the CPU, kept cool right there, then back out through RAM and I/O. */
-  let sticks = ''; [340,356,372,388].forEach(x => sticks += R(x,140,10,200,2,'m-chip') + R(x+2,148,6,184,1,'m-plastic'));
-  s += DW('ram', hot('ram',[336,136,72,208], sticks));
-  s += DW('cpu', hot('cpu',[450,165,100,100], R(450,165,100,100,8,'m-metal-lt') + R(464,179,72,72,6,'m-metal')));
+  let sticks = ''; [334,350,366,382].forEach(x => sticks += R(x,140,10,200,2,'m-chip') + R(x+2,148,6,184,1,'m-plastic'));
+  s += DW('ram', hot('ram',[330,136,72,208], sticks));
+  s += DW('cpu', hot('cpu',[425,190,100,100], R(425,190,100,100,8,'m-metal-lt') + R(439,204,72,72,6,'m-metal')));
   const fan = (cx,cy,r) => { let b = ''; for (let i=0;i<5;i++) b += `<path transform="rotate(${i*72} ${cx} ${cy})" d="M${cx} ${cy} C ${cx+r*.25} ${cy-r*.6}, ${cx+r*.7} ${cy-r*.6}, ${cx+r*.82} ${cy-r*.28} C ${cx+r*.5} ${cy-r*.26}, ${cx+r*.25} ${cy-r*.1}, ${cx} ${cy}Z"/>`;
     return R(cx-r-4,cy-r-4,2*r+8,2*r+8,10,'m-fan') + `<g class="blades">${b}</g>` + C(cx,cy,r*.24,'m-hub'); };
   s += DW('cooling', hot('cooling',[638,110,96,240], fan(686,160,44) + fan(686,300,44)));
@@ -93,10 +124,13 @@ SCENES.pc = () => {
   L += LB(150,276,'Monitor',{for:'monitor',dot:'out',tone:'inv'}) + LB(269,46,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(505,74,'Mic',{for:'mic',dot:'in'}) + LB(500,180,'Speakers',{for:'speakers',dot:'out'}) +
        LB(210,410,'Keyboard',{for:'keyboard',dot:'in'}) + LB(434,410,'Mouse',{for:'mouse',dot:'in'}) + LB(505,572,'Joystick',{for:'joystick',dot:'in'}) +
        LB(130,626,'Game controller',{for:'gamepad',dot:'in'}) + LB(330,626,'Printer',{for:'printer',dot:'out'});
-  [['io',288,100,'I/O'],['ram',372,122,'RAM',1],['cpu',500,215,'CPU'],['cooling',686,230,'Cooling'],['gpu',380,408,'GPU',1],
+  [['io',288,100,'I/O'],['ram',363,122,'RAM',1],['cpu',475,240,'CPU'],['cooling',686,230,'Cooling'],['gpu',380,408,'GPU',1],
    ['motherboard',470,482,'Motherboard',1],['psu',404,580,'Power supply',1,15],['storage',644,580,'Storage']].forEach(([id,x,y,t,inv,size]) => { const [a,b] = tp(x,y); L += LB(a,b,t,{for:id,size:size||16,tone:inv?'inv':''}); });
-  L += `<g class="legend"><circle class="lbl-dot in" cx="604" cy="666" r="6"/>${T(616,672,'Input device','')}<circle class="lbl-dot out" cx="760" cy="666" r="6"/>${T(772,672,'Output device','')}</g>`;
-  return {svg: s + LAYER(L), drag: true, init: el => {
+  [['bios',578,155,'BIOS',13],['chipset',578,320,'Chipset',13]].forEach(([id,x,y,t,size]) => { const [a,b] = tp(x,y); L += LB(a,b,t,{for:id,size,tone:'inv'}); });
+  { const [a,b] = tp(630,472); L += LB(a,b,'24-pin',{for:'atx-power',size:13,anchor:'start'}); }
+  { const [a,b] = tp(330,724); L += LB(a,b,'Wall AC',{size:13}); }
+  L += `<g class="legend" transform="translate(100 0)"><circle class="lbl-dot in" cx="604" cy="666" r="6"/>${T(616,672,'Input device','')}<circle class="lbl-dot out" cx="760" cy="666" r="6"/>${T(772,672,'Output device','')}</g>`;
+  return {svg: s + LAYER(L), vb: [1012, 700], drag: true, init: el => {
     const link = el.querySelector('.dev-link');
     if (!link) return;
     const open = () => window.open('https://ayan-1829.github.io/portfolio', '_blank', 'noopener');

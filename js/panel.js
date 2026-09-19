@@ -11,6 +11,15 @@ var SITE_NAME = 'Inside the Computer';
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function plain(s){ return String(s).replace(/<[^>]+>/g,''); }
 function link(href, id, cls, inner){ return '<a class="' + cls + '" href="' + href(id) + '" data-go="' + id + '">' + inner + '</a>'; }
+/* Small Back / Pause-Play / Step buttons for the power-on walkthrough (run = also the "Power on" button). */
+function pwControls(run){
+  var svg = function(inner, cls){ return '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"' + (cls ? ' class="' + cls + '"' : '') + '>' + inner + '</svg>'; };
+  var ic = function(act, label, inner, dis){ return '<button type="button" class="pw-btn pw-ic" data-pw="' + act + '" aria-label="' + label + '" title="' + label + '"' + (dis ? ' disabled' : '') + '>' + inner + '</button>'; };
+  return '<div class="pw-ctrl">' + (run ? '<button type="button" class="pw-btn pw-run" data-pw="run">Power on</button>' : '') +
+    ic('back', 'Previous step', svg('<rect x="3" y="3" width="2" height="10"/><path d="M13 3 6 8l7 5z"/>'), true) +
+    ic('pause', 'Pause', svg('<rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/>', 'i-pause') + svg('<path d="M5 3l8 5-8 5z"/>', 'i-play'), true) +
+    ic('step', 'Next step', svg('<path d="M3 3l7 5-7 5z"/><rect x="11" y="3" width="2" height="10"/>')) + '</div>';
+}
 function sec(t, h){ return h ? '<section class="p-sec"><h3>' + t + '</h3>' + h + '</section>' : ''; }
 
 function metaTitle(id){
@@ -92,6 +101,7 @@ function actionCardHTML(n){
   if (n.ex.length) h += '<button type="button" class="dp-act" data-act="examples">Examples</button>';
   if (n.id === 'webcam') h += '<button type="button" class="dp-act" data-act="try">Try camera</button>';
   else if (n.id === 'mic') h += '<button type="button" class="dp-act" data-act="try">Try mic</button>';
+  else if (n.id === 'power-button') h += '<button type="button" class="dp-act" data-act="try">Power on</button>';
   h += '</div><div class="dp-section"></div></div>';
   return h;
 }
@@ -102,6 +112,8 @@ function panelHTML(id, href){
   h += sec('What is it?', '<p>' + n.what + '</p>');
   h += sec('What does it do?', '<p>' + n.does + '</p>');
   h += sec('Why it matters', '<p>' + n.why + '</p>');
+  if (n.id === 'power-button') h += '<section class="p-sec pw-sec"><div class="pw-head"><h3>Power-on steps</h3>' + pwControls(true) + '</div>' +
+    '<p class="pw-hint">Press the power button in the diagram, or use these controls.</p><ol class="pw-log" data-pw-log aria-live="polite"></ol></section>';
 
   /* interactive "Try it" sections */
   if (n.gate) h += sec('Try it', '<p class="expr">' + n.expr + '</p><p class="hintline">' + TT + '</p>' + truthTable(n));

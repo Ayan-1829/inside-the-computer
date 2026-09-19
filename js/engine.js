@@ -151,7 +151,7 @@ function applyFocus(){
   svg.classList.remove('focus-mode');
   svg.querySelectorAll('.focused,.focus-anc').forEach(e => e.classList.remove('focused','focus-anc'));
   svg.querySelectorAll('.lbl.focused').forEach(e => e.classList.remove('focused'));
-  if (cur === curOwner) return;
+  if (cur === curOwner || cur === 'power-button') return;
   let n = N[cur], els = [], first = true;
   while (n && n.id !== curOwner){
     els = (first && focusOrigin && focusOrigin.dataset.id === n.id && svg.contains(focusOrigin))
@@ -273,6 +273,7 @@ function go(id, opts = {}){
   if (!N[id]) id = 'computer';
   focusOrigin = opts.from || null;
   if (id === cur && layer) return;
+  if (id !== 'power-button') powerStop();
   cur = id;
   const own = ownerOf(id);
   const changingLayer = own !== curOwner;
@@ -332,6 +333,7 @@ function renderPanel(id){
   panel.scrollTop = 0;
   inner.querySelectorAll('[data-live]').forEach(e => { if (LIVE[e.dataset.live]) e.innerHTML = LIVE[e.dataset.live]; });
   if (LASTKEY[id] !== undefined) syncTable(id, LASTKEY[id]);
+  powerSync();
 }
 /* looked up once, not re-queried from the whole document on every single
    navigation -- these elements are fixed in the page and never removed */
@@ -585,6 +587,7 @@ layersEl.addEventListener('click', e => {
   if (suppressClick){ suppressClick = false; return; }
   const h = hotAt(e.target);
   if (h){
+    if (h.dataset.id === 'power-button'){ powerToggle(); return; }
     /* With the details panel hidden there's nowhere for a normal click's
        navigation to show up, so it opens the same details card a right-click
        does instead of navigating away. */
@@ -596,7 +599,7 @@ layersEl.addEventListener('click', e => {
 });
 layersEl.addEventListener('keydown', e => {
   const h = e.target.closest && e.target.closest('.hot');
-  if (h && e.target === h && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); go(h.dataset.id, {from: h}); }
+  if (h && e.target === h && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); if (h.dataset.id === 'power-button') powerToggle(); else go(h.dataset.id, {from: h}); }
   const wrap = h && h.closest('.dragwrap');
   const dirs = {ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1]};
   if (wrap && e.shiftKey && dirs[e.key]){                 /* Shift + arrows moves a draggable part */
@@ -695,6 +698,7 @@ dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
    plays it back on screen -- it lives in memory for a few seconds and is then
    discarded (object URLs revoked, canvases cleared, variables set to null). */
 var runDeviceTest = () => {};
+var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set by the power-on walkthrough below */
 {
   const dt = $('#device-test');
   if (dt){
@@ -874,7 +878,7 @@ var runDeviceTest = () => {};
       return own.inverse().multiply(theirs);
     }
     function hotCenter(id){
-      const el = layer && layer.querySelector(`.hot[data-id="${id}"]`);
+      const el = layer && layer.querySelector(`.hot[data-id="${id}"], [data-flow="${id}"]`);
       if (!el || typeof el.getBBox !== 'function') return null;
       try {
         const box = el.getBBox(), ctm = relativeCTM(el);
@@ -894,13 +898,16 @@ var runDeviceTest = () => {};
       const ids = ROUTE_IDS[kind];
       const route = ids && ids.map(id => ({id, pt: hotCenter(id)})).filter(w => w.pt);
       if (!layer || !route || route.length < 2){ onArrive(); return; }
+      const lay = layer;
       const dot = document.createElementNS(SVGNS, 'circle');
       dot.setAttribute('r', '7'); dot.setAttribute('class', 'device-flow-dot');
-      layer.appendChild(dot);
-      const highlight = id => { const h = layer.querySelector(`.hot[data-id="${id}"]`); if (h) setSelected(h); };
+      dot.setAttribute('cx', route[0].pt[0]); dot.setAttribute('cy', route[0].pt[1]);
+      lay.appendChild(dot);
+      const highlight = id => { const h = lay.querySelector(`.hot[data-id="${id}"]`); if (h) setSelected(h); };
       highlight(route[0].id);
       let leg = 0, start = null;
       function frame(ts){
+        if (layer !== lay){ dot.remove(); return; }      /* the visitor navigated away mid-flow */
         if (!start) start = ts;
         const t = Math.min(1, (ts - start) / LEG_MS);
         const [x1, y1] = route[leg].pt, [x2, y2] = route[leg + 1].pt;
@@ -918,6 +925,268 @@ var runDeviceTest = () => {};
       }
       requestAnimationFrame(frame);
     }
+
+    /* ---- the power-on walkthrough ----
+       Pressing the tower's power button (or "Power on" in its panel / card, or Step)
+       plays these steps. Each step shows a one-line `note` at the top of the diagram
+       and adds its full text `x` to a log that keeps every earlier step: in the
+       details panel normally, or in a pop-up beside the tower when the panel isn't
+       visible (full screen, or "Hide details"). `**bold**` marks signal names.
+       A step's `routes` are several paths played at the same time, one dot each, so
+       a signal that reaches many parts (the PSU's power, the I/O port's signals to
+       every device) fans out from a shared start. Route entries are ids of parts,
+       or of the invisible "via" points and the wall plug drawn by the scene.
+       Step 1 has no routes: standby power is always there, so instead of a dot the
+       cord, the PSU cable and the PWR_SW# wire are lit (`lit` glows the named parts).
+       Pressing the button drops that wire LOW (step 2), and the main rails light up
+       from step 4. Pause holds after the current step; Step / Back move one. */
+    const T_PSU = ['psu', 'via-cable', 'via-cable2', 'atx-power'];   /* PSU to the 24-pin connector, along its cable */
+    const T_FW = ['bios', 'chipset', 'cpu'];                         /* firmware chip to the CPU, through the chipset */
+    const T_OS = ['ram', 'cpu'];                                     /* the running OS: RAM to the CPU */
+    const POWER_STEPS = [
+      {t: 'AC Power → PSU → +5VSB → Motherboard', note: 'Standby power is always on, even when the PC is “off”.',
+       x: 'The PSU receives AC power from the wall and converts it into DC power. Even when the PC is off, it provides **+5VSB standby power**. The motherboard receives it, so its power-management circuitry stays active and can detect the power button.',
+       routes: [], lit: ['ac', 'psu', 'atx-power', 'chipset']},
+      {t: 'Power Button → PWR_SW# → Power Logic', note: 'Pressing the button pulls PWR_SW# LOW; the board’s power logic sees it.',
+       x: 'When you press the power button, the switch momentarily connects the **PWR_SW# signal to ground**. The motherboard’s power-control circuitry recognizes the change and decides to start the system.',
+       routes: [['power-button', 'via-w1', 'via-w2', 'via-w3', 'chipset']]},
+      {t: 'Motherboard → PS_ON# → PSU', note: 'The board pulls PS_ON# LOW: “turn on”.',
+       x: 'The motherboard pulls the **PS_ON# signal LOW**, telling the PSU to turn on its main power outputs.',
+       routes: [['chipset', 'atx-power', 'via-cable2', 'via-cable', 'psu']]},
+      {t: 'PSU → Main Power Rails', note: '+12 V, +5 V and +3.3 V go out to every part.',
+       x: 'The PSU starts supplying **+12V, +5V, and +3.3V** to the motherboard and other components. The CPU gets its power through the motherboard’s voltage regulators (VRM), and the RAM and fans through the board too; the graphics card and drives also have their own cables.',
+       routes: [...['motherboard', 'cpu', 'ram', 'chipset', 'bios', 'cooling'].map(id => [...T_PSU, id]),
+                ['psu', 'via-gpu1', 'via-gpu2', 'via-gpu3', 'gpu'], ['psu', 'via-sto', 'storage']]},
+      {t: 'PSU → PWR_OK → CPU Reset Release', note: '“Power OK”: the board releases the CPU from reset.',
+       x: 'After the power rails become stable, the PSU sends **PWR_OK** to tell the motherboard that the power is within the required range. The motherboard’s reset circuitry then completes the startup sequence and releases the CPU from **RESET**.',
+       routes: [[...T_PSU, 'chipset', 'cpu']]},
+      {t: 'CPU → Firmware (UEFI)', note: 'The CPU starts running the UEFI firmware.',
+       x: 'The CPU starts executing instructions from the system firmware. Modern PCs generally use **UEFI**, although it is commonly still called “BIOS.”',
+       routes: [['cpu', 'chipset', 'bios']]},
+      {t: 'UEFI → Hardware Initialization & POST', note: 'It sets up RAM, GPU, drives and USB; the first picture appears.',
+       x: 'UEFI initializes and trains the RAM, then sets up essential hardware such as the GPU, storage controllers, USB controllers, and other devices. The **Power-On Self-Test (POST)** checks that they work well enough to continue booting. Once the graphics card is ready, the first picture (usually the maker’s logo) appears on the monitor.',
+       routes: [...['ram', 'storage', 'io'].map(id => [...T_FW, id]), [...T_FW, 'gpu', 'io', 'monitor']]},
+      {t: 'Boot Device → Bootloader → OS Kernel', note: 'It finds the boot drive and loads the OS into RAM.',
+       x: 'UEFI checks the configured boot order and finds a bootable device, such as an NVMe SSD or SATA drive. The firmware loads the bootloader into memory and hands control to it, and the bootloader loads the operating-system kernel and required initial components into RAM.',
+       routes: [[...T_FW, 'storage', 'ram']]},
+      {t: 'CPU → Operating System → Drivers → Desktop', note: 'The OS starts, loads drivers, and every device gets its signal.',
+       x: 'The CPU begins executing the OS kernel, which initializes memory management, processes, drivers, and other system services. The operating system loads device drivers so it can communicate with the GPU, keyboard, mouse, storage, network hardware, and other devices. Finally, the OS starts the graphical environment and presents the **login screen or desktop** to the user.',
+       routes: [[...T_OS, 'gpu', 'io', 'monitor'], [...T_OS, 'storage'],
+                ...['keyboard', 'mouse', 'webcam', 'mic', 'joystick', 'gamepad', 'printer', 'speakers'].map(id => [...T_OS, 'io', id])]},
+    ];
+    const SPEED = 0.42;                                              /* diagram units per millisecond */
+    const FX_CLASSES = ['pw-standby', 'pw-low', 'pw-rails'];
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    const isFs = () => (document.fullscreenElement || document.webkitFullscreenElement) === stage;
+    const usePop = () => isFs() || html.classList.contains('panel-hidden');
+
+    /* the one-line note at the top of the diagram */
+    const flowNote = document.createElement('div');
+    flowNote.className = 'flow-note'; flowNote.hidden = true; flowNote.setAttribute('role', 'status');
+    flowNote.innerHTML = '<span class="fn-step"></span><span class="fn-txt"></span>';
+    stage.appendChild(flowNote);
+    const showFlowNote = (text, i, paused) => {
+      flowNote.firstChild.textContent = `${i + 1}/${POWER_STEPS.length}${paused ? ' · paused' : ''}`;
+      flowNote.lastChild.textContent = text;
+      flowNote.hidden = false;
+    };
+    const hideFlowNote = () => { flowNote.hidden = true; };
+
+    /* the pop-up step log, for when the details panel isn't visible */
+    const pop = document.createElement('aside');
+    pop.className = 'flow-pop'; pop.hidden = true; pop.setAttribute('aria-label', 'Power-on steps');
+    pop.innerHTML = '<div class="fp-head"><b>Power-on steps</b><div class="fp-tools">' + pwControls(false) +
+      '<button type="button" class="fp-close" aria-label="Close the steps">×</button></div></div><ol class="pw-log" aria-live="polite"></ol>';
+    stage.appendChild(pop);
+    const popList = pop.querySelector('.pw-log');
+    /* keep the pop-up just left of the tower (not far off at the stage's edge) without covering it */
+    function placePop(){
+      const t = layer && layer.querySelector('[data-flow="tower"]');
+      if (!t) return;
+      const sr = stage.getBoundingClientRect(), tr = t.getBoundingClientRect(), w = Math.min(420, sr.width - 32);
+      pop.style.left = Math.max(16, Math.min(tr.left - sr.left - w - 12, sr.width - w - 16)) + 'px';
+    }
+
+    /* pw: the running walkthrough {lay, dots, sel, i, timer, raf, paused, holding, animating}; pwDone: steps shown so far */
+    let pw = null, pwDone = 0, popClosed = false;
+    const stepLi = i => {
+      const st = POWER_STEPS[i], li = document.createElement('li');
+      li.innerHTML = `<span class="pw-n">${i + 1}</span><div><b>${esc(st.t)}</b><p>${fmt(st.x)}</p></div>`;
+      return li;
+    };
+    const fillList = list => {
+      if (!list) return;
+      while (list.children.length > pwDone) list.lastChild.remove();
+      while (list.children.length < pwDone) list.appendChild(stepLi(list.children.length));
+    };
+    const syncControls = root => {
+      if (!root) return;
+      root.querySelectorAll('[data-pw]').forEach(b => {
+        const a = b.dataset.pw;
+        if (a === 'run') b.textContent = pw ? 'Stop' : pwDone ? 'Replay' : 'Power on';
+        else if (a === 'pause'){
+          const play = !!(pw && pw.paused), label = play ? 'Play' : 'Pause';
+          b.classList.toggle('is-play', play); b.setAttribute('aria-label', label); b.title = label; b.disabled = !pw;
+        } else if (a === 'back') b.disabled = !pw || pw.i <= 0;
+      });
+    };
+    powerSync = () => {
+      fillList(inner.querySelector('[data-pw-log]')); fillList(popList);
+      pop.hidden = !(pwDone > 0 && !popClosed && usePop());
+      if (!pop.hidden) placePop();
+      syncControls(inner); syncControls(pop);
+      if (pw && !flowNote.hidden) flowNote.firstChild.textContent = `${pw.i + 1}/${POWER_STEPS.length}${pw.paused ? ' · paused' : ''}`;
+    };
+    const revealLatest = () => {
+      popList.scrollTop = popList.scrollHeight;
+      const l = inner.querySelector('[data-pw-log]');
+      /* only where the panel scrolls on its own; on a phone it sits below the diagram and scrolling would pull the page away from it */
+      if (l && l.lastChild && innerWidth > 980) l.lastChild.scrollIntoView({block: 'nearest', behavior: reduce.matches ? 'auto' : 'smooth'});
+    };
+
+    const litSel = id => `.hot[data-id="${id}"], [data-flow="${id}"]`;
+    function clearLight(){
+      pw.sel.forEach(e => e.classList.remove('selected'));
+      pw.lay.querySelectorAll('.selected-lbl').forEach(l => l.classList.remove('selected-lbl'));
+      pw.lay.querySelectorAll('.flow-lit').forEach(e => e.classList.remove('flow-lit'));
+      pw.lay.classList.remove('select-dim');
+      pw.sel = [];
+    }
+    /* 'dim': the parts the dots are at stand out and everything else fades; 'glow': just glow the named parts */
+    function powerLight(ids, mode){
+      clearLight();
+      ids.forEach(id => {
+        if (id.startsWith('via-')) return;
+        const el = pw.lay.querySelector(litSel(id));
+        if (!el) return;
+        if (mode === 'dim' && el.classList.contains('hot')){
+          el.classList.add('selected'); pw.sel.push(el);
+          pw.lay.querySelectorAll(`.lbl[data-for="${id}"]`).forEach(l => l.classList.add('selected-lbl'));
+        } else el.classList.add('flow-lit');
+      });
+      if (mode === 'dim' && pw.sel.length) pw.lay.classList.add('select-dim');
+    }
+    /* what is powered / what the press changed, as a function of the step */
+    function powerFx(i){
+      const c = pw.lay.classList;
+      c.add('pw-standby');                       /* +5VSB never goes away */
+      c.toggle('pw-low', i === 1);               /* PWR_SW# is pulled LOW while the button is pressed */
+      c.toggle('pw-rails', i >= 3);              /* the main rails are on from step 4 */
+    }
+    function powerCleanup(){
+      if (!pw) return;
+      clearTimeout(pw.timer); cancelAnimationFrame(pw.raf);
+      pw.dots.forEach(d => d.remove());
+      clearLight();
+      pw.lay.classList.remove(...FX_CLASSES);
+      if (layer === pw.lay) setSelected(null);
+      pw = null; hideFlowNote();
+    }
+    const powerDot = k => {
+      while (pw.dots.length <= k){
+        const d = document.createElementNS(SVGNS, 'circle');
+        d.setAttribute('r', '7'); d.setAttribute('class', 'device-flow-dot');
+        pw.lay.appendChild(d); pw.dots.push(d);
+      }
+      return pw.dots[k];
+    };
+    /* each route's points (read fresh, so they follow dragged parts) and running distances */
+    function buildRoutes(st){
+      return st.routes.map(ids => {
+        const pts = ids.map(id => ({id, pt: hotCenter(id)})).filter(w => w.pt);
+        const cum = [0];
+        for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k].pt[0] - pts[k - 1].pt[0], pts[k].pt[1] - pts[k - 1].pt[1]));
+        return {pts, cum, total: cum[cum.length - 1]};
+      }).filter(r => r.pts.length);
+    }
+    const stepDwell = st => 700 + st.x.split(/\s+/).length * 75;      /* time to read the step */
+    function powerStep(i){
+      if (!pw) return;
+      if (layer !== pw.lay){ powerCleanup(); powerSync(); return; }   /* the visitor left the computer's diagram */
+      clearTimeout(pw.timer); cancelAnimationFrame(pw.raf);
+      pw.holding = false;
+      if (i >= POWER_STEPS.length){ powerCleanup(); powerSync(); return; }
+      i = Math.max(0, i);
+      pw.i = i; pwDone = i + 1; pw.animating = true;
+      const st = POWER_STEPS[i];
+      powerFx(i); showFlowNote(st.note, i, pw.paused); powerSync(); revealLatest();
+      const routes = buildRoutes(st);
+      pw.dots.forEach(d => { d.style.visibility = 'hidden'; });
+      if (!routes.length){ powerLight(st.lit || [], 'glow'); powerStepDone(); return; }
+      routes.forEach((r, k) => {
+        const d = powerDot(k);
+        d.style.visibility = 'visible'; d.setAttribute('cx', r.pts[0].pt[0]); d.setAttribute('cy', r.pts[0].pt[1]);
+      });
+      const longest = Math.max(...routes.map(r => r.total));
+      let t0 = null, litKey = null;
+      const frame = ts => {
+        if (!pw) return;
+        if (layer !== pw.lay){ powerCleanup(); powerSync(); return; }
+        if (t0 === null) t0 = ts;
+        const dist = (ts - t0) * SPEED, stops = new Set();
+        routes.forEach((r, k) => {
+          const d = Math.min(dist, r.total);
+          let a = 0; while (a < r.pts.length - 1 && r.cum[a + 1] <= d) a++;      /* the last stop this dot has reached */
+          stops.add(r.pts[a].id);
+          const b = Math.min(a + 1, r.pts.length - 1), seg = r.cum[b] - r.cum[a], f = seg > 0 ? (d - r.cum[a]) / seg : 1;
+          const [x1, y1] = r.pts[a].pt, [x2, y2] = r.pts[b].pt;
+          pw.dots[k].setAttribute('cx', x1 + (x2 - x1) * f); pw.dots[k].setAttribute('cy', y1 + (y2 - y1) * f);
+        });
+        const key = [...stops].join('|');
+        if (key !== litKey){ litKey = key; powerLight([...stops], 'dim'); }
+        if (dist < longest){ pw.raf = requestAnimationFrame(frame); return; }
+        powerStepDone();
+      };
+      pw.raf = requestAnimationFrame(frame);
+    }
+    /* a step's animation is over: wait to be read and go on, or hold here if paused */
+    function powerStepDone(){
+      if (!pw) return;
+      const i = pw.i;
+      pw.animating = false;
+      if (pw.paused){ pw.holding = true; powerSync(); return; }
+      pw.timer = setTimeout(() => powerStep(i + 1), stepDwell(POWER_STEPS[i]));
+    }
+    function powerStart(paused){
+      if (pw || !layer || !layer.querySelector('.hot[data-id="power-button"]')) return;
+      if (cur !== 'power-button') go('power-button');   /* so the panel shows the button's page, where the steps collect */
+      pw = {lay: layer, dots: [], sel: [], i: -1, timer: null, raf: 0, paused: !!paused, holding: false, animating: false};
+      pwDone = 0; popClosed = false; powerSync();
+      powerStep(0);
+    }
+    powerToggle = () => { if (pw){ powerCleanup(); powerSync(); } else powerStart(); };
+    powerStop = () => { powerCleanup(); popClosed = true; powerSync(); };
+    const powerPause = () => {
+      if (!pw) return;
+      pw.paused = !pw.paused;
+      if (pw.paused){
+        if (!pw.animating && !pw.holding){ clearTimeout(pw.timer); pw.holding = true; }   /* stop waiting; hold here */
+      } else if (pw.holding){
+        pw.holding = false;
+        pw.timer = setTimeout(() => powerStep(pw.i + 1), 400);
+      }
+      showFlowNote(POWER_STEPS[pw.i].note, pw.i, pw.paused); powerSync();
+    };
+    const powerStepBy = d => {
+      if (!pw){ if (d > 0) powerStart(true); return; }          /* Step from rest starts a paused walkthrough */
+      pw.paused = true;
+      powerStep(pw.i + d);
+    };
+    const powerControl = e => {
+      const b = e.target.closest('[data-pw]');
+      if (!b || b.disabled) return;
+      const a = b.dataset.pw;
+      if (a === 'run') powerToggle(); else if (a === 'pause') powerPause();
+      else if (a === 'step') powerStepBy(1); else if (a === 'back') powerStepBy(-1);
+    };
+    inner.addEventListener('click', powerControl);
+    pop.addEventListener('click', powerControl);
+    pop.querySelector('.fp-close').addEventListener('click', () => { powerCleanup(); popClosed = true; powerSync(); });
+    document.addEventListener('fullscreenchange', () => { powerSync(); setTimeout(placePop, 250); });
+    document.addEventListener('webkitfullscreenchange', () => { powerSync(); setTimeout(placePop, 250); });
+    addEventListener('resize', () => { if (!pop.hidden) placePop(); });
+    if (panelBtn) panelBtn.addEventListener('click', () => setTimeout(powerSync, 0));
     /* Reads an element's actual rectangle in the diagram's own coordinate
        space (again via getBBox + getCTM), so overlays line up with a part
        even after it has been dragged somewhere else. */
@@ -971,7 +1240,7 @@ var runDeviceTest = () => {};
       setTimeout(stopAll, 5000);
     }
 
-    runDeviceTest = kind => { if (kind === 'webcam') openCamera(); else if (kind === 'mic') openMic(); };
+    runDeviceTest = kind => { if (kind === 'webcam') openCamera(); else if (kind === 'mic') openMic(); else if (kind === 'power-button') powerToggle(); };
   }
 }
 
