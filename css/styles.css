@@ -325,8 +325,8 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .pw-trail.is-power{filter:drop-shadow(0 0 2px var(--power))}
 @keyframes pw-flow{to{stroke-dashoffset:-15}}
 @media (prefers-reduced-motion:reduce){.pw-dot,.pw-trail,.pw-glow{animation:none!important}}
-/* thin white line inside the monitor's bezel, around the screen */
-.mon-rim{fill:none;stroke:#fff;stroke-width:1.4;opacity:.9;pointer-events:none}
+/* thin ash line (the grey used for the outlines of the metal parts) inside the bezel, around the screen */
+.mon-rim{fill:none;stroke:var(--i-metal-edge);stroke-width:1.5;pointer-events:none}
 /* the monitor during the walkthrough: black, then the start-up page, then the welcome message */
 .mon-cover{opacity:0;pointer-events:none;transition:opacity .6s ease}
 .pw-screen .mon-cover{opacity:1}

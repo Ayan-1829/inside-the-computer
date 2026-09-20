@@ -10,7 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
-| 5.28.0 | 2026-09-20 | — | Computer: the black bar at the bottom of the monitor's screen is removed, and a thin white line now runs around the screen inside the bezel |
+| 5.28.0 | 2026-09-20 | — | Computer: the black bar at the bottom of the monitor's screen is removed, and a thin ash line now runs around the screen inside the bezel |
 | 5.27.0 | 2026-09-20 | — | Computer: in the power-on walkthrough, dots travelling between parts on the motherboard now run along straight horizontal and vertical lines instead of cutting diagonally; the drawn cables and the PWR_SW# wire keep their own shapes |
 | 5.26.0 | 2026-09-20 | — | Computer: the "Monitor" label moved off the screen to the middle of the lower bezel, so it no longer sits over the welcome message or the start-up page |
 | 5.25.0 | 2026-09-20 | — | Computer: the walkthrough's focus no longer flickers between parts (it used to drop out while a dot was on a wire); the blue/yellow colour key moved from the pop-up to a pill above the tower; the steps pop-up can be resized |
@@ -73,11 +73,11 @@ Add a new section at the top of "Versions" for each future update.
 ### 5.28.0: Monitor without the black bar
 
 **Prompt** (2026-09-20, exact time not in the saved record):
-> why there is a black bar at the bottom of the monitor? remove it and add a white thin boundary (box inside the basel as outside).
+> why there is a black bar at the bottom of the monitor? remove it and add a white thin boundary (box inside the basel as outside). [...] it should be ash as others colour. not pure white.
 
 **Changes**
 - The black bar across the bottom of the screen was a leftover taskbar-style strip drawn inside the screen; it is removed, so the welcome message area is one clean green screen.
-- A thin white line now runs around the screen, inside the bezel, like the edge of a real display.
+- A thin ash-grey line (the grey used for the outlines of the other metal parts, not pure white, and following the light and dark themes) runs around the screen, inside the bezel, like the edge of a real display.
 
 ### 5.27.0: Orthogonal flow lines on the board
 
