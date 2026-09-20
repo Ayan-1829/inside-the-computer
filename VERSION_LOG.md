@@ -10,6 +10,8 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.28.0 | 2026-09-20 | — | Computer: the black bar at the bottom of the monitor's screen is removed, and a thin white line now runs around the screen inside the bezel |
+| 5.27.0 | 2026-09-20 | — | Computer: in the power-on walkthrough, dots travelling between parts on the motherboard now run along straight horizontal and vertical lines instead of cutting diagonally; the drawn cables and the PWR_SW# wire keep their own shapes |
 | 5.26.0 | 2026-09-20 | — | Computer: the "Monitor" label moved off the screen to the middle of the lower bezel, so it no longer sits over the welcome message or the start-up page |
 | 5.25.0 | 2026-09-20 | — | Computer: the walkthrough's focus no longer flickers between parts (it used to drop out while a dot was on a wire); the blue/yellow colour key moved from the pop-up to a pill above the tower; the steps pop-up can be resized |
 | 5.24.0 | 2026-09-20 | — | Computer: no hover highlighting while a simulation runs; the monitor goes black, then shows the firmware start-up page and finally the welcome message; the steps pop-up can be dragged; webcam and mic flows follow the dotted cables (the mic gained one); the main-rails step notes that output devices have their own plugs |
@@ -67,6 +69,24 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.28.0: Monitor without the black bar
+
+**Prompt** (2026-09-20, exact time not in the saved record):
+> why there is a black bar at the bottom of the monitor? remove it and add a white thin boundary (box inside the basel as outside).
+
+**Changes**
+- The black bar across the bottom of the screen was a leftover taskbar-style strip drawn inside the screen; it is removed, so the welcome message area is one clean green screen.
+- A thin white line now runs around the screen, inside the bezel, like the edge of a real display.
+
+### 5.27.0: Orthogonal flow lines on the board
+
+**Prompt** (2026-09-20, exact time not in the saved record):
+> Can you use orthogonal lines in the motherboard for the flow of data/power instead of diagonals?
+
+**Changes**
+- Between two parts (for example CPU to chipset, CPU to RAM, BIOS to CPU, storage to CPU) the dot now follows an "L" of horizontal and vertical lines, like traces on a real board, instead of a straight diagonal. It goes vertical first when the parts are further apart up-and-down, horizontal first otherwise.
+- The cables and wire that are drawn in the diagram (the curved PSU cables, the dotted device cables to the I/O port, the PWR_SW# wire) are followed exactly as drawn, so they keep their own shapes.
 
 ### 5.26.0: Monitor label off the screen
 

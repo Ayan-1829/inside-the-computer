@@ -1194,7 +1194,24 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
         if (via) via.forEach((q, j) => pts.push({id: 'via-cable-' + j, pt: q}));
         pts.push({id, pt});
       });
-      return pts;
+      return orthogonal(pts);
+    }
+    /* Between two parts the route runs along straight horizontal and vertical lines (an "L"), like traces on a
+       board, instead of cutting diagonally: vertical first when the parts are further apart up-and-down than
+       side-to-side, horizontal first otherwise. Points along a drawn cable or wire (ids starting "via-") are
+       left exactly as drawn. */
+    function orthogonal(pts){
+      const out = [pts[0]];
+      for (let k = 1; k < pts.length; k++){
+        const a = pts[k - 1], b = pts[k];
+        if (!a.id.startsWith('via-') && !b.id.startsWith('via-')){
+          const dx = b.pt[0] - a.pt[0], dy = b.pt[1] - a.pt[1];
+          if (Math.abs(dx) > 2 && Math.abs(dy) > 2)
+            out.push({id: 'via-o', pt: Math.abs(dy) >= Math.abs(dx) ? [a.pt[0], b.pt[1]] : [b.pt[0], a.pt[1]]});
+        }
+        out.push(b);
+      }
+      return out;
     }
     function buildRoutes(st){
       return st.routes.map(ids => {

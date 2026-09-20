@@ -105,7 +105,7 @@ SCENES.pc = () => {
       <g class="mon-spin"><circle cx="240" cy="246" r="10" fill="none" stroke="#33413C" stroke-width="3"/><path d="M240 236a10 10 0 0 1 10 10" fill="none" stroke="#E9EEEB" stroke-width="3" stroke-linecap="round"/></g>
     </g></g>`;
   s += DW('monitor', hot('monitor',[30,66,421,315],
-    R(30,66,421,270,16,'m-chip') + R(45,81,391,229,6,'m-screen',`id="monitor-screen"`) +
+    R(30,66,421,270,16,'m-chip') + `<rect x="40" y="76" width="401" height="239" rx="9" class="mon-rim"/>` + R(45,81,391,229,6,'m-screen',`id="monitor-screen"`) +
     /* tab 1: a welcome message, shifted left so tab 2 covers less of its text */
     R(58,105,205,130,6,'m-panel') + R(58,105,205,24,6,'m-block') + dot3(71,117) +
     T(160,152,'Welcome!','t t-sm t-mut t-mid') + T(160,174,'to Inside the Computer','t t-xs t-mut t-mid') +
@@ -116,7 +116,7 @@ SCENES.pc = () => {
     `<g class="ctl dev-link" tabindex="0" role="link" aria-label="Open the portfolio site in a new tab">` +
       T(332,252,'Portfolio ↗','t t-xs t-mid', `style="fill:var(--accent);text-decoration:underline"`) +
     `</g>` +
-    R(45,291,391,19,4,'m-chip') + monCover + R(218,336,45,35,4,'m-metal') + R(160,368,162,13,6,'m-metal')));
+    monCover + R(218,336,45,35,4,'m-metal') + R(160,368,162,13,6,'m-metal')));
   s += DW('webcam', hot('webcam',[219,50,42,20], R(219,50,42,20,10,'m-chip') + C(240,60,5,'m-screen') + C(240,60,2,'m-metal-lt'), {hit:true, pad:6}));
   s += DW('mic', hot('mic',[484,84,42,92], R(490,90,30,48,15,'m-chip') +
     `<line class="ln-thin" x1="505" y1="138" x2="505" y2="160"/>` + R(487,160,36,10,5,'m-metal')));
