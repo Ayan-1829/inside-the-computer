@@ -10,6 +10,7 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.26.0 | 2026-09-20 | — | Computer: the "Monitor" label moved off the screen to the middle of the lower bezel, so it no longer sits over the welcome message or the start-up page |
 | 5.25.0 | 2026-09-20 | — | Computer: the walkthrough's focus no longer flickers between parts (it used to drop out while a dot was on a wire); the blue/yellow colour key moved from the pop-up to a pill above the tower; the steps pop-up can be resized |
 | 5.24.0 | 2026-09-20 | — | Computer: no hover highlighting while a simulation runs; the monitor goes black, then shows the firmware start-up page and finally the welcome message; the steps pop-up can be dragged; webcam and mic flows follow the dotted cables (the mic gained one); the main-rails step notes that output devices have their own plugs |
 | 5.23.0 | 2026-09-20 | — | Computer: in the power-on walkthrough, power is blue and signals and data are yellow, each dot leaves a fading comet tail with beads of current that keep flowing (and along the lit cables), dots follow the dotted cables to devices, USB devices get their 5 V in the main-rails step, and the top-left note is removed where the steps already show |
@@ -66,6 +67,14 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.26.0: Monitor label off the screen
+
+**Prompt** (2026-09-20, exact time not in the saved record):
+> take the monitor label out of the screen and take it to middle of the lower basel
+
+**Changes**
+- The "Monitor" label (with its output-device dot) now sits in the middle of the monitor's lower bezel instead of on the screen, so it no longer covers the welcome message or, during the power-on walkthrough, the black screen and the firmware start-up page.
 
 ### 5.25.0: Steadier focus, colour key above the tower, resizable pop-up
 

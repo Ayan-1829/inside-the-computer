@@ -132,7 +132,7 @@ SCENES.pc = () => {
   s += DW('printer', hot('printer',[240,512,180,88], R(284,512,92,28,2,'m-panel') + R(270,528,120,14,4,'m-metal') + R(240,540,180,60,10,'m-case') + R(268,556,124,6,3,'m-chip') + R(284,560,92,8,1,'m-panel') + C(398,582,6,'m-accent')));
 
   /* ---- labels (top layer) ---- */
-  L += LB(150,276,'Monitor',{for:'monitor',dot:'out',tone:'inv'}) + LB(269,46,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(505,74,'Mic',{for:'mic',dot:'in'}) + LB(500,180,'Speakers',{for:'speakers',dot:'out'}) +
+  L += LB(248.5,323,'Monitor',{for:'monitor',dot:'out',tone:'inv',size:14}) + LB(269,46,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(505,74,'Mic',{for:'mic',dot:'in'}) + LB(500,180,'Speakers',{for:'speakers',dot:'out'}) +
        LB(210,410,'Keyboard',{for:'keyboard',dot:'in'}) + LB(434,410,'Mouse',{for:'mouse',dot:'in'}) + LB(505,572,'Joystick',{for:'joystick',dot:'in'}) +
        LB(130,626,'Game controller',{for:'gamepad',dot:'in'}) + LB(330,626,'Printer',{for:'printer',dot:'out'});
   [['io',288,100,'I/O'],['ram',363,122,'RAM',1],['cpu',475,240,'CPU'],['cooling',686,230,'Cooling'],['gpu',380,408,'GPU',1],
