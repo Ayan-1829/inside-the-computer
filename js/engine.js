@@ -561,6 +561,7 @@ function clearSelection(){
 
 layersEl.addEventListener('pointermove', e => {
   if (e.pointerType === 'touch') return;
+  if (simRunning()){ if (hoverEl) setHover(null); clearTimeout(tipTimer); return; }   /* no hover highlight or card mid-simulation */
   if (drag && drag.moved) return;
   if (tipPinned) return;
   const h = layer ? hotAt(e.target) : null;
@@ -608,7 +609,7 @@ layersEl.addEventListener('keydown', e => {
     setOffset(wrap, o[0] + dirs[e.key][0]*14, o[1] + dirs[e.key][1]*14, true);
   }
 });
-layersEl.addEventListener('focusin', e => { const h = e.target.closest && e.target.closest('.hot'); if (h && e.target === h){ setHover(h); scheduleTip(h); } });
+layersEl.addEventListener('focusin', e => { const h = e.target.closest && e.target.closest('.hot'); if (h && e.target === h && !simRunning()){ setHover(h); scheduleTip(h); } });
 layersEl.addEventListener('focusout', hideTip);
 
 /* Rebuild the current scene in place (used when a scene switches mode) */
@@ -698,6 +699,7 @@ dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
    plays it back on screen -- it lives in memory for a few seconds and is then
    discarded (object URLs revoked, canvases cleared, variables set to null). */
 var runDeviceTest = () => {};
+var simRunning = () => false;    /* true while the power-on walkthrough or a webcam / mic flow is playing */
 var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set by the power-on walkthrough below */
 {
   const dt = $('#device-test');
@@ -893,35 +895,42 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       webcam: ['webcam', 'io', 'ram', 'cpu', 'ram', 'io', 'monitor'],
       mic: ['mic', 'io', 'ram', 'cpu', 'ram', 'io', 'speakers'],
     };
-    const LEG_MS = 800, PAUSE_MS = {cpu: 650, ram: 250};
+    const PAUSE_MS = {cpu: 650, ram: 250};
+    let flowBusy = 0;                                  /* webcam / mic flows currently playing */
     function runFlow(kind, onArrive){
       const ids = ROUTE_IDS[kind];
-      const route = ids && ids.map(id => ({id, pt: hotCenter(id)})).filter(w => w.pt);
+      const route = ids && layer ? routePts(ids) : null;
       if (!layer || !route || route.length < 2){ onArrive(); return; }
       const lay = layer;
+      flowBusy++; setHover(null); clearTimeout(tipTimer);
+      let over = false;
+      const finish = () => { if (!over){ over = true; flowBusy--; } };
       const dot = document.createElementNS(SVGNS, 'circle');
       dot.setAttribute('r', '7'); dot.setAttribute('class', 'device-flow-dot');
       dot.setAttribute('cx', route[0].pt[0]); dot.setAttribute('cy', route[0].pt[1]);
       lay.appendChild(dot);
-      const highlight = id => { const h = lay.querySelector(`.hot[data-id="${id}"]`); if (h) setSelected(h); };
+      const highlight = id => { if (id.startsWith('via-')) return; const h = lay.querySelector(`.hot[data-id="${id}"]`); if (h) setSelected(h); };
       highlight(route[0].id);
       let leg = 0, start = null;
+      const legMs = k => Math.max(90, Math.hypot(route[k + 1].pt[0] - route[k].pt[0], route[k + 1].pt[1] - route[k].pt[1]) / SPEED);
       function frame(ts){
-        if (layer !== lay){ dot.remove(); return; }      /* the visitor navigated away mid-flow */
+        if (layer !== lay){ dot.remove(); finish(); return; }      /* the visitor navigated away mid-flow */
         if (!start) start = ts;
-        const t = Math.min(1, (ts - start) / LEG_MS);
+        const t = Math.min(1, (ts - start) / legMs(leg));
         const [x1, y1] = route[leg].pt, [x2, y2] = route[leg + 1].pt;
         dot.setAttribute('cx', x1 + (x2 - x1) * t); dot.setAttribute('cy', y1 + (y2 - y1) * t);
         if (t < 1){ requestAnimationFrame(frame); return; }
         leg++; start = null;
-        highlight(route[leg].id);
+        const w = route[leg], real = !w.id.startsWith('via-');
+        highlight(w.id);
         if (leg < route.length - 1){
-          setTimeout(() => requestAnimationFrame(frame), PAUSE_MS[route[leg].id] || 120);
+          const pause = real ? (PAUSE_MS[w.id] || 120) : 0;         /* rests at parts, not at points along a cable */
+          if (pause) setTimeout(() => requestAnimationFrame(frame), pause); else requestAnimationFrame(frame);
           return;
         }
         dot.remove();
         onArrive();
-        setTimeout(() => setSelected(null), 5000);   /* keep the destination lit while its result shows, then clear */
+        setTimeout(() => { setSelected(null); finish(); }, 5000);   /* keep the destination lit while its result shows, then clear */
       }
       requestAnimationFrame(frame);
     }
@@ -936,7 +945,8 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
        a signal that reaches many parts (the PSU's power, the I/O port's signals to
        every device) fans out from a shared start. Route entries are ids of parts,
        or of the invisible "via" points and the wall plug drawn by the scene.
-       Step 1 has no routes: standby power is always there, so instead of a dot the
+       `kind: 'power'` draws the dots and lines blue (power); everything else is yellow
+       (signals and data). Step 1 has no routes: standby power is always there, so instead of a dot the
        cord, the PSU cable and the PWR_SW# wire are lit (`lit` glows the named parts).
        Pressing the button drops that wire LOW (step 2), and the main rails light up
        from step 4. Pause holds after the current step; Step / Back move one. */
@@ -946,7 +956,7 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     const POWER_STEPS = [
       {t: 'AC Power → PSU → +5VSB → Motherboard', note: 'Standby power is always on, even when the PC is “off”.',
        x: 'The PSU receives AC power from the wall and converts it into DC power. Even when the PC is off, it provides **+5VSB standby power**. The motherboard receives it, so its power-management circuitry stays active and can detect the power button.',
-       routes: [], lit: ['ac', 'psu', 'atx-power', 'chipset']},
+       routes: [], lit: ['ac', 'psu', 'atx-power', 'chipset'], kind: 'power'},
       {t: 'Power Button → PWR_SW# → Power Logic', note: 'Pressing the button pulls PWR_SW# LOW; the board’s power logic sees it.',
        x: 'When you press the power button, the switch momentarily connects the **PWR_SW# signal to ground**. The motherboard’s power-control circuitry recognizes the change and decides to start the system.',
        routes: [['power-button', 'via-w1', 'via-w2', 'via-w3', 'chipset']]},
@@ -954,9 +964,10 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
        x: 'The motherboard pulls the **PS_ON# signal LOW**, telling the PSU to turn on its main power outputs.',
        routes: [['chipset', 'atx-power', 'via-cable2', 'via-cable', 'psu']]},
       {t: 'PSU → Main Power Rails', note: '+12 V, +5 V and +3.3 V go out to every part.',
-       x: 'The PSU starts supplying **+12V, +5V, and +3.3V** to the motherboard and other components. The CPU gets its power through the motherboard’s voltage regulators (VRM), and the RAM and fans through the board too; the graphics card and drives also have their own cables.',
-       routes: [...['motherboard', 'cpu', 'ram', 'chipset', 'bios', 'cooling'].map(id => [...T_PSU, id]),
-                ['psu', 'via-gpu1', 'via-gpu2', 'via-gpu3', 'gpu'], ['psu', 'via-sto', 'storage']]},
+       x: 'The PSU starts supplying **+12V, +5V, and +3.3V** to the motherboard and other components. The CPU gets its power through the motherboard’s voltage regulators (VRM), and the RAM and fans through the board too; the graphics card and drives also have their own cables, and USB devices such as the keyboard and mouse get 5 V through the I/O ports. The monitor, printer and most speakers have their own wall plugs, so the PC does not power them.',
+       routes: [...['motherboard', 'cpu', 'ram', 'chipset', 'bios', 'cooling', 'io'].map(id => [...T_PSU, id]),
+                ...['keyboard', 'mouse', 'webcam', 'mic', 'joystick', 'gamepad'].map(id => [...T_PSU, 'io', id]),
+                ['psu', 'via-gpu1', 'via-gpu2', 'via-gpu3', 'gpu'], ['psu', 'via-sto', 'storage']], kind: 'power'},
       {t: 'PSU → PWR_OK → CPU Reset Release', note: '“Power OK”: the board releases the CPU from reset.',
        x: 'After the power rails become stable, the PSU sends **PWR_OK** to tell the motherboard that the power is within the required range. The motherboard’s reset circuitry then completes the startup sequence and releases the CPU from **RESET**.',
        routes: [[...T_PSU, 'chipset', 'cpu']]},
@@ -975,7 +986,7 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
                 ...['keyboard', 'mouse', 'webcam', 'mic', 'joystick', 'gamepad', 'printer', 'speakers'].map(id => [...T_OS, 'io', id])]},
     ];
     const SPEED = 0.42;                                              /* diagram units per millisecond */
-    const FX_CLASSES = ['pw-standby', 'pw-low', 'pw-rails'];
+    const FX_CLASSES = ['pw-standby', 'pw-low', 'pw-rails', 'pw-kind-power', 'pw-screen', 'pw-boot', 'pw-spin'];
     const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     const isFs = () => (document.fullscreenElement || document.webkitFullscreenElement) === stage;
@@ -989,7 +1000,6 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     const showFlowNote = (text, i, paused) => {
       flowNote.firstChild.textContent = `${i + 1}/${POWER_STEPS.length}${paused ? ' · paused' : ''}`;
       flowNote.lastChild.textContent = text;
-      flowNote.hidden = false;
     };
     const hideFlowNote = () => { flowNote.hidden = true; };
 
@@ -997,19 +1007,64 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     const pop = document.createElement('aside');
     pop.className = 'flow-pop'; pop.hidden = true; pop.setAttribute('aria-label', 'Power-on steps');
     pop.innerHTML = '<div class="fp-head"><b>Power-on steps</b><div class="fp-tools">' + pwControls(false) +
-      '<button type="button" class="fp-close" aria-label="Close the steps">×</button></div></div><ol class="pw-log" aria-live="polite"></ol>';
+      '<button type="button" class="fp-close" aria-label="Close the steps">×</button></div></div><ol class="pw-log" aria-live="polite"></ol>' +
+      '<span class="fp-rs fp-rs-e" data-rs="e" aria-hidden="true"></span><span class="fp-rs fp-rs-s" data-rs="s" aria-hidden="true"></span><span class="fp-rs fp-rs-se" data-rs="se" title="Drag to resize" aria-hidden="true"></span>';
     stage.appendChild(pop);
     const popList = pop.querySelector('.pw-log');
     /* keep the pop-up just left of the tower (not far off at the stage's edge) without covering it */
+    const stagePad = () => { const r = stage.getBoundingClientRect(); return {left: r.left + stage.clientLeft, top: r.top + stage.clientTop, width: stage.clientWidth, height: stage.clientHeight}; };
+    let popMoved = false;                       /* the visitor dragged the pop-up: leave it where they put it */
     function placePop(){
+      if (pop.hidden) return;
+      const sr = stagePad();
+      if (popMoved){                            /* only keep it inside the stage (it may have been resized) */
+        const pr = pop.getBoundingClientRect();
+        pop.style.left = Math.min(Math.max(pr.left - sr.left, 0), Math.max(0, sr.width - pr.width)) + 'px';
+        pop.style.top = Math.min(Math.max(pr.top - sr.top, 0), Math.max(0, sr.height - pr.height)) + 'px';
+        return;
+      }
       const t = layer && layer.querySelector('[data-flow="tower"]');
       if (!t) return;
-      const sr = stage.getBoundingClientRect(), tr = t.getBoundingClientRect(), w = Math.min(420, sr.width - 32);
+      const tr = t.getBoundingClientRect(), w = pop.offsetWidth || Math.min(420, sr.width - 32);
       pop.style.left = Math.max(16, Math.min(tr.left - sr.left - w - 12, sr.width - w - 16)) + 'px';
     }
 
+    const popHead = pop.querySelector('.fp-head');
+    popHead.title = 'Drag to move';
+    popHead.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || e.target.closest('button')) return;
+      const sr = stagePad(), pr = pop.getBoundingClientRect(), dx = e.clientX - pr.left, dy = e.clientY - pr.top;
+      popHead.setPointerCapture(e.pointerId); pop.classList.add('dragging');
+      const move = ev => {
+        pop.style.left = Math.min(Math.max(ev.clientX - dx - sr.left, 0), Math.max(0, sr.width - pr.width)) + 'px';
+        pop.style.top = Math.min(Math.max(ev.clientY - dy - sr.top, 0), Math.max(0, sr.height - pr.height)) + 'px';
+        pop.style.bottom = 'auto'; popMoved = true;
+      };
+      const up = () => { pop.classList.remove('dragging'); popHead.removeEventListener('pointermove', move); popHead.removeEventListener('pointerup', up); popHead.removeEventListener('pointercancel', up); };
+      popHead.addEventListener('pointermove', move); popHead.addEventListener('pointerup', up); popHead.addEventListener('pointercancel', up);
+      e.preventDefault();
+    });
+
+    /* resize from the corner (both), the right edge (width) or the bottom edge (height); the top-left corner stays put */
+    const POP_MIN_W = 260, POP_MIN_H = 170;
+    pop.querySelectorAll('.fp-rs').forEach(h => h.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      const dir = h.dataset.rs, sr = stagePad(), pr = pop.getBoundingClientRect();
+      const left = pr.left - sr.left, top = pr.top - sr.top, w0 = pr.width, h0 = pr.height, x0 = e.clientX, y0 = e.clientY;
+      pop.style.left = left + 'px'; pop.style.top = top + 'px'; pop.style.bottom = 'auto'; popMoved = true;
+      h.setPointerCapture(e.pointerId); pop.classList.add('dragging');
+      const move = ev => {
+        if (dir.includes('e')) pop.style.width = Math.min(Math.max(w0 + ev.clientX - x0, POP_MIN_W), sr.width - left) + 'px';
+        if (dir.includes('s')) pop.style.height = Math.min(Math.max(h0 + ev.clientY - y0, POP_MIN_H), sr.height - top) + 'px';
+      };
+      const up = () => { pop.classList.remove('dragging'); h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up); };
+      h.addEventListener('pointermove', move); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
+      e.preventDefault(); e.stopPropagation();
+    }));
+
     /* pw: the running walkthrough {lay, dots, sel, i, timer, raf, paused, holding, animating}; pwDone: steps shown so far */
     let pw = null, pwDone = 0, popClosed = false;
+    simRunning = () => !!pw || flowBusy > 0;
     const stepLi = i => {
       const st = POWER_STEPS[i], li = document.createElement('li');
       li.innerHTML = `<span class="pw-n">${i + 1}</span><div><b>${esc(st.t)}</b><p>${fmt(st.x)}</p></div>`;
@@ -1036,7 +1091,10 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       pop.hidden = !(pwDone > 0 && !popClosed && usePop());
       if (!pop.hidden) placePop();
       syncControls(inner); syncControls(pop);
-      if (pw && !flowNote.hidden) flowNote.firstChild.textContent = `${pw.i + 1}/${POWER_STEPS.length}${pw.paused ? ' · paused' : ''}`;
+      if (pw) flowNote.firstChild.textContent = `${pw.i + 1}/${POWER_STEPS.length}${pw.paused ? ' · paused' : ''}`;
+      /* the steps are already on screen in the pop-up or the side panel; the short note is only needed
+         on a phone, where the panel sits below the diagram */
+      flowNote.hidden = !(pw && innerWidth <= 980 && pop.hidden);
     };
     const revealLatest = () => {
       popList.scrollTop = popList.scrollHeight;
@@ -1067,17 +1125,26 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       });
       if (mode === 'dim' && pw.sel.length) pw.lay.classList.add('select-dim');
     }
+    /* the monitor while the walkthrough runs: 'off' is black, 'boot' the firmware's start-up page, 'spin' the same
+       page with the loading spinner, 'welcome' the normal welcome message */
+    const SCREENS = {off: ['pw-screen'], boot: ['pw-screen', 'pw-boot'], spin: ['pw-screen', 'pw-boot', 'pw-spin'], welcome: []};
+    function setScreen(state){
+      const c = pw.lay.classList;
+      ['pw-screen', 'pw-boot', 'pw-spin'].forEach(k => c.toggle(k, SCREENS[state].includes(k)));
+    }
     /* what is powered / what the press changed, as a function of the step */
     function powerFx(i){
       const c = pw.lay.classList;
       c.add('pw-standby');                       /* +5VSB never goes away */
       c.toggle('pw-low', i === 1);               /* PWR_SW# is pulled LOW while the button is pressed */
       c.toggle('pw-rails', i >= 3);              /* the main rails are on from step 4 */
+      c.toggle('pw-kind-power', POWER_STEPS[i].kind === 'power');
+      setScreen(i <= 6 ? 'off' : 'spin');       /* black until the first picture; the boot page (with its spinner) until the desktop */
     }
     function powerCleanup(){
       if (!pw) return;
       clearTimeout(pw.timer); cancelAnimationFrame(pw.raf);
-      pw.dots.forEach(d => d.remove());
+      pw.g.remove();
       clearLight();
       pw.lay.classList.remove(...FX_CLASSES);
       if (layer === pw.lay) setSelected(null);
@@ -1086,19 +1153,69 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     const powerDot = k => {
       while (pw.dots.length <= k){
         const d = document.createElementNS(SVGNS, 'circle');
-        d.setAttribute('r', '7'); d.setAttribute('class', 'device-flow-dot');
-        pw.lay.appendChild(d); pw.dots.push(d);
+        d.setAttribute('r', '7'); d.setAttribute('class', 'device-flow-dot pw-dot');
+        pw.dg.appendChild(d); pw.dots.push(d);
       }
       return pw.dots[k];
     };
-    /* each route's points (read fresh, so they follow dragged parts) and running distances */
+    /* the "current": a glowing line behind each dot with beads that keep flowing along it */
+    const powerTrail = k => {
+      while (pw.trails.length <= k){
+        const n = pw.trails.length, id = 'pw-tail-' + n, mk = (tag, attrs) => { const e = document.createElementNS(SVGNS, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); return e; };
+        const grad = mk('linearGradient', {id, gradientUnits: 'userSpaceOnUse'});
+        const s0 = mk('stop', {offset: '0', 'stop-opacity': '0'}), s1 = mk('stop', {offset: '1', 'stop-opacity': '1'});
+        grad.append(s0, s1); pw.defs.appendChild(grad);
+        const g = mk('g', {}), glow = mk('polyline', {}), line = mk('polyline', {});
+        glow.style.stroke = line.style.stroke = `url(#${id})`;
+        g.append(glow, line); pw.tg.appendChild(g);
+        pw.trails.push({g, glow, line, grad, s0, s1});
+      }
+      return pw.trails[k];
+    };
+    /* points along a device's dotted cable, from the device end to the I/O port end; null once parts have been
+       moved (the cables are hidden then, so the dot goes straight) */
+    function cablePts(dev){
+      const path = layer.querySelector(`.conn path[data-dev="${dev}"]`);
+      if (!path || layer.classList.contains('moved')) return null;
+      const len = path.getTotalLength(), n = 14, out = [];
+      for (let k = 0; k <= n; k++){ const q = path.getPointAtLength(len * k / n); out.push([q.x, q.y]); }
+      return out;
+    }
+    /* the points of a route (read fresh, so they follow dragged parts). Between the I/O port and a
+       device that has a dotted cable in the drawing, the route follows that cable. */
+    function routePts(ids){
+      const pts = [];
+      ids.forEach((id, k) => {
+        const pt = hotCenter(id);
+        if (!pt) return;
+        let via = null;
+        if (ids[k - 1] === 'io'){ via = cablePts(id); if (via) via.reverse(); }          /* port to device */
+        else if (id === 'io') via = cablePts(ids[k - 1]);                                  /* device to port */
+        if (via) via.forEach((q, j) => pts.push({id: 'via-cable-' + j, pt: q}));
+        pts.push({id, pt});
+      });
+      return pts;
+    }
     function buildRoutes(st){
       return st.routes.map(ids => {
-        const pts = ids.map(id => ({id, pt: hotCenter(id)})).filter(w => w.pt);
+        const pts = routePts(ids);
         const cum = [0];
         for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k].pt[0] - pts[k - 1].pt[0], pts[k].pt[1] - pts[k - 1].pt[1]));
         return {pts, cum, total: cum[cum.length - 1]};
       }).filter(r => r.pts.length);
+    }
+    const TAIL_LEN = 150, TAIL_FADE_MS = 800;                         /* length of a dot's tail (diagram units) and how long it takes to fade after arrival */
+    function routePos(r, d){
+      let a = 0; while (a < r.pts.length - 1 && r.cum[a + 1] <= d) a++;
+      const b = Math.min(a + 1, r.pts.length - 1), seg = r.cum[b] - r.cum[a], f = seg > 0 ? (d - r.cum[a]) / seg : 1;
+      const [x1, y1] = r.pts[a].pt, [x2, y2] = r.pts[b].pt;
+      return [x1 + (x2 - x1) * f, y1 + (y2 - y1) * f];
+    }
+    function routeBetween(r, from, to){
+      const out = [routePos(r, from)];
+      for (let k = 1; k < r.pts.length; k++) if (r.cum[k] > from && r.cum[k] < to) out.push(r.pts[k].pt);
+      out.push(routePos(r, to));
+      return out;
     }
     const stepDwell = st => 700 + st.x.split(/\s+/).length * 75;      /* time to read the step */
     function powerStep(i){
@@ -1113,30 +1230,51 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       powerFx(i); showFlowNote(st.note, i, pw.paused); powerSync(); revealLatest();
       const routes = buildRoutes(st);
       pw.dots.forEach(d => { d.style.visibility = 'hidden'; });
+      pw.trails.forEach(t => { t.g.style.visibility = 'hidden'; });
       if (!routes.length){ powerLight(st.lit || [], 'glow'); powerStepDone(); return; }
+      const power = st.kind === 'power', tone = power ? ' is-power' : '';
       routes.forEach((r, k) => {
-        const d = powerDot(k);
-        d.style.visibility = 'visible'; d.setAttribute('cx', r.pts[0].pt[0]); d.setAttribute('cy', r.pts[0].pt[1]);
+        const d = powerDot(k), t = powerTrail(k);
+        d.setAttribute('class', 'device-flow-dot pw-dot' + tone);
+        t.glow.setAttribute('class', 'pw-trail-glow' + tone); t.line.setAttribute('class', 'pw-trail' + tone);
+        t.s0.style.stopColor = t.s1.style.stopColor = power ? 'var(--power)' : 'var(--signal)';
+        d.style.visibility = t.g.style.visibility = 'visible'; t.g.style.opacity = '1';
+        d.setAttribute('cx', r.pts[0].pt[0]); d.setAttribute('cy', r.pts[0].pt[1]);
+        t.glow.setAttribute('points', ''); t.line.setAttribute('points', '');
       });
       const longest = Math.max(...routes.map(r => r.total));
-      let t0 = null, litKey = null;
+      let t0 = null, litKey = null, shown = false, done = false;
+      const fadeEnd = longest / SPEED + TAIL_FADE_MS;
       const frame = ts => {
         if (!pw) return;
         if (layer !== pw.lay){ powerCleanup(); powerSync(); return; }
         if (t0 === null) t0 = ts;
-        const dist = (ts - t0) * SPEED, stops = new Set();
+        const elapsed = ts - t0, dist = elapsed * SPEED, stops = new Set();
         routes.forEach((r, k) => {
-          const d = Math.min(dist, r.total);
-          let a = 0; while (a < r.pts.length - 1 && r.cum[a + 1] <= d) a++;      /* the last stop this dot has reached */
-          stops.add(r.pts[a].id);
-          const b = Math.min(a + 1, r.pts.length - 1), seg = r.cum[b] - r.cum[a], f = seg > 0 ? (d - r.cum[a]) / seg : 1;
-          const [x1, y1] = r.pts[a].pt, [x2, y2] = r.pts[b].pt;
-          pw.dots[k].setAttribute('cx', x1 + (x2 - x1) * f); pw.dots[k].setAttribute('cy', y1 + (y2 - y1) * f);
+          const d = Math.min(dist, r.total), [cx, cy] = routePos(r, d);
+          let a = 0; while (a < r.pts.length - 1 && r.cum[a + 1] <= d) a++;
+          /* The part this dot last reached. Points along a wire or cable (via-…) aren't parts, so between two
+             parts the focus stays on the last one instead of dropping out and coming back. */
+          let ra = a; while (ra > 0 && r.pts[ra].id.startsWith('via-')) ra--;
+          stops.add(r.pts[ra].id);
+          pw.dots[k].setAttribute('cx', cx); pw.dots[k].setAttribute('cy', cy);
+          /* the tail: the last TAIL_LEN units behind the dot, clear at its far end; once the dot has arrived it
+             draws in toward the dot and fades out */
+          const gone = dist > r.total ? Math.min(1, (elapsed - r.total / SPEED) / TAIL_FADE_MS) : 0;
+          const head = Math.max(0, d - TAIL_LEN), from = head + (d - head) * gone;
+          const pts = routeBetween(r, from, d), str = pts.map(q => q[0] + ',' + q[1]).join(' '), t = pw.trails[k];
+          t.glow.setAttribute('points', str); t.line.setAttribute('points', str);
+          t.grad.setAttribute('x1', pts[0][0]); t.grad.setAttribute('y1', pts[0][1]); t.grad.setAttribute('x2', cx); t.grad.setAttribute('y2', cy);
+          t.g.style.opacity = String(1 - gone);
         });
+        if (!shown && stops.has('monitor')){                 /* the picture reaches the monitor */
+          shown = true;
+          if (i === 6) setScreen('boot'); else if (i === 8) setScreen('welcome');
+        }
         const key = [...stops].join('|');
         if (key !== litKey){ litKey = key; powerLight([...stops], 'dim'); }
-        if (dist < longest){ pw.raf = requestAnimationFrame(frame); return; }
-        powerStepDone();
+        if (!done && dist >= longest){ done = true; powerStepDone(); }
+        if (elapsed < fadeEnd) pw.raf = requestAnimationFrame(frame);
       };
       pw.raf = requestAnimationFrame(frame);
     }
@@ -1151,8 +1289,12 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     function powerStart(paused){
       if (pw || !layer || !layer.querySelector('.hot[data-id="power-button"]')) return;
       if (cur !== 'power-button') go('power-button');   /* so the panel shows the button's page, where the steps collect */
-      pw = {lay: layer, dots: [], sel: [], i: -1, timer: null, raf: 0, paused: !!paused, holding: false, animating: false};
-      pwDone = 0; popClosed = false; powerSync();
+      const g = document.createElementNS(SVGNS, 'g'), tg = document.createElementNS(SVGNS, 'g'), dg = document.createElementNS(SVGNS, 'g');
+      const defs = document.createElementNS(SVGNS, 'defs');
+      g.setAttribute('class', 'pw-flow'); g.append(defs, tg, dg); layer.appendChild(g);       /* trails first, so the dots sit on top */
+      pw = {lay: layer, g, defs, tg, dg, dots: [], trails: [], sel: [], i: -1, timer: null, raf: 0, paused: !!paused, holding: false, animating: false};
+      pwDone = 0; popClosed = false; popMoved = false; pop.style.top = ''; pop.style.bottom = '';
+      setHover(null); clearTimeout(tipTimer); powerSync();
       powerStep(0);
     }
     powerToggle = () => { if (pw){ powerCleanup(); powerSync(); } else powerStart(); };
@@ -1185,7 +1327,7 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     pop.querySelector('.fp-close').addEventListener('click', () => { powerCleanup(); popClosed = true; powerSync(); });
     document.addEventListener('fullscreenchange', () => { powerSync(); setTimeout(placePop, 250); });
     document.addEventListener('webkitfullscreenchange', () => { powerSync(); setTimeout(placePop, 250); });
-    addEventListener('resize', () => { if (!pop.hidden) placePop(); });
+    addEventListener('resize', () => { if (!pop.hidden) placePop(); powerSync(); });
     if (panelBtn) panelBtn.addEventListener('click', () => setTimeout(powerSync, 0));
     /* Reads an element's actual rectangle in the diagram's own coordinate
        space (again via getBBox + getCTM), so overlays line up with a part

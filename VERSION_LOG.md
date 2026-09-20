@@ -10,6 +10,9 @@ Add a new section at the top of "Versions" for each future update.
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 5.25.0 | 2026-09-20 | — | Computer: the walkthrough's focus no longer flickers between parts (it used to drop out while a dot was on a wire); the blue/yellow colour key moved from the pop-up to a pill above the tower; the steps pop-up can be resized |
+| 5.24.0 | 2026-09-20 | — | Computer: no hover highlighting while a simulation runs; the monitor goes black, then shows the firmware start-up page and finally the welcome message; the steps pop-up can be dragged; webcam and mic flows follow the dotted cables (the mic gained one); the main-rails step notes that output devices have their own plugs |
+| 5.23.0 | 2026-09-20 | — | Computer: in the power-on walkthrough, power is blue and signals and data are yellow, each dot leaves a fading comet tail with beads of current that keep flowing (and along the lit cables), dots follow the dotted cables to devices, USB devices get their 5 V in the main-rails step, and the top-left note is removed where the steps already show |
 | 5.22.0 | 2026-09-20 | — | Site-wide: a small Feedback button at the bottom right opens a message box; the message is stored in a "Feedback" tab of the analytics Google Sheet through the same Cloudflare Worker (so no secret is in the public code); the switch-on walkthrough gained the CPU's voltage regulators (VRM) and the first picture on the monitor |
 | 5.21.0 | 2026-09-20 | — | Computer: the tower's power button is now a real part (hover card, right-click card with "Power on", its own page) and plays a 9-step switch-on walkthrough (standby power, button press, PS_ON#, main rails, PWR_OK and CPU reset, UEFI, hardware initialisation and POST, boot, OS and desktop) with parallel dots wherever a signal reaches several parts; a one-line note sits on top of the diagram and every step is added to a log that keeps the earlier ones, in the details panel or a pop-up beside the tower; small Back / Pause / Step controls; BIOS chip, chipset, 24-pin connector and wall plug added to the tower, and the board laid out evenly |
 | 5.20.0 | 2026-09-19 | — | Site-wide: added a lightweight visit/duration tracker (`js/analytics.js`) that reports to a private Google Sheet through a Cloudflare Worker proxy, so the real write-access secret never appears in this (public) repo — the page only knows a public Worker URL and this project's name |
@@ -63,6 +66,41 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 5.25.0: Steadier focus, colour key above the tower, resizable pop-up
+
+**Prompt** (2026-09-20, exact time not in the saved record):
+> There is a focus change effect while simulation. for example when data/power passes, everything except that is faded. But a flickering happen when all the screen gets to normal then again back to focus. the in between focus change should be avoided. (for example: power button to chipset) [...] Take the blue power and yellow data labels from the pop-up window to the top of the tower for better visibility. [...] can you make the pop-up window to have resize option to increase/reduce height and width?
+
+**Changes**
+- **No flicker in the focus while a dot travels**: the parts a dot isn't at are faded, but that fade used to switch off and back on while the dot was on a wire or cable between two parts (for example from the power button to the chipset, which lost the focus for about half a second; the main-rails and hardware-initialisation steps did too). The focus now stays on the last part the dot reached until it arrives at the next one, so it moves straight from part to part (measured frame by frame: no un-faded frames in any step).
+- **The colour key moved onto the diagram**: the "Power / Signals and data" key now sits in a small pill just above the tower, shown only while the walkthrough runs, instead of inside the steps pop-up. (The steps panel keeps its own copy only on a phone, where the diagram and its key are too small to read.)
+- **The steps pop-up can be resized**: drag the grip in its bottom-right corner to change width and height together, or the right or bottom edge to change just one. It stops at a minimum size and at the stage's edge, keeps its top-left corner where it is, and its size is remembered for the next run (it works by touch too). A 1px drift after each drag or resize was also fixed.
+
+### 5.24.0: A realistic monitor, calmer hover, draggable pop-up, flows along the wires
+
+**Prompt** (2026-09-20, exact time not in the saved record):
+> When any simulation is running stop highlighting on hovering over the elements. Use dragging option for the details' window. for the simulation, keep the screen black before starting. When monitor first get's the signal, show starting page as it does in real life. then at last the the welcome message. In step 4, doesn't the power go to output devices? If not then okay. for simulation from Mic/webcam to cpu to output should follow the lines as drawn with the i/o ports.
+
+**Changes**
+- **No hover highlighting while a simulation runs**: while the walkthrough or a webcam / mic flow is playing, hovering a part no longer highlights it or opens its hover card (the right-click card and clicking still work).
+- **The monitor behaves like a real one during the walkthrough**: it goes black when the walkthrough starts, shows the firmware's start-up page (logo, "Press DEL to enter setup") when the first picture arrives in the hardware-initialisation step, the same page with a loading spinner while the OS boots, and fades to the welcome message when the desktop arrives at the end (also restored if the walkthrough is stopped).
+- **The steps pop-up can be dragged** by its header (it stays inside the stage and where you put it until the next run).
+- **Webcam and mic flows follow the dotted cables** to and from the I/O port (and move at a constant speed), like the walkthrough; the mic gained a dotted cable to the I/O port in the drawing so it has a line to follow (the game controller still has none, so its path is straight).
+- **Output devices in the main-rails step**: they are not powered by the PC (the monitor, printer and most speakers have their own wall plugs), so no power dots go to them; the step text now says so. Only USB devices get power through the I/O ports.
+
+### 5.23.0: Blue power, yellow signals, flowing current
+
+**Prompt** (2026-09-20, exact time not in the saved record):
+> for the power on flow, remove the top-left short description as another description apears in bottom left. Use blue coloured point for the power and data flow is shown with yellow. And can you add some current iffect animantion while the current passes. it's very simple now. [...] use the current tails be more transparent and less visible. try to follow the dotted lines for the wires when it travels to the I/Os. [...] The tailing effect should gradually fade away.
+
+**Changes**
+- **Top-left note removed** where the step text is already on screen (the side panel, or the pop-up). It is kept only on a phone, where the panel sits below the diagram and would otherwise be off-screen.
+- **Colours mean something**: blue is power (standby power from the wall cord and the PSU cable, and the main rails), yellow is signals and data (PWR_SW#, PS_ON#, PWR_OK, firmware, boot and the signals to every device). A small key ("Power / Signals and data") sits under the steps heading in the panel and in the pop-up (moved onto the diagram in 5.25.0).
+- **Current effect**: each dot leaves a glowing line behind it along its path, with small beads that keep flowing along it; the dots pulse; the always-on cords and cables glow with flowing beads too (the wall cord flows into the PSU). Reduced-motion users get the colours without the movement.
+- **A fading comet tail**: the trail is thin and mostly transparent, bright at the dot and clear at its far end, and once a dot arrives its tail draws in and fades out over about a second instead of staying lit.
+- **Dots follow the wires**: between the I/O port and a device that has a dotted cable in the drawing (monitor, webcam, speakers, keyboard, mouse, joystick, printer), the dot rides along that dotted cable instead of cutting straight across. If parts have been dragged (which hides the cables), all paths are straight.
+- **Main rails now reach the USB devices**: the keyboard, mouse, webcam, mic, joystick and game controller get their 5 V through the I/O ports, alongside the board, CPU, RAM, chipset, BIOS, fans, graphics card and drives.
 
 ### 5.22.0: Feedback box
 

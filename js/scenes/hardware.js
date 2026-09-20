@@ -31,8 +31,8 @@ SCENES.pc = () => {
 
   /* cables from the devices to the tower, each ending at the I/O port (hidden once parts are moved) */
   s += `<g class="bg conn">${['M430 236C500 236 550 215 609 215','M240 100C330 60 550 80 609 205','M500 300C535 300 550 240 609 240',
-     'M400 440C480 440 550 262 609 262','M468 436C510 420 550 285 609 285','M546 530C556 470 570 300 609 300','M420 566C500 566 570 300 609 300']
-     .map(d => `<path class="ln-dash" d="${d}"/>`).join('')}</g>`;
+     'M400 440C480 440 550 262 609 262','M468 436C510 420 550 285 609 285','M546 530C556 470 570 300 609 300','M420 566C500 566 570 300 609 300','M523 165C556 165 586 200 609 228']
+     .map((d, i) => `<path class="ln-dash" data-dev="${['monitor','webcam','speakers','keyboard','mouse','joystick','printer','mic'][i]}" d="${d}"/>`).join('')}</g>`;
 
   /* ---- the rest of the tower's contents, over the case and the cables ---- */
   s += `<g transform="translate(${TX} ${TY}) scale(${S})">`;
@@ -93,6 +93,17 @@ SCENES.pc = () => {
 
   /* ---- devices ---- */
   const dot3 = (x,y) => `<g class="bg">${C(x,y,3.2,'',`fill="#FF5F57"`)}${C(x+11,y,3.2,'',`fill="#FEBC2E"`)}${C(x+22,y,3.2,'',`fill="#28C840"`)}</g>`;
+  /* the screen while the power-on walkthrough runs: black, then the firmware's start-up page (with a spinner while the OS
+     loads); fades away to reveal the welcome message (see engine.js and .mon-cover in styles.css) */
+  const monCover = `<g class="mon-cover"><rect x="45" y="81" width="391" height="229" rx="6" fill="#03060A"/>
+    <g class="mon-boot">
+      <rect x="210" y="118" width="60" height="60" rx="13" fill="#16654F"/><rect x="222" y="130" width="36" height="36" rx="5" fill="#0D0D0D"/>
+      <path d="M232 124v6M240 124v6M248 124v6M232 166v6M240 166v6M248 166v6M216 140h6M216 148h6M216 156h6M258 140h6M258 148h6M258 156h6" stroke="#0D0D0D" stroke-width="2" stroke-linecap="round"/>
+      <text x="240" y="152" text-anchor="middle" dominant-baseline="central" style="font:800 12px Arial,sans-serif;fill:#F2C14E">AS</text>
+      <text x="240" y="204" text-anchor="middle" style="font:700 15px var(--font-ui,system-ui,sans-serif);fill:#E9EEEB">Inside the Computer</text>
+      <text class="mon-del" x="240" y="292" text-anchor="middle" style="font:500 9.5px var(--font-ui,system-ui,sans-serif);fill:#8B9A94">Press DEL to enter setup</text>
+      <g class="mon-spin"><circle cx="240" cy="246" r="10" fill="none" stroke="#33413C" stroke-width="3"/><path d="M240 236a10 10 0 0 1 10 10" fill="none" stroke="#E9EEEB" stroke-width="3" stroke-linecap="round"/></g>
+    </g></g>`;
   s += DW('monitor', hot('monitor',[30,66,421,315],
     R(30,66,421,270,16,'m-chip') + R(45,81,391,229,6,'m-screen',`id="monitor-screen"`) +
     /* tab 1: a welcome message, shifted left so tab 2 covers less of its text */
@@ -105,7 +116,7 @@ SCENES.pc = () => {
     `<g class="ctl dev-link" tabindex="0" role="link" aria-label="Open the portfolio site in a new tab">` +
       T(332,252,'Portfolio ↗','t t-xs t-mid', `style="fill:var(--accent);text-decoration:underline"`) +
     `</g>` +
-    R(45,291,391,19,4,'m-chip') + R(218,336,45,35,4,'m-metal') + R(160,368,162,13,6,'m-metal')));
+    R(45,291,391,19,4,'m-chip') + monCover + R(218,336,45,35,4,'m-metal') + R(160,368,162,13,6,'m-metal')));
   s += DW('webcam', hot('webcam',[219,50,42,20], R(219,50,42,20,10,'m-chip') + C(240,60,5,'m-screen') + C(240,60,2,'m-metal-lt'), {hit:true, pad:6}));
   s += DW('mic', hot('mic',[484,84,42,92], R(490,90,30,48,15,'m-chip') +
     `<line class="ln-thin" x1="505" y1="138" x2="505" y2="160"/>` + R(487,160,36,10,5,'m-metal')));
@@ -129,6 +140,10 @@ SCENES.pc = () => {
   [['bios',578,155,'BIOS',13],['chipset',578,320,'Chipset',13]].forEach(([id,x,y,t,size]) => { const [a,b] = tp(x,y); L += LB(a,b,t,{for:id,size,tone:'inv'}); });
   { const [a,b] = tp(630,472); L += LB(a,b,'24-pin',{for:'atx-power',size:13,anchor:'start'}); }
   { const [a,b] = tp(330,724); L += LB(a,b,'Wall AC',{size:13}); }
+  /* colour key for the power-on walkthrough, centred above the tower; shown only while it runs (see .pw-legend in styles.css) */
+  L += `<g class="pw-legend" aria-hidden="true"><rect x="676" y="112" width="244" height="30" rx="15"/>
+    <circle class="k-pow" cx="696" cy="127" r="6"/><text x="708" y="127">Power</text>
+    <circle class="k-sig" cx="772" cy="127" r="6"/><text x="784" y="127">Signals and data</text></g>`;
   L += `<g class="legend" transform="translate(100 0)"><circle class="lbl-dot in" cx="604" cy="666" r="6"/>${T(616,672,'Input device','')}<circle class="lbl-dot out" cx="760" cy="666" r="6"/>${T(772,672,'Output device','')}</g>`;
   return {svg: s + LAYER(L), vb: [1012, 700], drag: true, init: el => {
     const link = el.querySelector('.dev-link');

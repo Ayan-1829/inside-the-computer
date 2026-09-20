@@ -20,6 +20,8 @@ function pwControls(run){
     ic('pause', 'Pause', svg('<rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/>', 'i-pause') + svg('<path d="M5 3l8 5-8 5z"/>', 'i-play'), true) +
     ic('step', 'Next step', svg('<path d="M3 3l7 5-7 5z"/><rect x="11" y="3" width="2" height="10"/>')) + '</div>';
 }
+/* what the two dot colours mean in the power-on walkthrough */
+function pwKey(){ return '<div class="pw-key"><i class="k-pow"></i>Power<i class="k-sig"></i>Signals and data</div>'; }
 function sec(t, h){ return h ? '<section class="p-sec"><h3>' + t + '</h3>' + h + '</section>' : ''; }
 
 function metaTitle(id){
@@ -113,7 +115,7 @@ function panelHTML(id, href){
   h += sec('What does it do?', '<p>' + n.does + '</p>');
   h += sec('Why it matters', '<p>' + n.why + '</p>');
   if (n.id === 'power-button') h += '<section class="p-sec pw-sec"><div class="pw-head"><h3>Power-on steps</h3>' + pwControls(true) + '</div>' +
-    '<p class="pw-hint">Press the power button in the diagram, or use these controls.</p><ol class="pw-log" data-pw-log aria-live="polite"></ol></section>';
+    '<p class="pw-hint">Press the power button in the diagram, or use these controls.</p>' + pwKey() + '<ol class="pw-log" data-pw-log aria-live="polite"></ol></section>';
 
   /* interactive "Try it" sections */
   if (n.gate) h += sec('Try it', '<p class="expr">' + n.expr + '</p><p class="hintline">' + TT + '</p>' + truthTable(n));

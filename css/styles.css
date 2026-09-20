@@ -19,6 +19,7 @@
   --accent:#16654F; --accent-2:#0F4E3C; --accent-ink:#FFFFFF;
   --accent-soft:rgba(22,101,79,.10); --accent-glow:rgba(22,101,79,.40);
   --signal:#E39A12; --signal-soft:rgba(227,154,18,.18); --signal-ink:#6B4300;
+  --power:#2B7BE8; --power-soft:rgba(43,123,232,.16);
   --out:#2F5FC4;
   --grid-dot:rgba(21,33,28,.10);
   --shadow:0 1px 2px rgba(21,33,28,.05), 0 12px 32px -18px rgba(21,33,28,.28);
@@ -63,6 +64,7 @@
   --accent:#4DC39C; --accent-2:#7BD9B9; --accent-ink:#0B1A14;
   --accent-soft:rgba(77,195,156,.12); --accent-glow:rgba(77,195,156,.42);
   --signal:#FFB23A; --signal-soft:rgba(255,178,58,.18); --signal-ink:#FFD591;
+  --power:#5DB2FF; --power-soft:rgba(93,178,255,.18);
   --out:#86A9FF;
   --grid-dot:rgba(228,235,231,.07);
   --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 36px -20px rgba(0,0,0,.7);
@@ -312,6 +314,50 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 @keyframes mp-fade{from{opacity:0}to{opacity:1}}
 .hot.device-playing{animation:device-pulse 1s ease-in-out infinite}
 .flow-lit{filter:drop-shadow(0 0 8px var(--signal))}
+/* the walkthrough's dots and current: power is blue, signals and data are yellow */
+.pw-dot{transform-box:fill-box;transform-origin:center;animation:pw-dot-pulse .8s ease-in-out infinite}
+@keyframes pw-dot-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.device-flow-dot.is-power{fill:#D6EAFF;stroke:var(--power);filter:drop-shadow(0 0 8px var(--power))}
+.pw-trail-glow,.pw-trail{fill:none;stroke:var(--signal);stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.pw-trail-glow{stroke-width:8;opacity:.16}
+.pw-trail{stroke-width:3.5;stroke-dasharray:2 13;opacity:.85;animation:pw-flow .55s linear infinite;filter:drop-shadow(0 0 2px var(--signal))}
+.pw-trail-glow.is-power,.pw-trail.is-power{stroke:var(--power)}
+.pw-trail.is-power{filter:drop-shadow(0 0 2px var(--power))}
+@keyframes pw-flow{to{stroke-dashoffset:-15}}
+@media (prefers-reduced-motion:reduce){.pw-dot,.pw-trail,.pw-glow{animation:none!important}}
+/* the monitor during the walkthrough: black, then the start-up page, then the welcome message */
+.mon-cover{opacity:0;pointer-events:none;transition:opacity .6s ease}
+.pw-screen .mon-cover{opacity:1}
+.mon-boot,.mon-spin,.mon-del{opacity:0;transition:opacity .5s ease}
+.pw-boot .mon-boot{opacity:1}
+.pw-boot .mon-del{opacity:1}
+.pw-spin .mon-del{opacity:0}
+.pw-spin .mon-spin{opacity:1}
+.mon-spin{transform-box:fill-box;transform-origin:center;animation:mon-rot 1s linear infinite}
+@keyframes mon-rot{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.mon-spin{animation:none}}
+.flow-pop .fp-head{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.flow-pop.dragging .fp-head{cursor:grabbing}
+.flow-pop{max-width:calc(100% - 16px);max-height:calc(100% - 16px)}   /* never larger than the stage, even after it shrinks */
+.flow-pop .fp-rs{position:absolute;z-index:2;touch-action:none}
+.flow-pop .fp-rs-e{top:0;right:0;bottom:18px;width:8px;cursor:ew-resize}
+.flow-pop .fp-rs-s{left:0;bottom:0;right:18px;height:8px;cursor:ns-resize}
+.flow-pop .fp-rs-se{right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;
+  background:linear-gradient(135deg,transparent 0 46%,var(--accent) 46% 54%,transparent 54% 68%,var(--accent) 68% 76%,transparent 76%)}
+.flow-pop.dragging{user-select:none;-webkit-user-select:none}
+.pw-key{display:none;align-items:center;gap:6px;margin:0 0 12px;font:600 12px var(--font-ui);color:var(--ink-3)}
+.pw-key i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.pw-key .k-pow{background:var(--power)}
+@media (max-width: 980px){.pw-key{display:flex}}
+.pw-key .k-sig{background:var(--signal);margin-left:10px}
+/* the colour key on the diagram, above the tower, while the walkthrough runs */
+.pw-legend{opacity:0;pointer-events:none;transition:opacity .35s;filter:drop-shadow(0 3px 8px rgba(0,0,0,.22))}
+.pw-standby .pw-legend{opacity:1}
+[data-theme="dark"] .pw-legend{filter:drop-shadow(0 0 10px rgba(255,255,255,.16))}
+.pw-legend rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.pw-legend text{font:700 13px var(--font-ui);fill:var(--ink);dominant-baseline:central}
+.pw-legend .k-pow{fill:var(--power)}
+.pw-legend .k-sig{fill:var(--signal)}
 .flow-note{position:absolute;left:16px;right:64px;top:14px;z-index:5;display:flex;align-items:baseline;gap:10px;width:fit-content;max-width:calc(100% - 80px);
   padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);
   font-size:14px;line-height:1.35;font-weight:500;color:var(--ink);pointer-events:none;animation:mp-fade .3s ease}
@@ -339,10 +385,14 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .pw-btn.is-play .i-pause{display:none}
 /* what is always powered / what a press changes: lit lines over the cables and the PWR_SW# wire */
 .pw-glow{fill:none;stroke:var(--signal);stroke-linecap:round;opacity:0;pointer-events:none;transition:opacity .35s,stroke-width .35s;filter:drop-shadow(0 0 3px var(--signal))}
+.pw-glow.pw-sb,.pw-glow.pw-sb-mb,.pw-glow.pw-main{stroke:var(--power);stroke-dasharray:2 11;filter:drop-shadow(0 0 4px var(--power))}
 .pw-standby .pw-sb,.pw-standby .pw-sb-mb,.pw-standby .pw-sw{opacity:.95}
 .pw-standby.pw-low .pw-sw{opacity:0}
 .pw-rails .pw-main{opacity:.95}
 .pw-rails .pw-sb-mb{stroke-width:4}
+.pw-standby .pw-sb,.pw-standby .pw-sb-mb,.pw-rails .pw-main{animation:pw-flow .7s linear infinite}
+.pw-glow.pw-sb{animation-direction:reverse}    /* the cord carries current from the wall plug into the PSU */
+.pw-kind-power .flow-lit{filter:drop-shadow(0 0 8px var(--power))}
 .pw-low .hot[data-id="power-button"] .m-panel{transform:scale(.82);transform-box:fill-box;transform-origin:center}
 .pw-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .pw-log li{display:flex;gap:10px;align-items:flex-start;animation:mp-fade .35s ease}
