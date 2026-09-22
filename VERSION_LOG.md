@@ -12,6 +12,7 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 6.4.0 | 2026-09-22 | — | Phone: a single tap on a part now opens the same details card (with its Inside/Examples/Details buttons) that a right-click opens on a computer, instead of navigating away |
 | 6.3.0 | 2026-09-22 | — | Computer: memory and the graphics card go deeper. DRAM, its cell, SRAM, the SPD chip, the CPU caches and NAND flash open up into their parts (24 new parts); the graphics card gains its L2 cache, video engines, PCIe link and power delivery, and its compute units, shader cores, VRAM, memory controller and display outputs open up into 28 more (52 new parts in all, each with examples, a fact and learning links) |
 | 6.2.0 | 2026-09-22 | — | All parts: many more real product, chip and standard names in the examples (162 parts), and a "Learn more" list of checked YouTube videos and Wikipedia articles at the bottom of the description |
 | 6.1.0 | 2026-09-22 | — | Computer: nine devices now open up. Click the monitor, keyboard, mouse, joystick, game controller, printer, webcam, microphone or speakers to see what is inside it (39 new parts, each with its own page): the drawings show the real path of the signal, for example sound wave to capsule to preamp to ADC to USB |
@@ -75,6 +76,16 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 ---
 
 ## Versions
+
+### 6.4.0: Tap opens the details card, like a computer's right-click
+
+**Prompt** (2026-09-22, exact time not in the saved record):
+> For the mobile browser, single click on the component should do the same as right click on computer browser does now (open the dialouge box).
+
+**Changes**
+- On a touchscreen, tapping a part now opens the same pinned details card a right-click opens on a computer — with its "Details", "Inside", "Examples" and (where it applies) "Try camera"/"Try mic"/"Power on" buttons — instead of navigating straight to the part. The card closes on a second tap on the background, and its "Inside" button still opens a part's own drawing.
+- On a computer, nothing changes: a left click still navigates to the part, and right-click still opens the same card without leaving the current diagram.
+- The power button is no longer a special case on a phone: tapping it opens its details card (with a "Power on" button inside), the same as tapping any other part, instead of toggling the switch-on walkthrough immediately.
 
 ### 6.3.0: Deeper inside memory and the graphics card
 

@@ -562,13 +562,16 @@ document.addEventListener('click', e => {
 });
 /* A click opens the part: it navigates there and updates the details panel
    on the right. Right-click (above) is the way to glance at a part without
-   leaving the current diagram. */
+   leaving the current diagram. On a touchscreen there is no right-click, so
+   a tap opens that same details card instead of navigating away -- a tap is
+   the mobile equivalent of a computer's right-click, not its left-click. */
 layersEl.addEventListener('click', e => {
   if (!layer || !layer.contains(e.target)) return;
   if (e.target.closest('.ctl,.bitc,.html-scene')) return;
   if (suppressClick){ suppressClick = false; return; }
   const h = hotAt(e.target);
   if (h){
+    if (coarse.matches){ setSelected(h); showActions(h, e.clientX, e.clientY); return; }
     if (h.dataset.id === 'power-button'){ powerToggle(); return; }
     /* With the details panel hidden there's nowhere for a normal click's
        navigation to show up, so it opens the same details card a right-click
