@@ -228,15 +228,18 @@ SCENES.gpu = () => {
   const vr = [[190,200,48,34],[250,200,48,34],[310,200,48,34],[190,406,48,34],[250,406,48,34],[310,406,48,34],[372,258,34,48],[372,334,34,48]];
   s += hot('vram',[180,196,232,248], vr.map(v=>R(...v,3,'m-chip')).join(''),{label:'VRAM chips'});
   s += `<g class="bg">${R(200,245,150,150,8,'m-chip')}${R(225,270,100,100,5,'m-die')}${T(275,325,'GPU','t t-sm t-die t-mid')}</g>`;
-  s += `<g class="bg">${R(540,110,400,520,12,'m-die')}${R(605,485,270,56,6,'m-die-block')}${T(740,518,'L2 cache','t t-sm t-die t-mid')}
-    ${R(605,556,130,54,6,'m-die-block')}${T(670,588,'Display, media','t t-xs t-die t-mid')}${R(745,556,130,54,6,'m-die-block')}${T(810,588,'PCIe link','t t-xs t-die t-mid')}
-    ${T(740,660,'GPU die, simplified floorplan','t t-sm t-mut t-mid')}</g>`;
+  s += `<g class="bg">${R(540,110,400,520,12,'m-die')}${T(740,660,'GPU die, simplified floorplan','t t-sm t-mut t-mid')}</g>`;
+  s += hot('gpu-l2cache',[605,485,270,56], R(605,485,270,56,6,'m-die-block')+T(740,518,'L2 cache','t t-sm t-die t-mid'));
+  s += hot('gpu-media',[605,556,130,54], R(605,556,130,54,6,'m-die-block')+T(670,588,'Display, media','t t-xs t-die t-mid'));
+  s += hot('gpu-pcie',[745,556,130,54], R(745,556,130,54,6,'m-die-block')+T(810,588,'PCIe link','t t-xs t-die t-mid'));
+  let pw=''; for (let i=0;i<4;i++) pw += R(424,250+i*48,58,36,4,'m-chip')+R(432,258+i*48,20,20,3,'m-block')+R(458,258+i*48,16,20,3,'m-block');
+  s += hot('gpu-power',[420,246,66,186], pw);
   let mc=''; for (let i=0;i<6;i++){ mc += R(556,130+i*80,34,70,4,'m-die-block') + R(890,130+i*80,34,70,4,'m-die-block'); }
   s += hot('memory-controller',[[556,130,34,470],[890,130,34,470]], mc,{pad:5});
   let cu=''; for (let r=0;r<6;r++) for (let c=0;c<5;c++){ const x=608+c*54, y=132+r*56; cu += R(x,y,48,50,4,'m-die-block')+R(x+6,y+8,36,8,2,'m-die-cell')+R(x+6,y+22,36,8,2,'m-die-cell')+R(x+6,y+36,36,8,2,'m-die-cell'); }
   s += hot('compute-units',[606,130,272,340], cu,{pad:5});
   return {svg: s + LAYER(LB(292,462,'VRAM chips',{for:'vram',tone:'inv'}) + LB(40,512,'Display outputs',{for:'display-outputs',anchor:'start'}) +
-    LB(742,300,'Compute units',{for:'compute-units',tone:'inv'}) + LB(556,94,'Memory controllers',{for:'memory-controller',anchor:'start'}))};
+    LB(742,300,'Compute units',{for:'compute-units',tone:'inv'}) + LB(556,94,'Memory controllers',{for:'memory-controller',anchor:'start'}) + LB(452,236,'Power',{for:'gpu-power',size:11}))};
 };
 
 /* ---------------- Storage ---------------- */

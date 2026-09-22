@@ -6,10 +6,16 @@ Times are in UTC, with Dhaka time (UTC+6) in brackets. Prompt times come from th
 
 Add a new section at the top of "Versions" for each future update.
 
+From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site as it was at 5.28.0, as a record of the previous state.
+
 ## Summary
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 6.3.0 | 2026-09-22 | — | Computer: memory and the graphics card go deeper. DRAM, its cell, SRAM, the SPD chip, the CPU caches and NAND flash open up into their parts (24 new parts); the graphics card gains its L2 cache, video engines, PCIe link and power delivery, and its compute units, shader cores, VRAM, memory controller and display outputs open up into 28 more (52 new parts in all, each with examples, a fact and learning links) |
+| 6.2.0 | 2026-09-22 | — | All parts: many more real product, chip and standard names in the examples (162 parts), and a "Learn more" list of checked YouTube videos and Wikipedia articles at the bottom of the description |
+| 6.1.0 | 2026-09-22 | — | Computer: nine devices now open up. Click the monitor, keyboard, mouse, joystick, game controller, printer, webcam, microphone or speakers to see what is inside it (39 new parts, each with its own page): the drawings show the real path of the signal, for example sound wave to capsule to preamp to ADC to USB |
+| 6.0.0 | 2026-09-22 | — | Phone: pressing and holding a part no longer opens the description card; only a tap does (right-click on a mouse is unchanged) |
 | 5.28.0 | 2026-09-20 | — | Computer: the black bar at the bottom of the monitor's screen is removed, and a thin ash line now runs around the screen inside the bezel |
 | 5.27.0 | 2026-09-20 | — | Computer: in the power-on walkthrough, dots travelling between parts on the motherboard now run along straight horizontal and vertical lines instead of cutting diagonally; the drawn cables and the PWR_SW# wire keep their own shapes |
 | 5.26.0 | 2026-09-20 | — | Computer: the "Monitor" label moved off the screen to the middle of the lower bezel, so it no longer sits over the welcome message or the start-up page |
@@ -69,6 +75,69 @@ Add a new section at the top of "Versions" for each future update.
 ---
 
 ## Versions
+
+### 6.3.0: Deeper inside memory and the graphics card
+
+**Prompt** (2026-09-22, exact time not in the saved record):
+> For the memory parts, GPU, go more deeper inside the components.
+
+**Changes**
+- **Memory now opens up one level further.** Six memory parts became drawings of their own, each with clickable parts (level 4 or 5, "Internal components"):
+  - **DRAM chip**: memory banks, row decoders, sense amplifiers, column select and data path, control logic, and the I/O pins, drawn as the chip's floorplan.
+  - **Memory cells** (one DRAM cell): access transistor, storage capacitor, word line and bit line.
+  - **SRAM**: the six-transistor cell, the row decoder and the sense amplifiers.
+  - **SPD chip**: the stored table, the thermal sensor and the serial bus.
+  - **CPU cache**: L1, L2, L3 and the tags that say which memory a cache line holds.
+  - **NAND flash**: plane, block, page and page buffer.
+- **The graphics card gained four parts on its chip and board**, now clickable in its drawing: the L2 cache, the video and display engines, the PCIe interface and the power delivery. It already had compute units, VRAM, memory controllers and display outputs, and each of those now opens up as well:
+  - **Compute unit**: warp schedulers, register file, shader cores, tensor cores, ray-tracing core, texture units, shared memory and L1.
+  - **Shader core**: the fused multiply-add in four steps (multiplier, alignment shifter, adder, normalise and round).
+  - **VRAM**: GDDR chips, the memory bus and HBM stacks; a GDDR chip opens into its channels, bank groups and high-speed interface.
+  - **Memory controller**: address interleaving, request scheduler, error protection (ECC and CRC) and the PHY.
+  - **Display outputs**: the scan-out engine, the link encoder and the connectors with EDID.
+- **52 new parts in all** (24 memory, 28 graphics), each with its own page and text, real-life examples, specifications, a fact and related parts. Only checked links were added to "Learn more" (see 6.2.0); where no video was an exact match, the part shows no video.
+- The text lives in `js/data/memory-deep.js` and `js/data/gpu-deep.js`, the drawings in `js/scenes/memory-deep.js` and `js/scenes/gpu-deep.js`, and the graphics card's own drawing in `js/scenes/hardware.js`. All drawings were checked in light and dark themes for overlapping or clipped labels.
+
+### 6.2.0: More real-life examples and "Learn more" links
+
+**Prompt** (2026-09-22, exact time not in the saved record):
+> Take all changes to v6 as new features are added. Modify the files accordingly. V5 should contain previous states. [...] For the example in the parts, Add more reallife component names. Add clickable video/web links for learning that part from youtube or internet at the bottom of the description. if the exact video is not found then keep that place as it is now. Search carefully. these changes will be kept in the v6. maintain devlog
+
+**Changes**
+- **Examples**: 162 parts gained more real product, chip and standard names (for example Micron and Samsung memory chips, Intel and AMD sockets, named USB, HDMI and SATA versions, 74-series chips). They are in `js/data/examples-more.js` and are added to each part's own examples when the site is built. The groups that describe 8086 instructions were left as they are.
+- **Learn more**: at the bottom of a part's description (the side panel, the details card and each part's own page) there is a list of links to a YouTube video or a Wikipedia article about that part. They open in a new tab, and a short note says they lead to other websites.
+- **Only links that were found to be real were kept.** Each video was checked through YouTube's own lookup service, which returns its real title and channel, and each article through Wikipedia's API. Videos were chosen from search results for how well their title matches the part and how well known the channel is. Where no video matched a part exactly, that part shows no video, and where there is nothing worth linking, no "Learn more" section at all, so the description looks as it did before.
+- The links live in `js/data/learn.js`.
+- **v6 started**: from here changes are made in the `v6` folder, and `v5` stays as the site was at 5.28.0.
+
+### 6.1.0: Inside the input and output devices
+
+**Prompt** (2026-09-22, exact time not in the saved record):
+> Try to expand mic and Speaker. go inside it. [...] Add inside of the monitor, keyboard and all I/O devices along with the previous new attachment.
+
+**Changes**
+- **Nine devices have an inside view now**: monitor, speakers, printer, keyboard, mouse, joystick, game controller, webcam and microphone. Clicking one on the computer's diagram zooms into a drawing of its parts (as the SSD and hard drive already did), and the right-click card gains an "Inside" button. The "Try camera" and "Try mic" buttons are unchanged.
+- **39 new parts, each with its own page and text** (what it is, what it does, why it matters, examples, specifications, a fun fact and related parts), at level 3 "Internal components":
+  - Microphone: capsule, preamplifier, ADC, USB interface.
+  - Speakers: DAC, amplifier, magnet, voice coil, cone.
+  - Monitor: LCD panel, backlight, controller board, power board, video inputs.
+  - Keyboard: keys and switches, switch matrix, controller, USB interface.
+  - Mouse: optical sensor, buttons, scroll wheel, controller.
+  - Joystick: stick and gimbal, position sensors, trigger and buttons, controller.
+  - Game controller: buttons and D-pad, thumbsticks, rumble motors, controller board.
+  - Printer (inkjet): cartridge and print head, carriage and belt, paper rollers, controller board.
+  - Webcam: lens, image sensor, image processor, USB and LED.
+- **Drawings follow the signal**: most views have a row along the bottom naming what is travelling at each stage (for example "Sound waves, weak voltage, stronger voltage, digital numbers, USB data"); the monitor shows the layers pulled apart with the light passing through to the eye; the keyboard shows a key pressed, closing its contact, and the row-and-column grid that finds it. They work in light and dark mode, and clicking a part opens its details in the panel as usual.
+- The text lives in `js/data/devices-inside.js` and the drawings in `js/scenes/devices.js`. The power button was left out: it starts the switch-on walkthrough on the computer's own diagram, so it has no inside view.
+
+### 6.0.0: Tap only on a phone
+
+**Prompt** (2026-09-22, exact time not in the saved record):
+> at present in mobile device click and hold opens the description tab, but I want it to be only click (only in mobile mode).
+
+**Changes**
+- The touch "press and hold to open the details card" gesture is removed, and so is the same card that some phone browsers would open from a long press (their "context menu" event is ignored for touch). On a phone a tap now opens the part and its description in the panel, and nothing else opens on a hold.
+- On a computer with a mouse nothing changes: right-click still opens the card, and hovering still shows the short summary.
 
 ### 5.28.0: Monitor without the black bar
 

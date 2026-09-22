@@ -196,7 +196,7 @@ def('fan-header',{name:'Fan header',parent:'motherboard',level:3,tip:'Small pin 
  rel:[['cooling','A common thing plugged in here'],['vrm','Nearby, and also needs its own airflow']]});
 
 /* ---------------- RAM parts ---------------- */
-def('dram',{name:'DRAM chips',parent:'ram',level:3,tip:'The memory chips on the stick',
+def('dram',{scene:'dram',name:'DRAM chips',parent:'ram',level:3,tip:'The memory chips on the stick',
  short:'The black chips on the stick, each holding billions of memory cells.',
  what:'Dynamic RAM chips are soldered onto the memory stick. A 16 GB DDR5 stick typically has 8 chips of 16 gigabits each.',
  does:'Inside, cells are grouped into banks of rows and columns. The memory controller opens a row, reads or writes a burst of data, then closes it.',
@@ -205,7 +205,7 @@ def('dram',{name:'DRAM chips',parent:'ram',level:3,tip:'The memory chips on the 
  specs:[['Cell','1 transistor + 1 capacitor'],['Chip density','16–32 Gb'],['Refresh','every 64 ms']],
  fact:'Each DRAM cell stores its bit as a charge of only tens of thousands of electrons.',
  rel:[['memory-cells','What is inside each chip'],['spd','Describes these chips to the computer']]});
-def('memory-cells',{name:'Memory cells',parent:'ram',level:4,tip:'Grid of 1-bit cells in rows and columns',
+def('memory-cells',{scene:'cells',name:'Memory cells',parent:'ram',level:4,tip:'Grid of 1-bit cells in rows and columns',
  short:'The tiny cells that store individual bits, arranged in a grid of rows and columns.',
  what:'In DRAM, each cell is one transistor and one capacitor. The transistor is a switch controlled by a word line (the row); the capacitor holds a charge for 1, or no charge for 0.',
  does:'To read, a whole row is switched on and sense amplifiers on the bit lines (the columns) detect tiny changes in voltage. Reading drains the charge, so the row is written back straight away.',
@@ -214,7 +214,7 @@ def('memory-cells',{name:'Memory cells',parent:'ram',level:4,tip:'Grid of 1-bit 
  specs:[['Addressing','row + column'],['Reading','destructive, then restored'],['Refresh','every row every 64 ms']],
  fact:'Reading a DRAM cell destroys its contents. The chip writes the value back immediately, so you never notice.',
  rel:[['dram','Chips full of these cells'],['sram','A faster cell design'],['d-flip-flop','The logic-gate way to store a bit']]});
-def('sram',{name:'SRAM',parent:'ram',level:3,tip:'Static RAM: the fast memory used for cache',
+def('sram',{scene:'sram',name:'SRAM',parent:'ram',level:3,tip:'Static RAM: the fast memory used for cache',
  short:'Static RAM: faster than DRAM and needs no refresh, but takes more space. It is used for CPU cache.',
  what:'An SRAM cell stores a bit in two inverters connected in a loop, each holding the other in place, plus two access transistors: six transistors in total.',
  does:'As long as the power is on, the loop keeps its value without refreshing. It can be read in about a nanosecond.',
@@ -223,7 +223,7 @@ def('sram',{name:'SRAM',parent:'ram',level:3,tip:'Static RAM: the fast memory us
  specs:[['Cell','6 transistors (6T)'],['Refresh','not needed'],['Speed','about 1 ns in L1 cache']],
  fact:'Two inverters in a loop are the simplest memory: if one outputs 1, the other outputs 0, and they hold each other in that state for as long as there is power.',
  rel:[['cache','Built from SRAM'],['not-gate','Two inverters form the cell'],['memory-cells','The DRAM alternative']]});
-def('spd',{name:'SPD chip',parent:'ram',level:3,tip:'Tells the computer what memory is installed',
+def('spd',{scene:'spd',name:'SPD chip',parent:'ram',level:3,tip:'Tells the computer what memory is installed',
  short:'A tiny chip that tells the computer what kind of memory is installed.',
  what:'Serial Presence Detect is a small memory chip on the stick. On DDR5 it is an “SPD hub” that also reads a temperature sensor.',
  does:'At start-up, the firmware reads it to learn the stick’s size, speed and timings, including XMP or EXPO overclocking profiles.',
@@ -234,7 +234,7 @@ def('spd',{name:'SPD chip',parent:'ram',level:3,tip:'Tells the computer what mem
  rel:[['bios','Reads this chip at start-up'],['ram-slots','Where the stick plugs in']]});
 
 /* ---------------- GPU parts ---------------- */
-def('compute-units',{name:'Compute units',parent:'gpu',level:3,tip:'Clusters of many small parallel cores',
+def('compute-units',{scene:'sm',name:'Compute units',parent:'gpu',level:3,tip:'Clusters of many small parallel cores',
  short:'Clusters of many simple cores that run the same program on lots of data at once.',
  what:'The GPU die is divided into repeated blocks called streaming multiprocessors (NVIDIA), compute units (AMD) or Xe-cores (Intel). Each contains dozens of small arithmetic cores plus schedulers, registers and cache.',
  does:'Every core runs the same small program (a shader) on different data, for example one pixel each, so thousands of pixels are coloured in parallel.',
@@ -243,7 +243,7 @@ def('compute-units',{name:'Compute units',parent:'gpu',level:3,tip:'Clusters of 
  specs:[['RTX 4090','128 SMs, 16,384 cores'],['Clock','about 2–3 GHz'],['Work groups','32 or 64 threads at a time']],
  fact:'A GPU hides slow memory by juggling many groups of threads: when one group waits for data, another starts running instantly.',
  rel:[['vram','Holds their data'],['alu','Each core contains simple ALUs']]});
-def('vram',{name:'VRAM',parent:'gpu',level:3,tip:'The graphics card’s own fast memory',
+def('vram',{scene:'vram',name:'VRAM',parent:'gpu',level:3,tip:'The graphics card’s own fast memory',
  short:'The graphics card’s own fast memory for textures, frames and models.',
  what:'VRAM is a set of GDDR memory chips soldered around the GPU, connected over a very wide bus, often 128 to 384 bits.',
  does:'It stores everything the GPU is working on: textures, 3D models, the frame being drawn and, for AI, the model’s weights.',
@@ -252,7 +252,7 @@ def('vram',{name:'VRAM',parent:'gpu',level:3,tip:'The graphics card’s own fast
  specs:[['Capacity','8–32 GB'],['Bus width','128–512 bits'],['Bandwidth','up to about 1.8 TB/s']],
  fact:'The RTX 4090’s VRAM moves about 1 terabyte per second, roughly ten times what a desktop CPU gets from its RAM.',
  rel:[['memory-controller','Manages it'],['dram','The same basic memory technology']]});
-def('memory-controller',{name:'Memory controller',parent:'gpu',level:3,tip:'Manages traffic to and from VRAM',
+def('memory-controller',{scene:'memctl',name:'Memory controller',parent:'gpu',level:3,tip:'Manages traffic to and from VRAM',
  short:'Circuits on the GPU die that manage traffic to and from the VRAM.',
  what:'Along the edges of the GPU die sit memory controllers, each driving VRAM chips over its own 32-bit channel.',
  does:'They queue requests from thousands of threads, reorder them for efficiency, and send the right commands to the memory chips.',
@@ -261,7 +261,7 @@ def('memory-controller',{name:'Memory controller',parent:'gpu',level:3,tip:'Mana
  specs:[['Channel width','32 bits each (GDDR)'],['Total bus','128–512 bits'],['Location','along the die edges']],
  fact:'Extra on-chip cache can matter as much as extra controllers: AMD’s Infinity Cache lets cards with narrower memory buses keep up with wider ones.',
  rel:[['vram','The memory it drives'],['bus-interface','The CPU equivalent']]});
-def('display-outputs',{name:'Display outputs',parent:'gpu',level:3,tip:'HDMI and DisplayPort on the card',
+def('display-outputs',{scene:'dispeng',name:'Display outputs',parent:'gpu',level:3,tip:'HDMI and DisplayPort on the card',
  short:'The ports on the card’s bracket that send images to your monitors.',
  what:'The card’s metal bracket carries HDMI and DisplayPort connectors. A display engine on the GPU reads each finished frame and converts it into the signal format.',
  does:'It sends the image to each monitor many times a second (for example 60, 144 or 240 frames), plus audio over HDMI and DisplayPort.',
@@ -319,7 +319,7 @@ def('dram-cache',{name:'DRAM cache',parent:'ssd',level:4,levelLabel:'Internal co
  specs:[['Typical size','512 MB–2 GB, depending on capacity'],['Type','Low-capacity DDR3 or DDR4'],['Holds','The flash translation layer’s address map']],
  fact:'Losing power mid-write is riskier on SSDs with a volatile DRAM cache, which is why many drives include small backup capacitors to finish flushing it safely.',
  rel:[['ram','The same idea as system RAM, used internally'],['ssd-controller','The chip that reads and writes this cache']]});
-def('nand-flash',{name:'NAND flash memory',parent:'ssd',level:4,levelLabel:'Internal components',tip:'Rows of memory cells storing data as trapped electric charge',
+def('nand-flash',{scene:'nand',name:'NAND flash memory',parent:'ssd',level:4,levelLabel:'Internal components',tip:'Rows of memory cells storing data as trapped electric charge',
  short:'The actual storage medium: rows of memory cells storing data as trapped electric charge, with no moving parts.',
  what:'Each flash chip contains billions of floating-gate transistors organised into pages (the smallest unit you can write, typically 4–16 KB) and blocks (the smallest unit you can erase, made of many pages). Modern chips are 3D NAND, stacking over 200 layers of cells vertically.',
  does:'Writing traps or removes electrons on a transistor’s floating gate, shifting its threshold voltage; reading measures that voltage to recover the stored bits. A whole block must be erased before any of its pages can be written again.',

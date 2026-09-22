@@ -26,7 +26,7 @@ if (!SITE.endsWith('/')) SITE += '/';
 
 /* Load the same data + panel code the browser uses */
 const ctx = vm.createContext({ console });
-for (const f of ['js/core.js','js/data/hardware.js','js/data/devices.js','js/data/cpu.js','js/data/i8086.js','js/data/alu.js','js/data/logic.js','js/data/chips.js','js/panel.js'])
+for (const f of ['js/core.js','js/data/hardware.js','js/data/devices.js','js/data/devices-inside.js','js/data/memory-deep.js','js/data/gpu-deep.js','js/data/examples-more.js','js/data/learn.js','js/data/cpu.js','js/data/i8086.js','js/data/alu.js','js/data/logic.js','js/data/chips.js','js/panel.js'])
   vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 vm.runInContext('linkTree()', ctx);
 const { N, ORDER } = ctx;

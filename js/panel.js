@@ -23,6 +23,32 @@ function pwControls(run){
 /* what the two dot colours mean in the power-on walkthrough */
 function pwKey(){ return '<div class="pw-key"><i class="k-pow"></i>Power<i class="k-sig"></i>Signals and data</div>'; }
 function sec(t, h){ return h ? '<section class="p-sec"><h3>' + t + '</h3>' + h + '</section>' : ''; }
+/* "Learn more": a video and/or an article that explains this part (data/learn.js).
+   Each entry is ['v', title, channel, YouTube id, length] or ['w', Wikipedia article title].
+   Nothing is shown for a part that has none. Links open in a new tab. */
+function escapeHtml(t){ return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+var PLAY_ICON = '<svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 4.5v11l9-5.5z"/></svg>';
+var PAGE_ICON = '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2.5h7l3 3v12H5z"/><path d="M12 2.5v3h3M7.5 9h5M7.5 12h5M7.5 15h3"/></svg>';
+var OPEN_ICON = '<svg class="lk-go" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M11 4h5v5M16 4l-7 7"/></svg>';
+function learnItems(id){
+  var L = typeof LEARN !== 'undefined' && LEARN[id];
+  if (!L || !L.length) return '';
+  return L.map(function(l){
+    var isVideo = l[0] === 'v';
+    var url = isVideo ? 'https://www.youtube.com/watch?v=' + l[3]
+      : 'https://en.wikipedia.org/wiki/' + encodeURIComponent(l[1].replace(/ /g, '_')).replace(/%28/g, '(').replace(/%29/g, ')');
+    var title = isVideo ? l[1] : l[1];
+    var meta = isVideo ? 'Video on YouTube · ' + escapeHtml(l[2]) + (l[4] ? ' · ' + l[4] : '') : 'Article on Wikipedia';
+    return '<li><a class="lk ' + (isVideo ? 'lk-v' : 'lk-w') + '" href="' + url + '" target="_blank" rel="noopener noreferrer">' +
+      '<span class="lk-ic" aria-hidden="true">' + (isVideo ? PLAY_ICON : PAGE_ICON) + '</span>' +
+      '<span class="lk-t">' + escapeHtml(title) + '<em>' + meta + '</em></span>' + OPEN_ICON +
+      '<span class="sr-only"> (opens in a new tab)</span></a></li>';
+  }).join('');
+}
+function learnHTML(id){
+  var items = learnItems(id);
+  return items ? sec('Learn more', '<ul class="learn">' + items + '</ul><p class="note learn-note">These links open YouTube and Wikipedia, which are separate websites, in a new tab.</p>') : '';
+}
 
 function metaTitle(id){
   var n = N[id];
@@ -81,6 +107,8 @@ function detailsFullHTML(n){
   var h = '<p>' + n.what + '</p><p>' + n.does + '</p><p>' + n.why + '</p>';
   if (n.specs.length) h += '<dl class="dp-specs">' + n.specs.map(function(s){ return '<dt>' + s[0] + '</dt><dd>' + s[1] + '</dd>'; }).join('') + '</dl>';
   if (n.fact) h += '<p class="dp-fact"><b>Fun fact.</b> ' + n.fact + '</p>';
+  var learn = learnItems(n.id);
+  if (learn) h += '<p class="dp-learn-h"><b>Learn more</b></p><ul class="learn">' + learn + '</ul>';
   return h;
 }
 function detailsExamplesHTML(n){
@@ -159,6 +187,7 @@ function panelHTML(id, href){
   var rel = n.rel.filter(function(r){ return N[r[0]]; });
   if (rel.length) h += sec('How it connects', '<ul class="rel">' + rel.map(function(r){ return '<li>' + link(href, r[0], '', '<b>' + N[r[0]].name + '</b><span>' + r[1] + '</span>') + '</li>'; }).join('') + '</ul>');
   if (n.fact) h += '<div class="fact"><h3>Fun fact</h3><p>' + n.fact + '</p></div>';
+  h += learnHTML(id);
   return h;
 }
 function crumbsHTML(id, href){

@@ -32,6 +32,10 @@ function linkTree(){
     var p = N[id].parent;
     if (p){ if (!N[p]) throw new Error('Unknown parent "' + p + '" for ' + id); N[p].children.push(id); }
   });
+  /* more real-life examples (data/examples-more.js) are added to each part's own list, once */
+  if (typeof EX_MORE !== 'undefined') Object.keys(EX_MORE).forEach(function(k){
+    if (N[k] && !N[k]._more){ N[k].ex = N[k].ex.concat(EX_MORE[k]); N[k]._more = true; }
+  });
 }
 function ownerOf(id){ var n = N[id]; while (n && !n.scene) n = N[n.parent]; return n ? n.id : 'computer'; }
 function pathTo(id){ var p = [], n = N[id]; while (n){ p.unshift(n.id); n = N[n.parent]; } return p; }

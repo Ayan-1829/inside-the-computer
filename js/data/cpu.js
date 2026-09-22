@@ -47,7 +47,7 @@ def('registers',{name:'Registers',parent:'cpu',level:3,scene:'registers',tip:'Ti
  fact:'Modern cores keep hundreds of hidden physical registers and rename them on the fly, so different instructions can use “RAX” at the same time without clashing.',
  rel:[['alu','Feeds it operands'],['cache','Next, larger level of memory'],['clock','Loads new values on each tick']]});
 
-def('cache',{name:'Cache',parent:'cpu',level:3,tip:'On-chip SRAM holding recently used data',
+def('cache',{scene:'cache',name:'Cache',parent:'cpu',level:3,tip:'On-chip SRAM holding recently used data',
  short:'Small, very fast memory on the CPU chip that keeps copies of recently used data.',
  what:'Cache is SRAM built into the processor, arranged in levels: a small, very fast L1 cache in each core, a larger L2, and a big L3 shared by the cores.',
  does:'When the CPU needs data, it checks L1, then L2, then L3, and only then goes to RAM. Because programs reuse nearby data, most requests are found in cache (a “hit”).',

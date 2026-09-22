@@ -7,7 +7,7 @@
    ========================================================== */
 
 /* ---------------- Output devices ---------------- */
-def('monitor',{name:'Monitor',parent:'computer',level:2,device:'output',tip:'Output device: shows the picture',
+def('monitor',{name:'Monitor',parent:'computer',level:2,scene:'monitor',device:'output',tip:'Output device: shows the picture',
  short:'The screen that shows everything the computer produces.',
  what:'A monitor is a display made of millions of pixels, each built from red, green and blue subpixels. Most are LCD panels lit by a backlight; OLED panels make light in every pixel directly.',
  does:'It receives a video signal from the graphics card over HDMI or DisplayPort and redraws the whole picture many times a second. That rate is called the refresh rate.',
@@ -17,7 +17,7 @@ def('monitor',{name:'Monitor',parent:'computer',level:2,device:'output',tip:'Out
  fact:'A 4K monitor has about 8.3 million pixels and almost 25 million subpixels, each set to the right brightness many times every second.',
  rel:[['display-outputs','Plugs into the graphics card'],['video-out','Or into the motherboard’s video ports'],['gpu','Draws every frame it shows']]});
 
-def('speakers',{name:'Speakers',parent:'computer',level:2,device:'output',tip:'Output device: plays sound',
+def('speakers',{name:'Speakers',parent:'computer',level:2,scene:'speakers',device:'output',tip:'Output device: plays sound',
  short:'Turn the computer’s electrical sound signals into sound waves you can hear.',
  what:'A speaker has a coil attached to a paper or plastic cone, sitting in the field of a magnet. Current through the coil pushes the cone back and forth, which pushes the air.',
  does:'The computer’s audio chip converts digital sound into an analog signal with a DAC (digital-to-analog converter). The signal is amplified and sent to the speakers or headphones.',
@@ -27,7 +27,7 @@ def('speakers',{name:'Speakers',parent:'computer',level:2,device:'output',tip:'O
  fact:'CD-quality audio stores 44,100 samples per second for each channel, just over twice the highest pitch humans can hear.',
  rel:[['audio','Plug into the audio jacks'],['usb','Or connect over USB']]});
 
-def('printer',{name:'Printer',parent:'computer',level:2,device:'output',tip:'Output device: puts pages on paper',
+def('printer',{name:'Printer',parent:'computer',level:2,scene:'printer',device:'output',tip:'Output device: puts pages on paper',
  short:'Puts text and images from the computer onto paper.',
  what:'Inkjet printers spray tiny droplets of ink. Laser printers use a laser and static electricity to place powdered toner on the paper, then melt it in place with heat.',
  does:'The computer sends each page as data over USB, Wi-Fi or the network. The printer’s own processor works out where every dot should go.',
@@ -38,7 +38,7 @@ def('printer',{name:'Printer',parent:'computer',level:2,device:'output',tip:'Out
  rel:[['usb','Often connects by USB'],['ethernet','Office printers join the network']]});
 
 /* ---------------- Input devices ---------------- */
-def('keyboard',{name:'Keyboard',parent:'computer',level:2,device:'input',tip:'Input device: types text and commands',
+def('keyboard',{name:'Keyboard',parent:'computer',level:2,scene:'keyboard',device:'input',tip:'Input device: types text and commands',
  short:'The main way to type text and commands into the computer.',
  what:'A keyboard is a grid of switches, one under each key. A small controller chip inside scans the grid many times a second to see which keys are pressed.',
  does:'When you press a key it sends a code to the computer over USB or Bluetooth. The operating system turns that code into a character according to your language layout.',
@@ -48,7 +48,7 @@ def('keyboard',{name:'Keyboard',parent:'computer',level:2,device:'input',tip:'In
  fact:'Cheap keyboards can miss some combinations of three or more keys held together. Gaming keyboards advertise “n-key rollover”, meaning every key is detected no matter how many are pressed.',
  rel:[['usb','Plugs into a USB port'],['cpu','Each key press becomes an interrupt the CPU handles']]});
 
-def('mouse',{name:'Mouse',parent:'computer',level:2,device:'input',tip:'Input device: moves the pointer',
+def('mouse',{name:'Mouse',parent:'computer',level:2,scene:'mouse',device:'input',tip:'Input device: moves the pointer',
  short:'A pointing device that moves the on-screen pointer and clicks on things.',
  what:'Modern mice use a tiny optical sensor, like a very fast low-resolution camera, that takes thousands of pictures of the surface beneath it every second.',
  does:'A chip compares the pictures to work out how far the mouse has moved, and sends the movement and button clicks to the computer, which moves the pointer.',
@@ -58,7 +58,7 @@ def('mouse',{name:'Mouse',parent:'computer',level:2,device:'input',tip:'Input de
  fact:'Douglas Engelbart demonstrated the first computer mouse, a wooden box with two wheels, in his famous 1968 “Mother of All Demos”.',
  rel:[['usb','Plugs into a USB port'],['monitor','Moves the pointer you see on it']]});
 
-def('joystick',{name:'Joystick',parent:'computer',level:2,device:'input',tip:'Input device: stick for games and simulators',
+def('joystick',{name:'Joystick',parent:'computer',level:2,scene:'joystick',device:'input',tip:'Input device: stick for games and simulators',
  short:'A tilting stick that gives smooth, precise control in games and simulators.',
  what:'A joystick is a stick that pivots on a base, with buttons on the handle and base. Sensors measure how far it is tilted along each axis.',
  does:'Its position is read as analog values, from potentiometers or Hall-effect magnetic sensors, converted into numbers and sent over USB many times a second.',
@@ -68,7 +68,7 @@ def('joystick',{name:'Joystick',parent:'computer',level:2,device:'input',tip:'In
  fact:'Hall-effect joysticks measure a magnet’s position without touching it, so they do not wear out and drift the way older sliding-contact sensors can.',
  rel:[['usb','Plugs into a USB port'],['gamepad','A two-handed alternative']]});
 
-def('gamepad',{name:'Game controller',parent:'computer',level:2,device:'input',tip:'Input device: two-handed gamepad',
+def('gamepad',{name:'Game controller',parent:'computer',level:2,scene:'gamepad',device:'input',tip:'Input device: two-handed gamepad',
  short:'A two-handed controller with thumbsticks, triggers and buttons, used for games.',
  what:'A game controller, or gamepad, combines two thumbsticks, a direction pad, analog triggers and a set of buttons in a shape made to be held in both hands.',
  does:'It reports stick positions, trigger pressure and button presses to the computer, and receives signals back that make it vibrate.',
@@ -88,7 +88,7 @@ def('power-button',{name:'Power button',parent:'computer',level:2,device:'input'
  fact:'Holding the power button for several seconds cuts the power even if the computer has frozen, because that override is done by hardware on the motherboard, not by the operating system.',
  rel:[['motherboard','Reads the PWR_SW# signal'],['psu','Switched on by the motherboard’s PS_ON# signal'],['bios','The firmware that runs once power is up']]});
 
-def('webcam',{name:'Webcam',parent:'computer',level:2,device:'input',tip:'Input device: camera for video calls',
+def('webcam',{name:'Webcam',parent:'computer',level:2,scene:'webcam',device:'input',tip:'Input device: camera for video calls',
  short:'A small camera that sends live video to the computer.',
  what:'A webcam is a small digital camera with a lens, an image sensor (usually CMOS) and often a built-in microphone.',
  does:'The sensor captures many frames per second, a chip compresses them, and they are sent over USB to the computer for video calls, streaming or recording.',
@@ -98,7 +98,7 @@ def('webcam',{name:'Webcam',parent:'computer',level:2,device:'input',tip:'Input 
  fact:'Each pixel on a camera sensor sees only one colour through a tiny filter. The full-colour image is rebuilt by software from a mosaic of red, green and blue pixels, called a Bayer filter.',
  rel:[['usb','Plugs into a USB port'],['monitor','Usually sits on top of it']]});
 
-def('mic',{name:'Microphone',parent:'computer',level:2,device:'input',tip:'Input device: turns sound into an electrical signal',
+def('mic',{name:'Microphone',parent:'computer',level:2,scene:'mic',device:'input',tip:'Input device: turns sound into an electrical signal',
  short:'Turns sound waves into an electrical signal the computer can record or transmit.',
  what:'A microphone has a thin diaphragm that vibrates with incoming sound. Most desk mics are condenser or dynamic types, built into a capsule on a small stand.',
  does:'The diaphragm’s vibration is turned into a tiny electrical signal, which an ADC (analog-to-digital converter) samples into digital audio for calls, recordings and voice assistants.',
