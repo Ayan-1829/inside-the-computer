@@ -12,7 +12,7 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
-| 6.7.0 | 2026-09-27 | — | Site-wide: the shared analytics.js gained trackEvent(name, detail), so a site can count its own events (used by the portfolio for course and Art-profile views); the analytics Sheet was rebuilt with one tab per project, a Summary, and a Report tab per project computed by the script |
+| 6.7.0 | 2026-09-27 | — | Site-wide: the shared analytics.js gained trackEvent(name, detail), so a site can count its own events (used by the portfolio for course and Art-profile views); the analytics Sheet was rebuilt with one tab per project, a Summary, and a Report tab per project computed by the script; the portfolio's contact form now stores its messages in the same Sheet |
 | 6.6.0 | 2026-09-27 | — | Site-wide: the footer's privacy line became a small Privacy button at the bottom left, which opens full privacy notes; on a computer the page no longer scrolls on past the footer |
 | 6.5.0 | 2026-09-27 | — | Site-wide: cookieless analytics. Unique visitors per day (an anonymous ID made on the server, changing daily), approximate location, and time on screen and active time for every page opened, not just the first; also browser, device, screen, language, theme, where visits come from, and clicks on outside links. A privacy line in the footer |
 | 6.4.0 | 2026-09-22 | — | Phone: a single tap on a part now opens the same details card (with its Inside/Examples/Details buttons) that a right-click opens on a computer, instead of navigating away |
@@ -102,6 +102,11 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 - **Other projects**:
   - The portfolio now uses the same `analytics.js`. Its older `tracker.js` was removed: it kept a browser fingerprint in localStorage and sent visits to a separate, older Sheet. Its two useful events, Art-profile views and course-detail views, now go through `trackEvent`. The portfolio's contact form still stores messages in that older Sheet, as before.
   - Gate Forge's local copy (`v28`) has the new `analytics.js` ready for when it is published. It isn't on GitHub yet.
+- **One Sheet for everything** (prompt: *"The message in contact section should send data to the new sheet. the send message is sending data to previous sheet. [...] I want to maintain one single sheet"*):
+  - The portfolio's contact form now goes through the same Worker, into a **Contact messages** tab (time, project, name, email, message, page).
+  - The Worker checks the fields, quietly ignores bots that fill in a hidden field, and only answers "sent" once the Sheet has stored the message. The form says so if it wasn't.
+  - The old Sheet's Apps Script address was removed from the portfolio's code.
+  - Adding the header `X-Debug: 1` to an analytics request makes the Worker show the Sheet's own answer, for diagnosing.
 
 ### 6.6.0: Privacy button, and no more scrolling past the footer
 
