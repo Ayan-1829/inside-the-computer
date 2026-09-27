@@ -21,3 +21,7 @@ Anyone curious about what's actually happening inside the computer they're using
 ---
 
 Built by **Ayan Sarkar**, Lecturer, CSE, Green University of Bangladesh — [ayan-1829.github.io/portfolio](https://ayan-1829.github.io/portfolio)
+
+## Privacy
+
+Visits are counted anonymously, without cookies and without anything stored on the visitor's device. The page reports which parts were opened and for how long. The server side makes a visitor ID that changes every day and can't be turned back into an IP address, and adds an approximate location (country, region, city) from the network. IP addresses are never stored. Nothing is sent when the browser asks not to be tracked (Global Privacy Control or Do Not Track).

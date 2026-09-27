@@ -12,6 +12,8 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 6.6.0 | 2026-09-27 | — | Site-wide: the footer's privacy line became a small Privacy button at the bottom left, which opens full privacy notes; on a computer the page no longer scrolls on past the footer |
+| 6.5.0 | 2026-09-27 | — | Site-wide: cookieless analytics. Unique visitors per day (an anonymous ID made on the server, changing daily), approximate location, and time on screen and active time for every page opened, not just the first; also browser, device, screen, language, theme, where visits come from, and clicks on outside links. A privacy line in the footer |
 | 6.4.0 | 2026-09-22 | — | Phone: a single tap on a part now opens the same details card (with its Inside/Examples/Details buttons) that a right-click opens on a computer, instead of navigating away |
 | 6.3.0 | 2026-09-22 | — | Computer: memory and the graphics card go deeper. DRAM, its cell, SRAM, the SPD chip, the CPU caches and NAND flash open up into their parts (24 new parts); the graphics card gains its L2 cache, video engines, PCIe link and power delivery, and its compute units, shader cores, VRAM, memory controller and display outputs open up into 28 more (52 new parts in all, each with examples, a fact and learning links) |
 | 6.2.0 | 2026-09-22 | — | All parts: many more real product, chip and standard names in the examples (162 parts), and a "Learn more" list of checked YouTube videos and Wikipedia articles at the bottom of the description |
@@ -76,6 +78,50 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 ---
 
 ## Versions
+
+### 6.6.0: Privacy button, and no more scrolling past the footer
+
+**Prompt** (2026-09-27, exact time not in the saved record):
+> instead of the footer note, add a small button on left and clicking button should say the privacy issures. add more elaborated notes. Otherwise totally remove it.
+>
+> The page can be scrolled down under the footer, fix this. and tell me how to implement the analytics.js and .gs files
+
+**Changes**
+- **Privacy button**: the one-line privacy note in the footer (added in 6.5.0) is replaced by a small "Privacy" button at the left of the footer. On a phone it sits at the bottom left, across from the Feedback button. It opens a dialog in the site's usual style, with sections on:
+  - what is recorded
+  - approximate location
+  - how visitors are counted without cookies
+  - what is not collected, including the two display settings (theme and side panel) that stay in the browser
+  - where the data goes
+  - how to turn it off (Global Privacy Control or Do Not Track)
+
+  It closes with the × button, Escape, or a click outside it.
+- **Page no longer scrolls past the footer on a computer**: on pages with "Learn more" links, the page could be scrolled 2,000 px or more below the footer into empty space.
+  - The cause was the hidden "(opens in a new tab)" label that screen readers read in each link. It is absolutely positioned, and nothing around it was positioned, so it was placed relative to the whole page instead of its link. It escaped the side panel's scrolling area and stretched the page to the panel's full text height.
+  - Each link is now its own positioning box, so the label stays inside it. This was checked at 1280×800, 1440×760, 1024×700 and on a phone, on the home page and five part pages: the page now ends at the footer.
+
+### 6.5.0: Unique visitors, locations and time per page, without cookies
+
+**Prompt** (2026-09-27, exact time not in the saved record):
+> I want to track the unique user, their locations to analyse my traffic. Also instead of session ID, I want to track the user specific time spending on a page. What should I do? What else public data can be collected for my analysis?
+> [...] I don't want to use any cookies right now and don't want to add any accept button.
+
+**Changes**
+- **Time per page, not per load**: `js/analytics.js` was rewritten. The site moves between parts without reloading (`pushState` on GitHub Pages, `#/part` from a local file), so the old tracker only ever saw the first page, with the whole visit's time. Now every part opened is its own `page_view`, sent when the visitor leaves it. It carries seconds on screen, seconds active (there was input in the last 2 minutes), its place in the visit and whether it was the first page. Time while the tab is hidden isn't counted.
+- **Nothing is stored on the device**: the `sessionStorage` session ID is gone. A short visit ID, kept in memory only, groups the pages of one page load.
+- **Unique visitors and location are added by the Cloudflare Worker, not the page**:
+  - The visitor ID is a keyed hash of the date, the IP address, the browser and the project. It is the same all day and different the next day, and can't be turned back into an IP. The IP itself is never stored or forwarded.
+  - Country, region, city, time zone and internet provider come from Cloudflare's own knowledge of the network. Browser, operating system and device type are read from the User-Agent.
+  - Visits from crawlers, automated browsers and local copies of the site are not recorded.
+- **Also recorded, once per visit**: where the visit came from (the referrer and `utm_` campaign tags), language, time zone, screen and window size, light or dark theme, touch or mouse, and page load time. Clicks on links to other sites (for example the "Learn more" videos and articles) are recorded as `outbound_click`.
+- **Opt-out respected**: nothing is sent when the browser has Global Privacy Control or Do Not Track turned on.
+- **Google Sheet**:
+  - The project tab keeps its first 7 columns, so old rows stay valid, and gains 25 more.
+  - The Summary tab keeps running totals instead of re-reading the whole tab on every event, and adds page views and unique visitors today.
+  - A lock stops beacons that arrive together from colliding.
+  - A new `setupReports()` function builds a "Reports" tab of formulas: unique visitors per day, time per page, countries, cities, time per visitor per day, where visits came from, outbound links, browsers and devices.
+- The Worker and Apps Script are kept outside this public repository, because they contain the Apps Script address. The real secret stays in Cloudflare's encrypted settings.
+- **Privacy line**: the footer said that visits are counted anonymously, without cookies or stored IP addresses (replaced by a Privacy button in 6.6.0). `README.md` gained a Privacy section.
 
 ### 6.4.0: Tap opens the details card, like a computer's right-click
 

@@ -111,7 +111,7 @@
       <article class="panel-inner" id="panel-inner">{{PANEL}}</article>
     </aside>
   </main>
-  <footer class="foot"><strong class="foot-c">&copy; {{YEAR}}</strong> <strong class="foot-name">Ayan Sarkar</strong>, Lecturer, CSE, Green University of Bangladesh &middot; <a class="foot-link" href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></footer>
+  <footer class="foot"><button class="foot-priv" id="btn-privacy" type="button" aria-haspopup="dialog"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 4 5v4.5c0 3.7 2.6 6.8 6 8 3.4-1.2 6-4.3 6-8V5z"/><path d="m7.5 10 1.8 1.8 3.3-3.6"/></svg><span>Privacy</span></button><strong class="foot-c">&copy; {{YEAR}}</strong> <strong class="foot-name">Ayan Sarkar</strong>, Lecturer, CSE, Green University of Bangladesh &middot; <a class="foot-link" href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></footer>
 </div>
 
 <dialog id="overview" aria-labelledby="ov-title">
@@ -121,6 +121,40 @@
   </div>
   <nav class="tree" id="tree" aria-label="All components">{{TREE}}</nav>
   <p class="dlg-foot">Ayan Sarkar, Lecturer, CSE, Green University of Bangladesh &middot; <a href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></p>
+</dialog>
+<dialog id="privacy" aria-labelledby="pv-title">
+  <div class="dlg-head">
+    <div><h2 id="pv-title">Privacy</h2><p>How visits to this site are counted.</p></div>
+    <button class="btn icon" id="pv-close" type="button" aria-label="Close privacy notes"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+  </div>
+  <div class="pv-body">
+    <p class="pv-lead">This site counts its visits to learn which parts people find useful. It does this <b>without cookies</b> and without collecting anything that says who you are.</p>
+    <h3>What is recorded</h3>
+    <ul>
+      <li>The parts you open, how long each one is on screen, and how long you actively use it. Time while the tab is hidden isn't counted.</li>
+      <li>Links to other websites that you follow from here, such as the "Learn more" videos and articles.</li>
+      <li>Your browser, operating system and type of device (computer, tablet or phone).</li>
+      <li>Screen and window size, language, time zone, light or dark theme, and touch or mouse.</li>
+      <li>The website that linked you here, if any, and how long the page took to load.</li>
+    </ul>
+    <h3>Approximate location</h3>
+    <p>Country, region and city, and your internet provider, as known from the network by Cloudflare, which carries the site's traffic. This is usually only as precise as a city, and sometimes wrong. The site never asks for your location and never uses GPS.</p>
+    <h3>How visitors are counted</h3>
+    <p>To count how many different people visit, the server makes a code from the date, your network address and your browser, scrambled with a secret key. It stays the same for one day and is replaced the next. It can't be turned back into your address, and it can't follow you from one day to the next or to other websites.</p>
+    <h3>What is not collected</h3>
+    <ul>
+      <li>No cookies, and nothing is stored on your device for tracking.</li>
+      <li>No IP addresses are stored.</li>
+      <li>No names, email addresses or accounts.</li>
+      <li>No fingerprinting, no advertising, and no data is sold or shared.</li>
+    </ul>
+    <p>The site does save two display settings in your browser, your light or dark theme and whether the side panel is shown, so they are kept the next time. They never leave your device.</p>
+    <h3>Where the data goes</h3>
+    <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button are kept separately, with the page and the type of device they were sent from.</p>
+    <h3>Turning it off</h3>
+    <p>Turn on <b>Global Privacy Control</b> or <b>Do Not Track</b> in your browser and this site sends nothing. Ad and tracker blockers also stop it, and the site works the same either way.</p>
+  </div>
+  <p class="dlg-foot">Questions? Use the Feedback button, or visit <a href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></p>
 </dialog>
 <dialog id="device-test" aria-labelledby="dt-title" class="dt">
   <div class="dlg-head">

@@ -133,7 +133,17 @@ button{font:inherit;color:inherit}
 .foot .foot-c,.foot .foot-name{color:var(--ink);font-weight:700}
 .foot .foot-link{color:var(--accent);font-weight:700;text-decoration:none}
 .foot .foot-link:hover,.foot .foot-link:focus-visible{text-decoration:underline}
-@media (max-width: 980px){.foot{padding-bottom:68px}}   /* room for the floating Feedback button */
+.foot{position:relative}
+.foot-priv{position:absolute;left:24px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink-2);font:600 12px var(--font-ui,system-ui,sans-serif);cursor:pointer}
+.foot-priv svg{width:15px;height:15px;flex:none}
+.foot-priv:hover,.foot-priv:focus-visible{border-color:var(--accent);color:var(--accent)}
+.pv-body{padding:6px 22px 18px;overflow:auto;max-height:calc(min(80vh,760px) - 128px);font-size:15px;line-height:1.55;color:var(--ink-2)}
+.pv-body h3{margin:18px 0 6px;font-size:16px;color:var(--ink)}
+.pv-body ul{margin:0;padding-left:20px}
+.pv-body li{margin:3px 0}
+.pv-body p{margin:6px 0}
+.pv-lead{color:var(--ink)}
+@media (max-width: 980px){.foot{padding-bottom:68px}.foot-priv{top:auto;bottom:22px;left:12px;transform:none;height:34px;padding:0 14px;font-size:14px}}   /* room for the floating Feedback button */
 .brand{display:flex;align-items:center;gap:12px;min-width:0;text-decoration:none;color:inherit}
 .brand svg{flex:none}
 .brand .brand-name{margin:0;color:var(--ink);font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
@@ -349,7 +359,7 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .flow-pop.dragging{user-select:none;-webkit-user-select:none}
 /* "Learn more" links at the bottom of a part's description */
 .learn{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.lk{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-decoration:none;color:var(--ink);transition:border-color .15s,box-shadow .15s}
+.lk{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-decoration:none;color:var(--ink);transition:border-color .15s,box-shadow .15s}
 .lk:hover,.lk:focus-visible{border-color:var(--accent);box-shadow:0 8px 20px -12px var(--accent-glow)}
 .lk-ic{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
 .lk-v .lk-ic{background:rgba(217,48,37,.12);color:#D93025}

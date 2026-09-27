@@ -675,6 +675,12 @@ $('#btn-overview').addEventListener('click', () => {
 $('#ov-close').addEventListener('click', () => dlg.close());
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 
+/* privacy notes */
+const pv = $('#privacy');
+$('#btn-privacy').addEventListener('click', () => pv.showModal());
+$('#pv-close').addEventListener('click', () => pv.close());
+pv.addEventListener('click', e => { if (e.target === pv) pv.close(); });
+
 /* ---------- webcam / mic live test ("Try the camera" / "Try the microphone") ----------
    Camera and microphone access is only ever requested after this direct button
    click (never on load or on hover). Every track is stopped the instant capture
