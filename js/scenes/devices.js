@@ -165,3 +165,11 @@ SCENES.webcam = () => {
   s += FLOW(560, [[170,'Light'],[315,'Focused'],[435,'Pixel values'],[560,'Video'],[690,'USB data']]);
   return {svg: s + LAYER(LB(226,160,'LED',{for:'webcam-usb'}) + LB(315,160,'Lens',{for:'webcam-lens'}) + LB(433,160,'Sensor',{for:'webcam-sensor'}) + LB(560,160,'Image processor',{for:'webcam-isp'}) + LB(690,160,'USB and LED',{for:'webcam-usb'}))};
 };
+
+/* The "How it works" controls sit at the bottom right of these diagrams: each gets an empty strip
+   along the bottom of its drawing area (780 units tall instead of 700), so the notes and captions
+   near the bottom never end up under the controls. */
+['mic', 'speakers', 'monitor', 'keyboard', 'mouse', 'joystick', 'gamepad', 'printer', 'webcam'].forEach(k => {
+  const draw = SCENES[k];
+  SCENES[k] = n => Object.assign({vb: [1000, 780]}, draw(n));
+});

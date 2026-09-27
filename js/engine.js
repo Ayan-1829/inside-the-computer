@@ -1702,7 +1702,7 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
     const STEPS = [1, 2, 3, 5, 6, 7, 8];                /* button, the chip's PS_ON# to the PSU, main power, firmware, POST, loading the OS, desktop */
     const SHOTS = {1: ['power-button', 'chipset'], 2: ['chipset', 'psu'], 3: ['psu', 'motherboard'], 5: ['cpu', 'bios'], 6: ['monitor', 'webcam'],
       7: ['bios', 'storage', 'ram'], 8: null};
-    const PACE = {speed: 1.7, hold: 2150};              /* dot speed (× normal) and how long each shot holds: about 25 s in all */
+    const PACE = {speed: 2.2, hold: 1550};              /* dot speed (× normal) and how long each shot holds: about 19 s in all */
     const lay = layer, st = stage.style;
     const EASE = 'cubic-bezier(.45,0,.2,1)';
     html.classList.add('intro-cinema');

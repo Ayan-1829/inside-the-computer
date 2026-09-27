@@ -14,6 +14,7 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 7.1.2 | 2026-09-28 | — | The "How it works" controls no longer cover text in the device diagrams; the intro is about 19 seconds |
 | 7.1.1 | 2026-09-28 | — | Videos: no "Play" label (a click on the item opens it); the page behind the video window is darker and blurred |
 | 7.1.0 | 2026-09-28 | — | Intro: now 25 seconds, with the OS loading from storage into RAM, and a final wide shot that shows the whole system; chip and gate diagrams centred; focus darker and more blurred; no yellow tint in the window corners |
 | 7.0.0 | 2026-09-28 | — | v7: a start screen on the first visit (dark, with only the power button lit) that plays a fast boot with nothing else on screen, then reveals the site; parts out of focus now blur as well as fade, in every animation and focus |
@@ -89,6 +90,19 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 ---
 
 ## Versions
+
+### 7.1.2: Controls clear of the text, a 19-second intro
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> Some texts are overlapped inside the components with the 'how it works' button. adjust them. Try to finish the animation in 18/20 seconds instead of 25 seconds.
+>
+> push after finish
+
+**Changes**
+- **The "How it works" controls no longer cover any text.**
+  - A check of the nine device diagrams at 1440×860, 1280×720, 1024×768 and on a phone, with the controls both closed and open, found them over the one-line notes along the bottom of the monitor, mouse, joystick and game-controller diagrams, and over the keyboard's flow captions ("Key code", "USB report").
+  - Each device diagram now has an empty strip along the bottom of its drawing area (780 units tall instead of 700), where the controls sit. The same check now finds nothing under them.
+- **The intro takes about 19 seconds** (measured 18.9 s from pressing the button to the page settling), down from 25. The dots move at 2.2 times normal speed and each shot holds 1.55 seconds. The same seven scenes are all still there.
 
 ### 7.1.1: Cleaner video items, a darker backdrop
 
