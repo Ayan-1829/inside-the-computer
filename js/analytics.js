@@ -14,6 +14,11 @@
                      hidden, page closed): seconds on screen, and seconds
                      active (some input in the last 2 minutes)
      outbound_click  a link to another site was followed
+     custom          sent by the site itself for something worth counting:
+                       window.trackEvent('course_view', 'CSE-203 Digital Logic Design')
+                     (a short name, and an optional detail). It isn't defined
+                     when tracking is off, so call it through a check:
+                       if (window.trackEvent) trackEvent('art_profile_view');
    Pages opened inside the site without a reload (history.pushState or a
    #/hash change) count as pages of their own. Nothing is sent when the
    browser asks for no tracking (Global Privacy Control or Do Not Track). */
@@ -111,6 +116,12 @@
   ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(t => addEventListener(t, onInput, { passive: true, capture: true }));
 
   /* Links that leave the site (for example the "Learn more" videos and articles) */
+  /* Events the site reports itself (see "custom" above) */
+  window.trackEvent = function (name, detail) {
+    if (!name) return;
+    send('custom', { page: pageKey().slice(0, 300), name: String(name).slice(0, 60), detail: detail == null ? '' : String(detail).slice(0, 200) });
+  };
+
   document.addEventListener('click', e => {
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a) return;

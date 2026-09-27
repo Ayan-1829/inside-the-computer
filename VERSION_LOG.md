@@ -12,6 +12,7 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 6.7.0 | 2026-09-27 | — | Site-wide: the shared analytics.js gained trackEvent(name, detail), so a site can count its own events (used by the portfolio for course and Art-profile views); the analytics Sheet was rebuilt with one tab per project, a Summary, and a Report tab per project computed by the script |
 | 6.6.0 | 2026-09-27 | — | Site-wide: the footer's privacy line became a small Privacy button at the bottom left, which opens full privacy notes; on a computer the page no longer scrolls on past the footer |
 | 6.5.0 | 2026-09-27 | — | Site-wide: cookieless analytics. Unique visitors per day (an anonymous ID made on the server, changing daily), approximate location, and time on screen and active time for every page opened, not just the first; also browser, device, screen, language, theme, where visits come from, and clicks on outside links. A privacy line in the footer |
 | 6.4.0 | 2026-09-22 | — | Phone: a single tap on a part now opens the same details card (with its Inside/Examples/Details buttons) that a right-click opens on a computer, instead of navigating away |
@@ -78,6 +79,29 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 ---
 
 ## Versions
+
+### 6.7.0: Analytics across all projects, and custom events
+
+**Prompts** (2026-09-27, exact times not in the saved record):
+> but the google sheet is not updating properly. I have other projects too. I want to delete all the previous tabs of the sheet and you should adjust the codes accordingly. See the previous versions
+>
+> It's working but taking a time. That's good I thik. Check other projects analysis is updated properly and pushed.
+
+**Changes**
+- **What was wrong**:
+  - The Worker accepted only `inside-the-computer`, so the portfolio (`ayan-sarkar-portfolio`) and Gate Forge (`gate-forge`) were rejected. Both are now allowed.
+  - The Apps Script's secret no longer matched the Worker's, so events were refused, and nothing showed it. The secret is now kept in the Apps Script's Script properties instead of its code, so pasting a new version can't lose it. The Worker logs any event the Sheet refuses, and the address `?check=sheet` on the Worker says whether the two secrets match, without writing anything.
+  - The formula-based report tab didn't pick up the location columns reliably.
+- **Sheet rebuilt**:
+  - A `startFresh` function cleared every old tab.
+  - Each project gets one tab of events.
+  - The **Summary** tab shows, per project: visits, page views, unique visitors today and over 7 days, time spent, average time per visit, average active time per page, top country and last activity.
+  - Each project gets a **Report - <project>** tab: per day, pages, countries, cities, visitors (with location, device and where they came from), browsers, systems and devices, outbound links, and custom events.
+  - Both are calculated by the script every 15 minutes, or straight away from **Analytics → Refresh reports now**. The older tracker's `visit_start` and `visit_end` events are still understood.
+- **`trackEvent(name, detail)`** in the shared `js/analytics.js` lets a site count its own events. It isn't defined when tracking is turned off, so it is called through a check.
+- **Other projects**:
+  - The portfolio now uses the same `analytics.js`. Its older `tracker.js` was removed: it kept a browser fingerprint in localStorage and sent visits to a separate, older Sheet. Its two useful events, Art-profile views and course-detail views, now go through `trackEvent`. The portfolio's contact form still stores messages in that older Sheet, as before.
+  - Gate Forge's local copy (`v28`) has the new `analytics.js` ready for when it is published. It isn't on GitHub yet.
 
 ### 6.6.0: Privacy button, and no more scrolling past the footer
 
