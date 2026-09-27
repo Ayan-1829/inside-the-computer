@@ -8,10 +8,20 @@ Add a new section at the top of "Versions" for each future update.
 
 From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site as it was at 5.28.0, as a record of the previous state.
 
+From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site as it was at 6.10.1, so it can be rolled back to.
+
 ## Summary
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 7.1.1 | 2026-09-28 | — | Videos: no "Play" label (a click on the item opens it); the page behind the video window is darker and blurred |
+| 7.1.0 | 2026-09-28 | — | Intro: now 25 seconds, with the OS loading from storage into RAM, and a final wide shot that shows the whole system; chip and gate diagrams centred; focus darker and more blurred; no yellow tint in the window corners |
+| 7.0.0 | 2026-09-28 | — | v7: a start screen on the first visit (dark, with only the power button lit) that plays a fast boot with nothing else on screen, then reveals the site; parts out of focus now blur as well as fade, in every animation and focus |
+| 6.10.1 | 2026-09-28 | — | Fixes: the power-on walkthrough plays again (6.10.0 broke it); the microphone's and speakers' voices start straight away; "Learn more" videos show thumbnails |
+| 6.10.0 | 2026-09-28 | — | Site-wide: "Learn more" videos play in a window on the site; a volume slider (one volume for every animation, 100 % by default and louder) replaces the on/off button; power-on dots carry one- or two-word labels; the 8086 shows a short step note, and its effective address travels on its own address wire instead of the data bus |
+| 6.9.1 | 2026-09-28 | — | Computer: calmer sounds. The power supply's fan sound is gone, high-pitched and cartoonish sounds are replaced by soft, plain ones, the monitor's last step is silent, and voices come only from natural-sounding speech voices (Google's first), never robotic ones |
+| 6.9.0 | 2026-09-27 | — | Computer: sound effects for every animation (the nine I/O devices' "How it works" and the power-on walkthrough), made in the browser with no audio files; the microphone and speakers speak with a real voice; a sound on/off button that is remembered |
+| 6.8.0 | 2026-09-27 | — | Computer: a "How it works" button on the inside view of every I/O device plays a step-by-step animation of how it works (for example the microphone: sound waves, the vibrating diaphragm, a tiny voltage, amplification, sampling into numbers, digital data over USB), 45 steps across nine devices |
 | 6.7.0 | 2026-09-27 | — | Site-wide: the shared analytics.js gained trackEvent(name, detail), so a site can count its own events (used by the portfolio for course and Art-profile views); the analytics Sheet was rebuilt with one tab per project, a Summary, and a Report tab per project computed by the script; the portfolio's contact form now stores its messages in the same Sheet |
 | 6.6.0 | 2026-09-27 | — | Site-wide: the footer's privacy line became a small Privacy button at the bottom left, which opens full privacy notes; on a computer the page no longer scrolls on past the footer |
 | 6.5.0 | 2026-09-27 | — | Site-wide: cookieless analytics. Unique visitors per day (an anonymous ID made on the server, changing daily), approximate location, and time on screen and active time for every page opened, not just the first; also browser, device, screen, language, theme, where visits come from, and clicks on outside links. A privacy line in the footer |
@@ -79,6 +89,212 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 ---
 
 ## Versions
+
+### 7.1.1: Cleaner video items, a darker backdrop
+
+**Prompt** (2026-09-28, exact time not in the saved record):
+> remove the play button text from the video(simple click should pop up the window. Blur and dark the back when the window is poped up. push all the changes to the github
+
+**Changes**
+- "Learn more" video items no longer show a "Play" label. The thumbnail with its play badge already says it is a video, and a click anywhere on the item opens the player window.
+- While the video window is open, the page behind it is darker (72 % black) and blurred (8 px), instead of lightly tinted.
+
+### 7.1.0: A 25-second intro, centred diagrams, deeper focus, no yellow corners
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> For ic-74151.html the ic is not positioned at the middle of the window like other chips positions (it is shifted to a bit upward). Fix this and all this type of issues related to other ICs/components.
+>
+> Also add the bios to storage to ram animation (os load) in the intro, in the animation. Total length will be 25 seconds.
+>
+> Zoom out the frame (after the OS load to the whole system), so that every components are shown properly.
+>
+> For the focusing effect of different components, Make the other space a bit darker, a bit more blur.
+>
+> There is a yellowing shade at the bottom right of the window that looks odd to me. Please remove these shades from the windows.
+
+**Changes**
+- **Intro**:
+  - It now includes loading the operating system: the firmware finds the boot drive and the "Loading OS" dot travels from storage into RAM. The camera frames the BIOS, the storage and the RAM for it.
+  - The scenes are now PWR_SW#, PS_ON#, Main power, Firmware, POST, Loading OS and Drivers.
+  - The pace is set to about **25 seconds** from pressing the button to the page settling (measured 25.0 s): the dots move at 1.7 times normal speed and each shot holds 2.15 seconds.
+  - The last shot (the operating system reaching every device) now zooms out, so the whole system fits between the letterbox bars. At normal size the bars used to cover the webcam at the top and the device labels at the bottom. Checked at 1440×860, 1280×720 and on a phone.
+  - In the normal power-on walkthrough the same dot is now labelled "Loading OS" instead of "Bootloader".
+- **Centred diagrams**: every diagram (117 diagrams and views) was measured for where its content sits in its drawing area.
+  - **74151 and 74157 pin diagrams**: they used the enlarged drawing area of their "Inside the chip" view, so the chip sat small and high in the top-left. The pin diagram now uses the usual 1000×700 area, and only "Inside the chip" switches to the larger one.
+  - **Logic gates** (NOT, AND, OR, NAND, NOR, XOR, XNOR): the switches, gate, formula and chip sat 14 to 17 % below the middle. Their view is moved down to centre them. A scene can now give its view a starting point (`vb: [x, y, w, h]`) as well as a size.
+  - **7805 and LM317**: the caption "Front view, legs down" sat far to the right and made the picture lean right. It now sits beside the chip.
+  - Everything is now within 5 % of the middle. The registers diagram, 6 % low, looks balanced and was left as it is.
+- **Stronger focus**:
+  - Parts out of focus are now darker as well as blurred (more than before): less transparent, but dimmed and softer.
+  - The diagram window's own background darkens slightly while something is in focus.
+  - It applies everywhere focus is used: power-on, "How it works", right-click, and the camera and microphone flows.
+- **No yellow tint**: the diagram window's background used to fade to cream in its bottom-right corner, and the page behind had a soft amber glow at the top right. Both are neutral green-white now, in the light and dark themes.
+
+### 7.0.0: A start screen, and a stronger focus
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> Now for making the web interface more interesting, add a dark black screen that only guides to the power button of the cpu. Then the animation starts. or focusing the components, blur the surroundings more for all the sections, animations. start this in a new version v7 as I may need to roll back to v7.
+>
+> Only for the first intro interaction, don't need to show the details in the sidebar, The names, logos and other buttons should apear after the animation ends. Only for the first intro to this website should show the fast animation of the booting.
+>
+> Keep the intro animation a bit short (skip some less important details). Take the entire screen for the animation (Right, top is empty). After the animation with a smooth transition, add side details top nav, logo, etc. Try to add cinematography to the animation if possible
+>
+> For the cinematic animation, hold a bit in each screen a few miliseconds more. Zoom out all the frames a bit
+>
+> For the last scene of the animation, zoom out the frame a little bit so that webcam is visible. in the animation, add the chip to PSU part too.
+
+**Changes**
+- **v7**: a new folder, copied from v6. v6 stays as it was (6.10.1) to roll back to.
+- **Start screen** (first visit only):
+  - Opening the site for the first time, on the home page, shows the computer in the dark with only the tower's **power button** lit, a pulsing ring around it, and "Press the power button to switch the computer on and watch how it starts".
+  - A click anywhere else in the dark just pulses the ring again. Enter presses the button, and Tab moves between it and **Skip**.
+  - Pressing the button plays a short, **filmed boot**:
+    - Only the main steps play: the button press (PWR_SW#), the chipset telling the power supply to start (PS_ON#), the main power, the firmware, POST (the boot logo on the monitor) and the desktop. Standby power, PWR_OK and the bootloader are left out.
+    - The dots travel 3 times as fast, and each shot holds for 1.4 seconds once its dot arrives. The boot takes about 13 seconds, plus under 2 for the ending.
+    - The diagram fills the **whole window**, with black letterbox bars at the top and bottom and a soft vignette.
+    - A camera frames each step, zoomed in at most 1.8 times and with room around the parts: in close on the button and chipset, wider on the power supply and board, close on the CPU and BIOS, then over to the monitor, framed with the webcam above it, as the boot logo appears. The PS_ON# step frames the chipset and the power supply together. Parts out of focus are blurred, which gives the close-ups a depth-of-field look.
+    - At the end the camera pulls back to the whole scene and the bars slide away. The diagram then glides from the full window back to its place in the page, while the site's name and logo, the buttons, breadcrumbs, side panel, parts strip, footer and Feedback button fade in around it.
+    - Its place is held by an invisible placeholder the whole time, so nothing else on the page moves. Checked on a computer and a phone: the diagram ends exactly where it started, with nothing left behind.
+  - **Skip** (or Escape), on the start screen or during the boot, shows everything straight away.
+  - It is remembered in the browser (`itc-intro`), so it appears only once. Adding `?intro` to the address shows it again. The Privacy notes list it with the other settings kept in the browser.
+  - Starts and skips are counted as a `start_screen` custom event in the analytics Sheet.
+- **Stronger focus everywhere**: whenever parts are brought into focus, everything else now **blurs** as well as fading (a little more than before), with a smooth transition. That covers the power-on walkthrough, the I/O devices' "How it works", right-click focus, and the camera and microphone flows. Reduced-motion settings turn the transition off.
+
+### 6.10.1: The power-on walkthrough works again, faster voices, video thumbnails
+
+**Prompt** (2026-09-28, exact time not in the saved record):
+> in the details part for videos, add thumbnails, For mic and the speaker, the voice is starting so late. Start them a bit faster. The power button is not showing the animation. Why?
+
+**Changes**
+- **The power-on walkthrough plays again.**
+  - Why it stopped: when 6.10.0 removed its note on computers, one new line asked for the current step's note while the walkthrough was still starting, before any step existed. That error stopped the animation at once, both from the power button and from "Power on".
+  - The line now waits until there is a step. Both ways of starting were checked with no errors.
+- **The voices start straight away.**
+  - The microphone's sentence is now spoken the moment "How it works" is pressed; there used to be a 0.35-second pause first.
+  - Google's voices are fetched over the network, so for the speakers (whose voice comes in the last step) the chosen voice is now warmed up silently when the animation starts. Its sentence then starts at once.
+  - Moving to the next step no longer cancels that warm-up; only a sentence actually being spoken is stopped.
+- **Thumbnails for the "Learn more" videos**, in the side panel and in the details card (smaller there), with a play badge that turns red on hover.
+  - They come from YouTube's image server (i.ytimg.com) and load lazily.
+  - The Privacy notes now say so: the preview pictures load when the list is shown, and the video itself only when it is pressed.
+
+### 6.10.0: Embedded videos, a volume slider, labelled power-on dots, 8086 notes
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> As the flow shows a short notes In the i/Os, similarly use this short notes for power option too. Similarly inside the 8086 microprocessor simulation. Use embadded video on the website for videos
+>
+> in 8086, sometimes address bus uses internal database line, that should be avoided. make the volume controller. Now it only has two options, on/off. But clicking the icon should pop up a slider for volume control. Make it universal that mean changing one in a component shoulld carry on to others.
+>
+> For short notes in power/boot animation, I meant the dot should have one/two words for better clarity. Enlarge the text in the notes a bit.
+>
+> For the boot animation, remove the top text as a pop-up window tells the details.
+>
+> increase the default 100% volume for components. adjust to 0 accordingly
+>
+> Use vertical slider for the volume on the top of the volume icon.
+
+**Changes**
+- **Videos play on the site**:
+  - Pressing a "Learn more" video opens it in a window with YouTube's privacy-enhanced player (youtube-nocookie.com), with a "Watch on YouTube" link.
+  - Nothing loads from YouTube until a video is pressed, and closing the window removes the player, which stops it.
+  - All 203 videos were checked with YouTube's embed check. The one whose owner doesn't allow embedding (the 74LS373 video) stays an ordinary link.
+  - A middle-click or Ctrl/⌘-click still opens YouTube, and opened as a local file (where YouTube refuses to play embeds) the links behave as before.
+  - The Privacy notes gained a short "Videos" section.
+- **Volume slider**:
+  - The speaker button in every animation's controls (the I/O devices and the power-on steps) opens a narrow panel just above it, centred on it: the level in percent on top, a **vertical** slider (up is louder) and a mute button nearest the icon. It opens below the icon only when there is no room above.
+  - There is one volume for everything. Every speaker button shows it, a change applies at once (even to sounds already playing), and it is remembered in the browser (`itc-volume`, replacing the old on/off setting; an earlier mute carries over).
+  - A soft tick plays while sliding, so the level can be heard.
+  - The default is now **100 %**, louder than before: the old default level is about 50 % on the new scale. The slider scales evenly down to 0, and a gentle limiter stops overlapping sounds from distorting at full volume.
+- **Power-on walkthrough**:
+  - Each travelling dot carries a one- or two-word label: PWR_SW#, PS_ON#, Main power, PWR_OK, Firmware, POST, Bootloader, Drivers. When a signal fans out to many parts, only the first dot is labelled.
+  - There is no note over the diagram on a computer, since the pop-up and the side panel already give the details. In the one-column layout (tablets, phones) a short note sits below the diagram.
+- **8086 simulation**:
+  - While a program plays, or after Step, a short note at the top of the diagram gives the step's title and the first sentence of its explanation. It fades a few seconds after playback stops, so it doesn't cover the headings for good.
+  - The **effective address** (an operand's offset) now travels to the address adder on its own address wire: out of the control unit's left side, across the data connector, and up the channel between the segment registers and the queue. It used to run along the internal data bus and up the data connector, so an address looked as if it travelled on the data lines.
+- **Notes**:
+  - One shared step note now serves the I/O devices, the power-on walkthrough (phones only) and the 8086. Its text is a little larger.
+  - In the one-column layout it sits just below the diagram.
+- **Escape**: while any window is open (a video, Privacy, Overview) or the volume slider is showing, Escape closes just that, instead of also going up a level.
+
+### 6.9.1: Calmer sounds, better voices
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> The power supply (fan sound) is annoing. Can you please change to any soft sound or remove it. some high pitch sounds are annoing. For monitors you can skip sound when it comes to the eye. Try to avoid the robotic voice. Google voices works much better I guess.
+>
+> avoid funny sounds.
+
+**Changes**
+- **Power-on walkthrough**: the power supply's fan sound and the standby hum are removed. What's left is short and soft: the button's click, the PSU's relay, a low swell as the power comes on, one soft POST beep, a few quiet data ticks, and a soft chord at the end.
+- **No high-pitched sounds**:
+  - The faint high "light" tone is removed.
+  - Data sounds, radio pips and the ding are all lower, and use sine waves instead of the buzzier square waves.
+  - Everything is a little quieter overall.
+- **Nothing cartoonish**:
+  - No sound slides up or down in pitch any more. The earlier keyboard "boop", ink "bloop" and power "zap" are gone.
+  - The random notes for data are now even ticks, the sampling sound is a steady tick instead of a stepped melody, and the printer's motor and the rumble motors are steady instead of wobbling.
+  - The sounds that remain are plain: switch clicks and key clacks made of short filtered noise, steady hums, a soft rush of air, and tiny ticks for the ink nozzles.
+- **Monitor**: the last step (coloured light reaching the eye) is silent, and the light tone is gone from the step before it.
+- **Voices**:
+  - Google's voices come first (Chrome and Android), then Microsoft's "Natural" online voices (Edge), then Apple's voices (Safari).
+  - Voices that sound robotic are never used: eSpeak on Linux, Microsoft's old desktop voices (for example Firefox on Windows), and Apple's novelty voices. Where no natural voice exists, the microphone and speaker steps play their other sounds without speech.
+  - Checked by giving the site the voice lists of Chrome on Windows (it picks Google US English), Edge (Microsoft Aria Natural), Safari on a Mac (Samantha), Chrome on Android (Google US English), and Firefox on Linux and on Windows (no voice rather than a robotic one).
+
+### 6.9.0: Sound effects and voices for the animations
+
+**Prompt** (2026-09-27, exact time not in the saved record):
+> For every component with animation add sound effects to be more interesting. For mic and sound, add real voices
+
+**Changes**
+- **Every step of every animation has its own sound**: the nine I/O devices' "How it works" (45 steps) and the 9-step power-on walkthrough. A few examples:
+  - Keyboard: a key clacking down and back up, the matrix scan ticking, and data chirps as the report goes out.
+  - Printer: the rollers turning, the carriage motor whirring back and forth, and the ink drops pattering.
+  - Game controller: button clicks, radio chirps, and the rumble motors buzzing.
+  - Monitor: the electronics humming, a zap as the backlight comes on, and a soft tone for light.
+  - Webcam: a shutter click as the pixels read the light.
+  - Joystick and mouse: switch clicks.
+  - The signal steps are heard too: a quiet tone before the amplifier and a loud one after it, a stepped tone while samples are taken, and fast chirps for bits travelling over USB.
+  - Power-on walkthrough: the standby hum, the button's click, the PSU relay, the fan spinning up, one short POST beep ("all is well"), and a welcome chime when the desktop appears.
+- **Real voices for the microphone and the speakers**, using the browser's own speech voices, preferring a natural-sounding English one (for example Samantha on Apple devices, or Google US English).
+  - Microphone: someone speaks into it ("Hello! Can you hear me? This is a test recording."), then the diaphragm step repeats it more softly as it vibrates.
+  - Speakers: the last step says "Hello! This sound is coming out of the speaker."
+- **No audio files**: every effect is generated in the browser with the Web Audio API (oscillators and filtered noise), in the new `js/sfx.js`. Each step's sounds are listed in a table at the end of `js/scenes/device-anims.js`.
+- **Behaviour**:
+  - Sounds start only when a visitor presses "How it works" or the power button, since browsers only allow sound after a click.
+  - Continuous sounds stop when the step changes. Pause pauses them, and Stop, Escape or leaving the diagram silences everything.
+  - On an iPhone or iPad, a silent, empty sentence is spoken at the first press. Safari needs this so a voice that starts later on a timer (the speakers' last step) is allowed to play.
+- **A sound on/off button** (speaker icon) next to the animation controls, on each device's diagram and in the power-on steps. The choice is remembered in the browser like the theme, and the Privacy notes now list it as the third display setting kept there.
+
+### 6.8.0: "How it works" animations for the I/O devices
+
+**Prompt** (2026-09-27, exact time not in the saved record):
+> I like to animate the inside of I/O devices like the power on button. there should be a button that will show the animation how different internal components are working. For example in mic, after clicking the button, a sound record flow will be shown. At first the sensor (show the vibrations) then the conversion to the digital logic and output as digital signal. Likewise do with all other components.
+
+**Changes**
+- **A "How it works" button** at the bottom right of the inside view of the microphone, speakers, monitor, keyboard, mouse, joystick, game controller, printer and webcam. It plays that device's steps one after another. In each step:
+  - the parts it is about stay lit and the rest fades;
+  - a note says what is happening, with the step number;
+  - effects move on the diagram.
+- **The steps** (45 in all):
+  - **Microphone**: sound waves arrive; the diaphragm vibrates; a tiny analog voltage; the preamp boosts it; the ADC samples it into numbers; digital data goes out over USB.
+  - **Speakers**: digital audio arrives; the DAC turns numbers into a smooth wave; the amplifier boosts it; current in the voice coil pushes and pulls against the magnet; the cone moves the air.
+  - **Monitor**: the video signal arrives; the controller board decodes it; the power board lights the backlight; light passes through the liquid crystal, set subpixel by subpixel; red, green and blue light reaches the eye.
+  - **Keyboard**: the key goes down; its contacts close; the controller scans the matrix row by row; the key code; a USB report.
+  - **Mouse**: the LED lights the desk; the sensor takes pictures; movement becomes numbers; the buttons press and the wheel turns; a report goes to the computer.
+  - **Joystick**: the stick tilts; the sensors turn the angle into a voltage; the controller converts it to numbers; the trigger and buttons; USB.
+  - **Game controller**: buttons and sticks; the controller chip reads them all; radio or USB; the game answers with rumble (the off-centre motors spin).
+  - **Printer**: the page arrives; the rollers feed the paper; the carriage slides across; the nozzles fire ink drops; the page builds up line by line.
+  - **Webcam**: light enters; the lens focuses it; the pixels measure it; the image processor makes a picture; video goes out over USB and the LED lights.
+- **Controls**:
+  - Each step waits long enough to read (about 5 to 9 seconds), then the next starts.
+  - **Pause**, **Back** and **Next step** work as in the power-on walkthrough. The button becomes **Stop** while it plays.
+  - Escape, or opening another part, stops it. While it plays, Escape only stops it and no longer goes up a level.
+  - Hovering doesn't highlight parts while it plays.
+- **On narrow screens** (the one-column layout), the note sits just below the diagram instead of over it, so the drawing stays visible. In full screen it stays on the diagram.
+- Each start is counted as a `how_it_works` custom event (with the device) in the analytics Sheet.
+- **Files**:
+  - the steps and the effects toolkit (moving dots, 0s and 1s riding a wire, sound or radio waves, shaking, spinning, glowing, sine and staircase waves, labels) are in `js/scenes/device-anims.js`;
+  - the player is in `js/engine.js`;
+  - the styles are in `css/styles.css`.
+- **Checked**: every step of all nine devices in light and dark themes and on a phone. Labels were moved where they collided with part names.
 
 ### 6.7.0: Analytics across all projects, and custom events
 

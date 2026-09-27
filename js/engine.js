@@ -49,7 +49,9 @@ function buildLayer(ownId){
   }
   const svg = document.createElementNS(SVGNS,'svg');
   svg.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns:xlink', 'http://www.w3.org/1999/xlink');
-  svg.setAttribute('viewBox','0 0 ' + (sc.vb || [1000,700]).join(' '));   /* scenes may be wider than 1000 */
+  /* scenes may be wider than 1000; vb [x, y, w, h] also moves the view, to centre a drawing whose content sits off-centre */
+  const vb = sc.vb || [1000,700];
+  svg.setAttribute('viewBox', (vb.length === 4 ? vb : [0, 0].concat(vb)).join(' '));
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
   svg.setAttribute('class','layer scene');
   svg.setAttribute('role','group');
@@ -274,11 +276,12 @@ function go(id, opts = {}){
   focusOrigin = opts.from || null;
   if (id === cur && layer) return;
   if (id !== 'power-button') powerStop();
+  devStop();
   cur = id;
   const own = ownerOf(id);
   const changingLayer = own !== curOwner;
   const animated = opts.animate !== false && !!layer && !reduce.matches;
-  if (changingLayer) swapLayer(own, animated);
+  if (changingLayer){ stepNote.hide(); swapLayer(own, animated); }
   /* renderPanel/crumbs/strip below rebuild a good chunk of DOM (esp. the detail
      panel) -- on a throttled CPU that was enough, on its own, to reproduce the
      exact same crossfade-blocking freeze that swapLayer's settle() used to
@@ -315,6 +318,7 @@ function go(id, opts = {}){
     }
   }
   announce.textContent = `${N[id].name}. Level ${N[id].level}, ${levelName(N[id])}.`;
+  devSync();
 }
 function hintFor(n){
   const tap = coarse.matches ? 'Tap' : 'Click';
@@ -334,6 +338,7 @@ function renderPanel(id){
   inner.querySelectorAll('[data-live]').forEach(e => { if (LIVE[e.dataset.live]) e.innerHTML = LIVE[e.dataset.live]; });
   if (LASTKEY[id] !== undefined) syncTable(id, LASTKEY[id]);
   powerSync();
+  if (typeof SFX !== 'undefined') SFX.syncButtons();
 }
 /* looked up once, not re-queried from the whole document on every single
    navigation -- these elements are fixed in the page and never removed */
@@ -652,7 +657,7 @@ $('#btn-home').addEventListener('click', () => {
 });
 $('.brand').addEventListener('click', e => { if (e.button === 0 && !e.metaKey && !e.ctrlKey){ e.preventDefault(); go('computer'); } });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && !tipPinned && !$('#overview').open && !(e.target.closest && e.target.closest('input,textarea'))){ const p = N[cur].parent; if (p) go(p); }
+  if (e.key === 'Escape' && !tipPinned && !document.querySelector('dialog[open]') && !(e.target.closest && e.target.closest('input,textarea'))){ const p = N[cur].parent; if (p) go(p); }
 });
 addEventListener('popstate', e => {
   const id = (e.state && e.state.id) || idFromLocation();
@@ -675,6 +680,36 @@ $('#btn-overview').addEventListener('click', () => {
 $('#ov-close').addEventListener('click', () => dlg.close());
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 
+/* "Learn more" videos: pressing one plays it in a window here (YouTube's privacy-enhanced embed) instead
+   of leaving the site. The player is only created when a video is pressed, and removed when the window
+   closes, which also stops it. Opened from a file on disk (file://), YouTube refuses to play embeds, so
+   there the links open YouTube as before; a middle-click or Ctrl/⌘-click also still opens YouTube. */
+{
+  const vd = $('#video'), frame = $('#vd-frame');
+  const closeVideo = () => { frame.innerHTML = ''; if (vd.open) vd.close(); };
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[data-yt]');
+    if (!a || !HTTP || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    powerStop(); devStop();                              /* one thing at a time: no animation sounds under the video */
+    const id = a.dataset.yt;
+    $('#vd-title').textContent = a.dataset.ytTitle || 'Video';
+    $('#vd-by').textContent = a.dataset.ytBy ? 'YouTube · ' + a.dataset.ytBy : 'YouTube';
+    $('#vd-yt').href = 'https://www.youtube.com/watch?v=' + id;
+    const f = document.createElement('iframe');
+    f.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&playsinline=1`;
+    f.title = a.dataset.ytTitle || 'YouTube video';
+    f.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    f.allowFullscreen = true;
+    f.referrerPolicy = 'strict-origin-when-cross-origin';   /* YouTube needs to know which site embeds it */
+    frame.innerHTML = ''; frame.appendChild(f);
+    vd.showModal();
+  });
+  $('#vd-close').addEventListener('click', closeVideo);
+  vd.addEventListener('close', () => { frame.innerHTML = ''; });
+  vd.addEventListener('click', e => { if (e.target === vd) closeVideo(); });
+}
+
 /* privacy notes */
 const pv = $('#privacy');
 $('#btn-privacy').addEventListener('click', () => pv.showModal());
@@ -688,9 +723,53 @@ pv.addEventListener('click', e => { if (e.target === pv) pv.close(); });
    captured is written to storage, uploaded, or kept past the short animation that
    plays it back on screen -- it lives in memory for a few seconds and is then
    discarded (object URLs revoked, canvases cleared, variables set to null). */
+/* ---------- the short step note ----------
+   One line or two at the top of the diagram while an animation plays: the step
+   number, a bold title and a short sentence. Used by the power-on walkthrough,
+   the I/O devices' "How it works" and (through window.stepNote) the 8086
+   simulation. In the one-column layout (tablets, phones) it sits just below the
+   diagram instead, so it never covers the drawing; in full screen it stays on it.
+   show(step, title, text, {center, fade}): center puts it in the middle of the
+   top edge; fade hides it again after that many milliseconds. */
+const stepNote = (() => {
+  const el = document.createElement('div');
+  el.className = 'flow-note dv-note'; el.hidden = true; el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="fn-step"></span><span class="fn-txt"><b></b> <span></span></span>';
+  stage.appendChild(el);
+  const fmt = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  let fadeTimer = null;
+  function place(){
+    const fs = (document.fullscreenElement || document.webkitFullscreenElement) === stage;
+    const below = innerWidth <= 980 && !fs;
+    if (below && el.parentElement === stage){ stage.after(el); el.classList.add('below'); }
+    else if (!below && el.parentElement !== stage){ stage.appendChild(el); el.classList.remove('below'); }
+  }
+  addEventListener('resize', place);
+  document.addEventListener('fullscreenchange', place);
+  document.addEventListener('webkitfullscreenchange', place);
+  const api = {
+    show(step, title, text, o = {}){
+      clearTimeout(fadeTimer);
+      el.querySelector('.fn-step').textContent = step;
+      el.querySelector('.fn-txt > b').textContent = title ? title + (/[.!?:]$/.test(title) ? '' : '.') : '';
+      el.querySelector('.fn-txt > span').innerHTML = fmt(text || '');
+      el.classList.toggle('center', !!o.center);
+      el.hidden = false; place();
+      if (o.fade) api.fade(o.fade);
+    },
+    step(t){ el.querySelector('.fn-step').textContent = t; },
+    fade(ms){ clearTimeout(fadeTimer); fadeTimer = setTimeout(() => { el.hidden = true; }, ms); },
+    hide(){ clearTimeout(fadeTimer); el.hidden = true; }
+  };
+  return api;
+})();
+window.stepNote = stepNote;
+
 var runDeviceTest = () => {};
 var simRunning = () => false;    /* true while the power-on walkthrough or a webcam / mic flow is playing */
 var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set by the power-on walkthrough below */
+var powerIntro = () => {};                                                 /* the fast run for the first-visit intro */
+var devStop = () => {}, devSync = () => {};                                /* set by the device "How it works" player below */
 {
   const dt = $('#device-test');
   if (dt){
@@ -975,6 +1054,14 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
        routes: [[...T_OS, 'gpu', 'io', 'monitor'], [...T_OS, 'storage'],
                 ...['keyboard', 'mouse', 'webcam', 'mic', 'joystick', 'gamepad', 'printer', 'speakers'].map(id => [...T_OS, 'io', id])]},
     ];
+    /* the sounds of each power-on step (sfx.js), kept short and soft: the button's click; the PSU's relay;
+       the power coming on; PWR_OK; the firmware's data; one short POST beep (all is well); the boot drive's data;
+       the welcome chime. Step 1 (standby) is silent. */
+    const POWER_SFX = [[], ['click', 'relay@0.25'], ['relay'], ['zap'], ['blip'],
+      ['loop:bits'], ['beep@1.2'], ['loop:bits'], ['chime@0.8']];
+    /* one or two words riding on the dots of each step, so the eye can follow what is travelling
+       (step 1, standby power, has no dot) */
+    const POWER_TAGS = ['', 'PWR_SW#', 'PS_ON#', 'Main power', 'PWR_OK', 'Firmware', 'POST', 'Loading OS', 'Drivers'];
     const SPEED = 0.42;                                              /* diagram units per millisecond */
     const FX_CLASSES = ['pw-standby', 'pw-low', 'pw-rails', 'pw-kind-power', 'pw-screen', 'pw-boot', 'pw-spin'];
     const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -982,16 +1069,15 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
     const isFs = () => (document.fullscreenElement || document.webkitFullscreenElement) === stage;
     const usePop = () => isFs() || html.classList.contains('panel-hidden');
 
-    /* the one-line note at the top of the diagram */
-    const flowNote = document.createElement('div');
-    flowNote.className = 'flow-note'; flowNote.hidden = true; flowNote.setAttribute('role', 'status');
-    flowNote.innerHTML = '<span class="fn-step"></span><span class="fn-txt"></span>';
-    stage.appendChild(flowNote);
+    /* the short step note (shared, above): only in the one-column layout, where it sits below the diagram and
+       the panel with the full steps is far down the page; elsewhere the pop-up or the side panel already
+       tells the details, and the dots carry their own labels (POWER_TAGS) */
+    const noteWanted = () => innerWidth <= 980 && pop.hidden;
     const showFlowNote = (text, i, paused) => {
-      flowNote.firstChild.textContent = `${i + 1}/${POWER_STEPS.length}${paused ? ' · paused' : ''}`;
-      flowNote.lastChild.textContent = text;
+      if (noteWanted()) stepNote.show(`${i + 1}/${POWER_STEPS.length}${paused ? ' · paused' : ''}`, POWER_STEPS[i].t, text);
+      else stepNote.hide();
     };
-    const hideFlowNote = () => { flowNote.hidden = true; };
+    const hideFlowNote = () => stepNote.hide();
 
     /* the pop-up step log, for when the details panel isn't visible */
     const pop = document.createElement('aside');
@@ -1000,6 +1086,7 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       '<button type="button" class="fp-close" aria-label="Close the steps">×</button></div></div><ol class="pw-log" aria-live="polite"></ol>' +
       '<span class="fp-rs fp-rs-e" data-rs="e" aria-hidden="true"></span><span class="fp-rs fp-rs-s" data-rs="s" aria-hidden="true"></span><span class="fp-rs fp-rs-se" data-rs="se" title="Drag to resize" aria-hidden="true"></span>';
     stage.appendChild(pop);
+    if (typeof SFX !== 'undefined') SFX.syncButtons();
     const popList = pop.querySelector('.pw-log');
     /* keep the pop-up just left of the tower (not far off at the stage's edge) without covering it */
     const stagePad = () => { const r = stage.getBoundingClientRect(); return {left: r.left + stage.clientLeft, top: r.top + stage.clientTop, width: stage.clientWidth, height: stage.clientHeight}; };
@@ -1081,10 +1168,7 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       pop.hidden = !(pwDone > 0 && !popClosed && usePop());
       if (!pop.hidden) placePop();
       syncControls(inner); syncControls(pop);
-      if (pw) flowNote.firstChild.textContent = `${pw.i + 1}/${POWER_STEPS.length}${pw.paused ? ' · paused' : ''}`;
-      /* the steps are already on screen in the pop-up or the side panel; the short note is only needed
-         on a phone, where the panel sits below the diagram */
-      flowNote.hidden = !(pw && innerWidth <= 980 && pop.hidden);
+      if (pw && POWER_STEPS[pw.i]) showFlowNote(POWER_STEPS[pw.i].note, pw.i, pw.paused);   /* no step yet while it starts */
     };
     const revealLatest = () => {
       popList.scrollTop = popList.scrollHeight;
@@ -1138,7 +1222,10 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       clearLight();
       pw.lay.classList.remove(...FX_CLASSES);
       if (layer === pw.lay) setSelected(null);
+      const onEnd = pw.onEnd;
       pw = null; hideFlowNote();
+      if (typeof SFX !== 'undefined') SFX.stop();
+      if (onEnd) onEnd();
     }
     const powerDot = k => {
       while (pw.dots.length <= k){
@@ -1147,6 +1234,16 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
         pw.dg.appendChild(d); pw.dots.push(d);
       }
       return pw.dots[k];
+    };
+    /* the label that travels just above a dot */
+    const powerTag = k => {
+      pw.tags = pw.tags || [];
+      while (pw.tags.length <= k){
+        const t = document.createElementNS(SVGNS, 'text');
+        t.setAttribute('class', 'pw-tag'); t.setAttribute('text-anchor', 'middle');
+        pw.dg.appendChild(t); pw.tags.push(t);
+      }
+      return pw.tags[k];
     };
     /* the "current": a glowing line behind each dot with beads that keep flowing along it */
     const powerTrail = k => {
@@ -1232,11 +1329,15 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       pw.holding = false;
       if (i >= POWER_STEPS.length){ powerCleanup(); powerSync(); return; }
       i = Math.max(0, i);
+      if (pw.only && pw.only.indexOf(i) < 0){ powerStep(i + 1); return; }   /* the intro's short version skips some steps */
+      if (pw.onStep) pw.onStep(i);
       pw.i = i; pwDone = i + 1; pw.animating = true;
       const st = POWER_STEPS[i];
+      if (typeof SFX !== 'undefined') SFX.cue(POWER_SFX[i]);
       powerFx(i); showFlowNote(st.note, i, pw.paused); powerSync(); revealLatest();
       const routes = buildRoutes(st);
       pw.dots.forEach(d => { d.style.visibility = 'hidden'; });
+      (pw.tags || []).forEach(t => { t.style.visibility = 'hidden'; });
       pw.trails.forEach(t => { t.g.style.visibility = 'hidden'; });
       if (!routes.length){ powerLight(st.lit || [], 'glow'); powerStepDone(); return; }
       const power = st.kind === 'power', tone = power ? ' is-power' : '';
@@ -1248,15 +1349,21 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
         d.style.visibility = t.g.style.visibility = 'visible'; t.g.style.opacity = '1';
         d.setAttribute('cx', r.pts[0].pt[0]); d.setAttribute('cy', r.pts[0].pt[1]);
         t.glow.setAttribute('points', ''); t.line.setAttribute('points', '');
+        if (POWER_TAGS[i] && (k === 0 || routes.length <= 3)){        /* every dot, or just the first when it fans out widely */
+          const g = powerTag(k); g.textContent = POWER_TAGS[i];
+          g.setAttribute('class', 'pw-tag' + tone); g.style.visibility = 'visible';
+          g.setAttribute('x', r.pts[0].pt[0]); g.setAttribute('y', r.pts[0].pt[1] - 14);
+        }
       });
       const longest = Math.max(...routes.map(r => r.total));
       let t0 = null, litKey = null, shown = false, done = false;
-      const fadeEnd = longest / SPEED + TAIL_FADE_MS;
+      const spd = SPEED * (pw.fast ? (pw.speed || 3) : 1);           /* the first-visit intro sets its own pace */
+      const fadeEnd = longest / spd + TAIL_FADE_MS;
       const frame = ts => {
         if (!pw) return;
         if (layer !== pw.lay){ powerCleanup(); powerSync(); return; }
         if (t0 === null) t0 = ts;
-        const elapsed = ts - t0, dist = elapsed * SPEED, stops = new Set();
+        const elapsed = ts - t0, dist = elapsed * spd, stops = new Set();
         routes.forEach((r, k) => {
           const d = Math.min(dist, r.total), [cx, cy] = routePos(r, d);
           let a = 0; while (a < r.pts.length - 1 && r.cum[a + 1] <= d) a++;
@@ -1265,6 +1372,8 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
           let ra = a; while (ra > 0 && r.pts[ra].id.startsWith('via-')) ra--;
           stops.add(r.pts[ra].id);
           pw.dots[k].setAttribute('cx', cx); pw.dots[k].setAttribute('cy', cy);
+          const tg = pw.tags && pw.tags[k];
+          if (tg && tg.style.visibility === 'visible'){ tg.setAttribute('x', cx); tg.setAttribute('y', cy - 14); if (dist > r.total + 900) tg.style.visibility = 'hidden'; }
           /* the tail: the last TAIL_LEN units behind the dot, clear at its far end; once the dot has arrived it
              draws in toward the dot and fades out */
           const gone = dist > r.total ? Math.min(1, (elapsed - r.total / SPEED) / TAIL_FADE_MS) : 0;
@@ -1291,24 +1400,29 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
       const i = pw.i;
       pw.animating = false;
       if (pw.paused){ pw.holding = true; powerSync(); return; }
-      pw.timer = setTimeout(() => powerStep(i + 1), stepDwell(POWER_STEPS[i]));
+      pw.timer = setTimeout(() => powerStep(i + 1), pw.fast ? (pw.hold || 1400) : stepDwell(POWER_STEPS[i]));   /* the intro holds each shot a moment */
     }
-    function powerStart(paused){
+    function powerStart(paused, o = {}){
       if (pw || !layer || !layer.querySelector('.hot[data-id="power-button"]')) return;
-      if (cur !== 'power-button') go('power-button');   /* so the panel shows the button's page, where the steps collect */
+      if (!o.fast && cur !== 'power-button') go('power-button');   /* so the panel shows the button's page, where the steps collect */
       const g = document.createElementNS(SVGNS, 'g'), tg = document.createElementNS(SVGNS, 'g'), dg = document.createElementNS(SVGNS, 'g');
       const defs = document.createElementNS(SVGNS, 'defs');
       g.setAttribute('class', 'pw-flow'); g.append(defs, tg, dg); layer.appendChild(g);       /* trails first, so the dots sit on top */
-      pw = {lay: layer, g, defs, tg, dg, dots: [], trails: [], sel: [], i: -1, timer: null, raf: 0, paused: !!paused, holding: false, animating: false};
+      pw = {lay: layer, g, defs, tg, dg, dots: [], trails: [], sel: [], i: -1, timer: null, raf: 0, paused: !!paused, holding: false, animating: false,
+            fast: !!o.fast, onEnd: o.onEnd || null, onStep: o.onStep || null, only: o.only || null, speed: o.speed || 0, hold: o.hold || 0};
       pwDone = 0; popClosed = false; popMoved = false; pop.style.top = ''; pop.style.bottom = '';
       setHover(null); clearTimeout(tipTimer); powerSync();
       powerStep(0);
     }
     powerToggle = () => { if (pw){ powerCleanup(); powerSync(); } else powerStart(); };
+    /* fast, staying on the home page: o.only lists the steps to play, o.onStep(i) runs as each starts,
+       o.onEnd when it finishes or is stopped */
+    powerIntro = o => powerStart(false, Object.assign({fast: true}, o));
     powerStop = () => { powerCleanup(); popClosed = true; powerSync(); };
     const powerPause = () => {
       if (!pw) return;
       pw.paused = !pw.paused;
+      if (typeof SFX !== 'undefined'){ if (pw.paused) SFX.pause(); else SFX.resume(); }
       if (pw.paused){
         if (!pw.animating && !pw.holding){ clearTimeout(pw.timer); pw.holding = true; }   /* stop waiting; hold here */
       } else if (pw.holding){
@@ -1393,6 +1507,134 @@ var powerToggle = () => {}, powerSync = () => {}, powerStop = () => {};   /* set
   }
 }
 
+/* ---------- "How it works": the step-by-step animations of the I/O devices ----------
+   The inside views of the monitor, keyboard, mouse, joystick, game controller,
+   printer, webcam, microphone and speakers have a "How it works" button on the
+   diagram. It plays that device's steps (data in scenes/device-anims.js): the
+   parts a step is about stay lit while the rest fades, a note at the top says
+   what is happening, and the step's effects (SVG animations) are drawn over the
+   diagram. Each step waits long enough to be read, then the next one starts;
+   Pause, Back and Next step work as in the power-on walkthrough. Opening any
+   other part, or leaving the diagram, stops it. */
+{
+  const bar = document.createElement('div');
+  bar.className = 'dv-bar'; bar.hidden = true;
+  bar.innerHTML = '<button type="button" class="pw-btn pw-run dv-run" data-dv="run"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3l9 5-9 5z"/></svg><span>How it works</span></button>' +
+    pwControls(false).replace(/data-pw=/g, 'data-dv=');
+  stage.appendChild(bar);
+  const S = typeof SFX !== 'undefined' ? SFX : {cue(){}, stop(){}, pause(){}, resume(){}, syncButtons(){}};
+  S.syncButtons();
+  const animFor = () => (typeof DEVICE_ANIMS !== 'undefined' && curOwner && N[curOwner] && DEVICE_ANIMS[N[curOwner].scene]) || null;
+
+  /* dv: the animation playing {anim, lay, i, timer, paused, fx, lit} */
+  let dv = null;
+  const prevSim = simRunning;
+  simRunning = () => prevSim() || !!dv;
+
+  function unlight(){
+    if (!dv) return;
+    dv.lit.forEach(e => e.classList.remove('selected'));
+    dv.lay.querySelectorAll('.selected-lbl').forEach(l => l.classList.remove('selected-lbl'));
+    dv.lay.classList.remove('select-dim');
+    dv.lit = [];
+  }
+  function light(ids){
+    unlight();
+    ids.forEach(id => dv.lay.querySelectorAll(`.hot[data-id="${id}"]`).forEach(h => { h.classList.add('selected'); dv.lit.push(h); }));
+    ids.forEach(id => dv.lay.querySelectorAll(`.lbl[data-for="${id}"]`).forEach(l => l.classList.add('selected-lbl')));
+    if (dv.lit.length) dv.lay.classList.add('select-dim');
+  }
+  const dwell = st => Math.min(9000, Math.max(4500, 1800 + st.x.replace(/\*\*/g, '').length * 38));   /* time to read the note */
+
+  function show(i){
+    clearTimeout(dv.timer);
+    const steps = dv.anim.steps;
+    if (i >= steps.length){ finish(); return; }
+    dv.i = Math.max(0, i);
+    const st = steps[dv.i];
+    if (dv.fx) dv.fx.remove();
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'dfx'); g.setAttribute('aria-hidden', 'true');
+    const t0 = typeof dv.lay.getCurrentTime === 'function' ? dv.lay.getCurrentTime() : 0;
+    g.innerHTML = st.fx(DEVICE_FX(t0));
+    const labels = dv.lay.querySelector(':scope > .labels');
+    dv.lay.insertBefore(g, labels);                       /* over the drawing, under the part names */
+    dv.fx = g;
+    light(st.parts || []);
+    S.cue(st.sfx);
+    stepNote.show(`${dv.i + 1}/${steps.length}${dv.paused ? ' · paused' : ''}`, st.t, st.x);
+    if (!dv.paused) dv.timer = setTimeout(() => dv && show(dv.i + 1), dwell(st));
+    sync();
+  }
+  function start(){
+    const anim = animFor();
+    if (!anim || !layer || dv) return;
+    powerStop();
+    tipPinned = false; hideTip(); setSelected(null); setHover(null); clearTimeout(tipTimer);
+    dv = {anim, lay: layer, i: 0, timer: null, paused: false, fx: null, lit: []};
+    if (typeof dv.lay.unpauseAnimations === 'function') dv.lay.unpauseAnimations();
+    if (window.trackEvent) window.trackEvent('how_it_works', N[curOwner].scene);
+    /* a device that speaks later on (the speakers): get the voice ready now, during this click */
+    if (anim.steps.some((st, i) => i > 0 && (st.sfx || []).some(e => /^say/.test(e))) && S.warm) S.warm();
+    show(0);
+  }
+  function finish(){
+    if (!dv) return;
+    clearTimeout(dv.timer);
+    if (dv.fx) dv.fx.remove();
+    unlight();
+    if (typeof dv.lay.unpauseAnimations === 'function') dv.lay.unpauseAnimations();
+    dv = null;
+    S.stop();
+    stepNote.hide();
+    sync();
+  }
+  function pause(){
+    if (!dv) return;
+    dv.paused = !dv.paused;
+    const lay = dv.lay;
+    if (dv.paused){ clearTimeout(dv.timer); if (lay.pauseAnimations) lay.pauseAnimations(); S.pause(); }
+    else { if (lay.unpauseAnimations) lay.unpauseAnimations(); S.resume(); dv.timer = setTimeout(() => dv && show(dv.i + 1), 2500); }
+    stepNote.step(`${dv.i + 1}/${dv.anim.steps.length}${dv.paused ? ' · paused' : ''}`);
+    sync();
+  }
+  function stepBy(d){
+    if (!dv){ if (d > 0){ start(); if (dv) pause(); } return; }       /* Next step from rest: start paused on step 1 */
+    if (dv.paused && dv.lay.unpauseAnimations){ dv.lay.unpauseAnimations(); }
+    show(dv.i + d);
+    if (dv && dv.paused && dv.lay.pauseAnimations){ setTimeout(() => { if (dv && dv.paused){ dv.lay.pauseAnimations(); S.pause(); } }, 1500); }   /* let the new step's motion (and sound) play briefly */
+  }
+  function sync(){
+    const anim = animFor();
+    bar.hidden = !anim || !layer || layer.tagName !== 'svg';
+    if (bar.hidden) return;
+    const run = bar.querySelector('[data-dv="run"]');
+    run.querySelector('span').textContent = dv ? 'Stop' : 'How it works';
+    run.classList.toggle('is-stop', !!dv);
+    run.title = dv ? 'Stop the animation' : `Watch step by step: ${anim.name.toLowerCase()}`;
+    bar.classList.toggle('running', !!dv);
+    bar.querySelectorAll('.pw-ic').forEach(b => {
+      const a = b.dataset.dv;
+      if (a === 'pause'){ const play = !!(dv && dv.paused), label = play ? 'Play' : 'Pause';
+        b.classList.toggle('is-play', play); b.setAttribute('aria-label', label); b.title = label; b.disabled = !dv; }
+      else if (a === 'back') b.disabled = !dv || dv.i <= 0;
+      else if (a === 'step') b.disabled = !!dv && dv.i >= dv.anim.steps.length - 1;
+    });
+  }
+  bar.addEventListener('click', e => {
+    const b = e.target.closest('[data-dv]'); if (!b || b.disabled) return;
+    const a = b.dataset.dv;
+    if (a === 'run'){ if (dv) finish(); else start(); }
+    else if (a === 'pause') pause();
+    else if (a === 'step') stepBy(1);
+    else if (a === 'back') stepBy(-1);
+  });
+  /* while it plays, Escape only stops it (normally Escape goes up a level): caught first, on the way down */
+  addEventListener('keydown', e => { if (e.key === 'Escape' && dv){ finish(); e.stopPropagation(); } }, true);
+  devStop = finish;
+  devSync = sync;
+}
+
 /* theme */
 const themeBtn = $('#btn-theme');
 const MOON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M16.5 12.2A7 7 0 0 1 7.8 3.5a7 7 0 1 0 8.7 8.7Z"/></svg>';
@@ -1408,4 +1650,153 @@ themeBtn.addEventListener('click', () => setTheme(html.dataset.theme === 'dark' 
 
 /* start */
 go(idFromLocation(), {animate:false, replace:true});
+
+/* ---------- the start screen ----------
+   Opening the home page shows the computer in the dark, with only its power button
+   lit, and a short prompt. Pressing it (or Enter) fades the dark away and plays the
+   power-on walkthrough, fast, with nothing else on screen: the site's name, buttons,
+   side panel and footer fade in when it ends. "Skip" or Escape just lets the
+   visitor explore. It appears only on a first visit, opened on the home page, and
+   is remembered in this browser (localStorage 'itc-intro'); add ?intro to the
+   address to see it again. */
+const introSeen = () => { try { return localStorage.getItem('itc-intro') === 'seen'; } catch(_){ return false; } };
+const introQ = new URLSearchParams(location.search);
+if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
+  const btnFor = () => layer && layer.querySelector('.hot[data-id="power-button"]');
+  const intro = document.createElement('div');
+  intro.className = 'intro';
+  intro.setAttribute('role', 'dialog'); intro.setAttribute('aria-modal', 'true'); intro.setAttribute('aria-label', 'Switch the computer on');
+  intro.innerHTML = '<button type="button" class="intro-hole" aria-label="Press the power button to switch the computer on"></button>' +
+    '<div class="intro-msg"><b>Press the power button</b><span>to switch the computer on and watch how it starts</span></div>' +
+    '<button type="button" class="intro-skip">Skip</button>';
+  const hole = intro.querySelector('.intro-hole'), msg = intro.querySelector('.intro-msg');
+  let open = false;
+  function place(){
+    const b = btnFor(); if (!b || !open) return;
+    const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) + 34;
+    const cx = r.left + r.width / 2, cyy = r.top + r.height / 2;
+    Object.assign(hole.style, {left: cx - d / 2 + 'px', top: cyy - d / 2 + 'px', width: d + 'px', height: d + 'px'});
+    /* the message beside the button, on whichever side has room, else below it */
+    const mw = msg.offsetWidth, mh = msg.offsetHeight;
+    let x = cx - d / 2 - 18 - mw, y = cyy - mh / 2;
+    if (x < 12){ x = Math.min(innerWidth - mw - 12, Math.max(12, cx - mw / 2)); y = cyy + d / 2 + 18; }
+    msg.style.left = x + 'px'; msg.style.top = Math.max(12, Math.min(innerHeight - mh - 12, y)) + 'px';
+  }
+  function close(start){
+    if (!open) return;
+    open = false;
+    removeEventListener('resize', place); removeEventListener('scroll', place, true);
+    removeEventListener('keydown', onKey, true);
+    intro.classList.add(start ? 'leaving-go' : 'leaving');
+    setTimeout(() => intro.remove(), 650);
+    try { localStorage.setItem('itc-intro', 'seen'); } catch(_){}
+    if (window.trackEvent) window.trackEvent('start_screen', start ? 'power_on' : 'skip');
+    if (start) cinema();
+  }
+  /* The fast boot, filmed: the diagram fills the whole window between letterbox bars, and a "camera"
+     frames the parts of each step (the power button, the power supply, the CPU and firmware, the monitor
+     showing POST), then pulls back to the whole scene. Only the main steps play. At the end the bars
+     leave, the diagram glides back to its place and the site's name, buttons, side panel and footer fade
+     in around it. */
+  function cinema(){
+    const STEPS = [1, 2, 3, 5, 6, 7, 8];                /* button, the chip's PS_ON# to the PSU, main power, firmware, POST, loading the OS, desktop */
+    const SHOTS = {1: ['power-button', 'chipset'], 2: ['chipset', 'psu'], 3: ['psu', 'motherboard'], 5: ['cpu', 'bios'], 6: ['monitor', 'webcam'],
+      7: ['bios', 'storage', 'ram'], 8: null};
+    const PACE = {speed: 1.7, hold: 2150};              /* dot speed (× normal) and how long each shot holds: about 25 s in all */
+    const lay = layer, st = stage.style;
+    const EASE = 'cubic-bezier(.45,0,.2,1)';
+    html.classList.add('intro-cinema');
+
+    /* keep the diagram's place in the page while it fills the window */
+    const r0 = stage.getBoundingClientRect(), ph = document.createElement('div');
+    ph.className = 'stage-ph'; ph.style.height = r0.height + 'px'; stage.before(ph);
+    const FULL = {position: 'fixed', left: '0px', top: '0px', width: '100vw', height: '100vh', zIndex: '1500', borderRadius: '0px', margin: '0px'};
+    Object.assign(st, FULL);
+
+    const film = document.createElement('div');
+    film.className = 'cine'; film.innerHTML = '<i class="cine-bar top"></i><i class="cine-bar bottom"></i><b class="cine-vignette"></b>';
+    document.body.appendChild(film);
+    requestAnimationFrame(() => requestAnimationFrame(() => film.classList.add('on')));
+
+    const skip = document.createElement('button');
+    skip.type = 'button'; skip.className = 'intro-skip cinema-skip'; skip.textContent = 'Skip';
+    document.body.appendChild(skip);
+
+    /* the camera: where each shot's parts are, measured once with the diagram full-window and at rest */
+    lay.style.transformOrigin = '0 0';
+    const box = lay.getBoundingClientRect(), rects = {};
+    Object.keys(SHOTS).forEach(k => {
+      if (!SHOTS[k]) return;
+      let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+      SHOTS[k].forEach(id => { const e = lay.querySelector(`.hot[data-id="${id}"]`); if (!e) return;
+        const r = e.getBoundingClientRect(); x1 = Math.min(x1, r.left); y1 = Math.min(y1, r.top); x2 = Math.max(x2, r.right); y2 = Math.max(y2, r.bottom); });
+      if (x1 < Infinity) rects[k] = {cx: (x1 + x2) / 2 - box.left, cy: (y1 + y2) / 2 - box.top, w: x2 - x1, h: y2 - y1};
+    });
+    const shoot = i => {
+      lay.style.transition = `transform 1.2s ${EASE}`;
+      const r = rects[i], W = box.width, H = box.height;
+      if (reduce.matches){ lay.style.transform = ''; return; }
+      if (!r){                                          /* the whole system: zoomed out to fit between the letterbox bars */
+        const bar = innerHeight * .09, sc = Math.min(1, (H - 2 * bar - 24) / H);
+        lay.style.transform = `translate(${W / 2 * (1 - sc)}px, ${H / 2 * (1 - sc)}px) scale(${sc})`;
+        return;
+      }
+      const sc = Math.max(1.05, Math.min(1.8, .5 * Math.min(W / r.w, H / r.h)));   /* framed with room around the parts */
+      lay.style.transform = `translate(${W / 2 - sc * r.cx}px, ${H / 2 - sc * r.cy}px) scale(${sc})`;
+    };
+
+    const onEsc = e => { if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); powerStop(); } };
+    addEventListener('keydown', onEsc, true);
+    const end = () => {
+      removeEventListener('keydown', onEsc, true);
+      skip.remove();
+      /* pull back to the whole scene and lose the bars, then glide back into the page */
+      lay.style.transition = `transform .9s ${EASE}`; lay.style.transform = '';
+      film.classList.remove('on');
+      setTimeout(settle, reduce.matches ? 0 : 800);
+    };
+    function settle(){
+      html.classList.remove('intro-cinema'); html.classList.add('intro-reveal');
+      const to = ph.getBoundingClientRect(), from = stage.getBoundingClientRect();
+      Object.assign(st, {left: from.left + 'px', top: from.top + 'px', width: from.width + 'px', height: from.height + 'px'});
+      stage.getBoundingClientRect();
+      const T = reduce.matches ? 0 : .85;
+      st.transition = ['left', 'top', 'width', 'height', 'border-radius'].map(p => `${p} ${T}s ${EASE}`).join(',');
+      Object.assign(st, {left: to.left + 'px', top: to.top + 'px', width: to.width + 'px', height: to.height + 'px', borderRadius: '20px'});
+      setTimeout(() => {
+        ph.remove(); film.remove();
+        ['position', 'left', 'top', 'width', 'height', 'zIndex', 'borderRadius', 'margin', 'transition'].forEach(k => { st[k] = ''; });
+        lay.style.transition = ''; lay.style.transformOrigin = '';
+        setTimeout(() => html.classList.remove('intro-reveal'), 1000);
+        dispatchEvent(new Event('resize'));             /* anything sized to the stage settles again */
+      }, T * 1000 + 60);
+    }
+    skip.addEventListener('click', () => powerStop());     /* stopping runs end() as well */
+    powerIntro(Object.assign({only: STEPS, onStep: shoot, onEnd: end}, PACE));
+  }
+  function onKey(e){
+    if (!open) return;
+    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(false); }
+    else if (e.key === 'Enter' && document.activeElement !== intro.querySelector('.intro-skip')){ e.preventDefault(); e.stopPropagation(); close(true); }
+    else if (e.key === 'Tab'){                         /* keep focus inside: the button and Skip */
+      e.preventDefault(); (document.activeElement === hole ? intro.querySelector('.intro-skip') : hole).focus();
+    }
+  }
+  hole.addEventListener('click', () => close(true));
+  intro.querySelector('.intro-skip').addEventListener('click', () => close(false));
+  /* a click anywhere else in the dark just draws the eye back to the button */
+  intro.addEventListener('click', e => { if (e.target === intro){ hole.classList.remove('nudge'); void hole.offsetWidth; hole.classList.add('nudge'); } });
+  const show = () => {
+    const b = btnFor(); if (!b) return;
+    const r = b.getBoundingClientRect();
+    if (r.bottom > innerHeight || r.top < 0) b.scrollIntoView({block: 'center'});
+    document.body.appendChild(intro); open = true;
+    place(); requestAnimationFrame(() => { intro.classList.add('show'); place(); });
+    addEventListener('resize', place); addEventListener('scroll', place, true);
+    addEventListener('keydown', onKey, true);
+    hole.focus({preventScroll: true});
+  };
+  /* once the diagram has been laid out */
+  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(show, 120)));
+}
 })();

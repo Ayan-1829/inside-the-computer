@@ -18,7 +18,8 @@ function pwControls(run){
   return '<div class="pw-ctrl">' + (run ? '<button type="button" class="pw-btn pw-run" data-pw="run">Power on</button>' : '') +
     ic('back', 'Previous step', svg('<rect x="3" y="3" width="2" height="10"/><path d="M13 3 6 8l7 5z"/>'), true) +
     ic('pause', 'Pause', svg('<rect x="4" y="3" width="3" height="10"/><rect x="9" y="3" width="3" height="10"/>', 'i-pause') + svg('<path d="M5 3l8 5-8 5z"/>', 'i-play'), true) +
-    ic('step', 'Next step', svg('<path d="M3 3l7 5-7 5z"/><rect x="11" y="3" width="2" height="10"/>')) + '</div>';
+    ic('step', 'Next step', svg('<path d="M3 3l7 5-7 5z"/><rect x="11" y="3" width="2" height="10"/>')) +
+    '<button type="button" class="pw-btn pw-ic sfx-btn" data-sfx="toggle" aria-label="Sound on or off" title="Sound on or off"></button></div>';   /* icon filled in by sfx.js */
 }
 /* what the two dot colours mean in the power-on walkthrough */
 function pwKey(){ return '<div class="pw-key"><i class="k-pow"></i>Power<i class="k-sig"></i>Signals and data</div>'; }
@@ -30,24 +31,40 @@ function escapeHtml(t){ return String(t).replace(/&/g, '&amp;').replace(/</g, '&
 var PLAY_ICON = '<svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 4.5v11l9-5.5z"/></svg>';
 var PAGE_ICON = '<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2.5h7l3 3v12H5z"/><path d="M12 2.5v3h3M7.5 9h5M7.5 12h5M7.5 15h3"/></svg>';
 var OPEN_ICON = '<svg class="lk-go" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3M11 4h5v5M16 4l-7 7"/></svg>';
+/* the video's thumbnail (YouTube's image server, loaded lazily) with a small play badge */
+function thumb(id){
+  return '<span class="lk-thumb" aria-hidden="true"><img src="https://i.ytimg.com/vi/' + id + '/mqdefault.jpg" alt="" loading="lazy" width="120" height="68">' +
+    '<span class="lk-thumb-play">' + PLAY_ICON + '</span></span>';
+}
+/* Videos whose owners don't allow them to be played on other websites (YouTube's embed check
+   answers 401): these stay ordinary links that open YouTube. Checked for every video on 2026-09-28. */
+var NO_EMBED = {'bwRe7JxuNHw': 1};
 function learnItems(id){
   var L = typeof LEARN !== 'undefined' && LEARN[id];
   if (!L || !L.length) return '';
   return L.map(function(l){
     var isVideo = l[0] === 'v';
+    /* a video plays in a window on this page (engine.js); the link still works without JavaScript */
+    if (isVideo && !NO_EMBED[l[3]]){
+      return '<li><a class="lk lk-v" href="https://www.youtube.com/watch?v=' + l[3] + '" target="_blank" rel="noopener noreferrer" data-yt="' + l[3] + '"' +
+        ' data-yt-title="' + escapeHtml(l[1]) + '" data-yt-by="' + escapeHtml(l[2]) + '">' +
+        thumb(l[3]) +
+        '<span class="lk-t">' + escapeHtml(l[1]) + '<em>Video · ' + escapeHtml(l[2]) + (l[4] ? ' · ' + l[4] : '') + '</em></span>' +
+        '<span class="sr-only"> (plays in a window on this page)</span></a></li>';
+    }
     var url = isVideo ? 'https://www.youtube.com/watch?v=' + l[3]
       : 'https://en.wikipedia.org/wiki/' + encodeURIComponent(l[1].replace(/ /g, '_')).replace(/%28/g, '(').replace(/%29/g, ')');
     var title = isVideo ? l[1] : l[1];
     var meta = isVideo ? 'Video on YouTube · ' + escapeHtml(l[2]) + (l[4] ? ' · ' + l[4] : '') : 'Article on Wikipedia';
     return '<li><a class="lk ' + (isVideo ? 'lk-v' : 'lk-w') + '" href="' + url + '" target="_blank" rel="noopener noreferrer">' +
-      '<span class="lk-ic" aria-hidden="true">' + (isVideo ? PLAY_ICON : PAGE_ICON) + '</span>' +
+      (isVideo ? thumb(l[3]) : '<span class="lk-ic" aria-hidden="true">' + PAGE_ICON + '</span>') +
       '<span class="lk-t">' + escapeHtml(title) + '<em>' + meta + '</em></span>' + OPEN_ICON +
       '<span class="sr-only"> (opens in a new tab)</span></a></li>';
   }).join('');
 }
 function learnHTML(id){
   var items = learnItems(id);
-  return items ? sec('Learn more', '<ul class="learn">' + items + '</ul><p class="note learn-note">These links open YouTube and Wikipedia, which are separate websites, in a new tab.</p>') : '';
+  return items ? sec('Learn more', '<ul class="learn">' + items + '</ul><p class="note learn-note">Videos play here, from YouTube; articles open Wikipedia in a new tab.</p>') : '';
 }
 
 function metaTitle(id){

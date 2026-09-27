@@ -58,7 +58,7 @@ function pinViewV(c){
   return s + legend(40, 520, true);
 }
 function pinViewTO220(c){
-  let s = `<g class="bg">${T(740,250,'Front view, legs down.','t t-sm t-mut')}${T(740,274,'Pin 1 is on the left.','t t-sm t-mut')}</g>`;
+  let s = `<g class="bg">${T(616,250,'Front view, legs down.','t t-sm t-mut')}${T(616,274,'Pin 1 is on the left.','t t-sm t-mut')}</g>`;   /* beside the chip, so the pair sits centred */
   s += R(420,124,160,64,6,'m-metal') + C(500,152,14,'','style="fill:var(--surface)"') + R(410,176,180,170,8,'m-ic');
   s += T(500,256,c.part,'t t-xl t-inv t-mid') + T(500,288,esc(c.desc),'t t-sm t-inv t-mid','style="opacity:.8"');
   [440,500,560].forEach((x,i) => { const p = i+1;
@@ -281,6 +281,8 @@ function insideBlocks(c){
   return `${groups}<path class="ia" d="${lines}"/>${heads}${blocks}${labels}<g class="bg">${T(500,668,'Simplified block diagram of the inside of the chip.','t t-xs t-mut t-mid')}</g>`;
 }
 
+/* the big gate-level "Inside the chip" drawings need more room; the pin diagram keeps the usual 1000×700,
+   so it isn't shrunk into the top-left corner of the larger view */
 const IC_VB = {'ic-74157':[1080,1080], 'ic-74151':[1300,1120]};
 SCENES.ic = (n) => {
   const c = CHIPS[n.id];
@@ -289,10 +291,11 @@ SCENES.ic = (n) => {
   let s = `<g class="icv" data-view="pins">${pinsSvg}</g>`;
   if (inside) s += `<g class="icv" data-view="inside" style="display:none">${inside}</g>` +
     btnS(372,62,138,40,'Pin diagram','data-show="pins" aria-pressed="true"') + btnS(520,62,168,40,'Inside the chip','data-show="inside" aria-pressed="false"');
-  return {svg:s, vb: IC_VB[n.id], init: el => {
+  return {svg:s, init: el => {
     const key = 'icview:' + n.id, units = chipUnits(c), info = el.querySelector('[data-info]');
     const setInfo = t => { if (!info) return; if (info.dataset.wrap) info.innerHTML = tspans(wrap(t, +info.dataset.wrap), 40, 22); else info.textContent = t; };
     const setView = v => { SIM[key] = v; el.querySelectorAll('.icv').forEach(g => g.style.display = g.dataset.view === v ? '' : 'none');
+      el.setAttribute('viewBox', '0 0 ' + (v === 'inside' && IC_VB[n.id] ? IC_VB[n.id] : [1000, 700]).join(' '));
       el.querySelectorAll('[data-show]').forEach(b => { b.classList.toggle('on', b.dataset.show === v); b.setAttribute('aria-pressed', b.dataset.show === v ? 'true' : 'false'); }); };
     el.querySelectorAll('[data-show]').forEach(b => onPress(b, () => setView(b.dataset.show)));
     setView(SIM[key] || 'pins');

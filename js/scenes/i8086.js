@@ -222,7 +222,12 @@
   const pData2Reg = (y, r, x = RAM.x) => [[x, y], [BUSX.data, y], [BUSX.data, DJY], [cx(648), DJY], [cx(648), IBUS], [cx(534), IBUS], [cx(534), regRowY(r)]];
   const pDataOut = (y, r, x = RAM.x) => [[cx(534), regRowY(r)], [cx(534), IBUS], [cx(648), IBUS], [cx(648), DJY], [BUSX.data, DJY], [BUSX.data, y], [x, y]];
   const P_Q2CU  = [[cx(786), QUE.y + 5*QUE.dy + QUE.h], [cx(786), CU.y]];
-  const P_EA    = [[cx(786), CU.y + CU.h], [cx(786), IBUS], [cx(648), IBUS], [cx(648), cy(226)], [cx(598), cy(226)], [cx(598), SUM.b]];
+  /* the effective address (an operand's offset) goes from the control unit to the address adder on its own
+     address wire: out of the control unit's left side, across the data connector, up the free channel between
+     the segment registers and the queue, and into the adder's bottom. It used to run down onto the internal
+     data bus and up the data connector, so an address looked as if it were travelling on the data lines. */
+  const EAX = cx(634), EAIN = cx(614), EAY = cy(226);
+  const P_EA    = [[CU.x, cy(463)], [EAX, cy(463)], [EAX, EAY], [EAIN, EAY], [EAIN, SUM.b]];
   const pReg2ALU = r => [[cx(534), regRowY(r)], [cx(534), IBUS], [cx(840), IBUS], [cx(840), ALU.t]];
   /* the operands already arrived at the ALU's top edge (pReg2ALU); execute shows
      the computed result leaving from the ALU's bottom/output point into Result */
@@ -623,6 +628,7 @@
 
     /* wiring inside the chip */
     s += wire([[cx(606), SEG.y], [cx(606), SUM.b]], 'a');
+    s += wire(P_EA, 'a');                                           /* the effective address's own wire into the adder */
     s += wire([[cx(592), SUM.t], [cx(592), ADRY], [BUSX.addr, ADRY]], 'a');
     /* memory interface's own data-bus tap stays at its own height, clear to the
        right of the queue box, instead of running down through it */
@@ -902,6 +908,16 @@
          move begins, gives the arrival a moment to register instead of
          instantly chaining into the next step. */
       const ARRIVE_PAUSE = 320;
+      /* the short note over the diagram (engine.js's stepNote): the step's title and the first sentence of
+         its description, shown as each step lands while playing or stepping; it fades a few seconds after
+         playback stops, so it doesn't sit over the diagram's headings for good */
+      const firstSentence = t => ((String(t || '').match(/^.*?[.!?](?=\s|$)/) || [String(t || '')])[0]).trim();
+      const shortNote = fade => {
+        const st = S.story[S.idx];
+        if (!st || !window.stepNote) return;
+        window.stepNote.show(`${S.idx + 1}/${S.story.length}`, st.title, firstSentence(st.desc), {center: true, fade});
+      };
+      const noteFade = ms => { if (window.stepNote) window.stepNote.fade(ms); };
       const stop = () => { playing = false; clearTimeout(timer); if (raf) cancelAnimationFrame(raf); hideDot(); draw(); };
       const show = (i, animate) => {
         S.idx = Math.max(0, Math.min(i, Math.max(0, S.story.length - 1)));
@@ -909,9 +925,9 @@
         else draw();
       };
       const advance = () => {
-        if (S.idx >= S.story.length - 1){ stop(); return; }
+        if (S.idx >= S.story.length - 1){ stop(); noteFade(5000); return; }
         S.idx++;
-        travel(S.story[S.idx], () => { draw(); if (playing) timer = setTimeout(advance, Math.max(110, speedMs(S.speed)*0.3) + ARRIVE_PAUSE); });
+        travel(S.story[S.idx], () => { draw(); if (playing) shortNote(0); if (playing) timer = setTimeout(advance, Math.max(110, speedMs(S.speed)*0.3) + ARRIVE_PAUSE); });
       };
 
       /* ---------- the example picker, collapsed to the current pick ---------- */
@@ -1048,15 +1064,15 @@
       onPress($('[data-excur]'), openExamples);
       onPress($('[data-a="play"]'), () => {
         if (!S.story.length) return;
-        if (playing){ stop(); return; }
+        if (playing){ stop(); noteFade(4000); return; }
         if (S.idx >= S.story.length - 1) S.idx = 0;
-        playing = true; draw(); advance();
+        playing = true; draw(); shortNote(0); advance();
       });
       onPress($('[data-a="step"]'), () => {
         if (playing) stop();
-        if (S.idx < S.story.length - 1){ S.idx++; travel(S.story[S.idx], () => draw()); }
+        if (S.idx < S.story.length - 1){ S.idx++; travel(S.story[S.idx], () => { draw(); shortNote(6000); }); }
       });
-      onPress($('[data-a="reset"]'), () => { stop(); show(0, false); });
+      onPress($('[data-a="reset"]'), () => { stop(); show(0, false); if (window.stepNote) window.stepNote.hide(); });
       onPress($('[data-a="ops"]'), () => openOps(S.story[S.idx] && S.story[S.idx].ins ? OPKEY(S.story[S.idx].ins.bytes[0][0]) : 'B8'));
       onPress($('[data-a="edit"]'), openEdit);
       onPress($('[data-a="segs"]'), openSegs);

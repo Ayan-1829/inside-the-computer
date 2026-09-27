@@ -32,7 +32,9 @@ SCENES.gate = (n) => {
   s += one ? sw(110,334,'a','A') : sw(110,234,'a','A') + sw(110,434,'b','B');
   s += led(830,350,'y','Output Y',1);
   s += n.chip ? chipHot(n.chip,720,572) : `<g class="bg">${T(890,590,'Real chip: 74LS266','t t-sm t-end')}${T(890,612,'details in the panel','t t-xs t-mut t-end')}</g>`;
-  return {svg:s, init: el => bindSim(el, n.id, {a:0,b:0}, st => {
+  /* the drawing (switches, gate, formula, real chip) sits in the lower part of the usual 1000×700,
+     so the view is moved down to centre it */
+  return {svg:s, vb: [0, one ? 118 : 98, 1000, 700], init: el => bindSim(el, n.id, {a:0,b:0}, st => {
     const y = one ? GFN.NOT(st.a) : GFN[g](st.a, st.b);
     return {a:st.a, b:st.b, y, key: one ? `${st.a}` : `${st.a}${st.b}`};
   }, {step: () => GATE_STEP*2})};

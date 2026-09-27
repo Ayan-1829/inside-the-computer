@@ -148,13 +148,23 @@
       <li>No names, email addresses or accounts.</li>
       <li>No fingerprinting, no advertising, and no data is sold or shared.</li>
     </ul>
-    <p>The site does save two display settings in your browser, your light or dark theme and whether the side panel is shown, so they are kept the next time. They never leave your device.</p>
+    <p>The site does save a few settings in your browser: your light or dark theme, whether the side panel is shown, the animations' sound volume, and that you have already seen the start screen, so they are kept the next time. They never leave your device.</p>
     <h3>Where the data goes</h3>
     <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button are kept separately, with the page and the type of device they were sent from.</p>
-    <h3>Turning it off</h3>
+    <h3>Videos</h3>
+    <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
+        <h3>Turning it off</h3>
     <p>Turn on <b>Global Privacy Control</b> or <b>Do Not Track</b> in your browser and this site sends nothing. Ad and tracker blockers also stop it, and the site works the same either way.</p>
   </div>
   <p class="dlg-foot">Questions? Use the Feedback button, or visit <a href="https://ayan-1829.github.io/portfolio" target="_blank" rel="noopener">ayan-1829.github.io/portfolio</a></p>
+</dialog>
+<dialog id="video" class="vd" aria-labelledby="vd-title">
+  <div class="dlg-head">
+    <div><h2 id="vd-title"></h2><p id="vd-by"></p></div>
+    <button class="btn icon" id="vd-close" type="button" aria-label="Close the video"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+  </div>
+  <div class="vd-frame" id="vd-frame"></div>
+  <p class="dlg-foot vd-foot"><span>Plays from YouTube in its privacy-enhanced mode.</span> <a id="vd-yt" href="#" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a></p>
 </dialog>
 <dialog id="device-test" aria-labelledby="dt-title" class="dt">
   <div class="dlg-head">
@@ -192,6 +202,7 @@
 <script src="{{ROOT}}js/scenes/common.js"></script>
 <script src="{{ROOT}}js/scenes/hardware.js"></script>
 <script src="{{ROOT}}js/scenes/devices.js"></script>
+<script src="{{ROOT}}js/scenes/device-anims.js"></script>
 <script src="{{ROOT}}js/scenes/memory-deep.js"></script>
 <script src="{{ROOT}}js/scenes/gpu-deep.js"></script>
 <script src="{{ROOT}}js/scenes/cpu.js"></script>
@@ -200,6 +211,7 @@
 <script src="{{ROOT}}js/scenes/logic.js"></script>
 <script src="{{ROOT}}js/scenes/chips.js"></script>
 <script src="{{ROOT}}js/scenes/i8086.js"></script>
+<script src="{{ROOT}}js/sfx.js"></script>
 <script src="{{ROOT}}js/engine.js"></script>
 <script src="{{ROOT}}js/analytics.js"
         data-endpoint="https://analytics-proxy.ayansarkar1829.workers.dev"

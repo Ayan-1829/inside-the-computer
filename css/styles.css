@@ -48,8 +48,8 @@
   --lbl-hi:#0B5A43; --lbl-hi-inv:#B4F5DC; --on-accent:#FFFFFF;
   --pin-in:#16654F; --pin-out:#8A5600; --pin-bi:#2F5FC4; --pin-pwr:#B24A3A; --pin-nc:#5E6B64;
   /* gradients: greens and yellows (every stop is checked for contrast by the build) */
-  --g-bg-1:rgba(22,101,79,.13); --g-bg-2:rgba(227,154,18,.13);
-  --g-stage-a:#FFFFFF; --g-stage-b:#F2F8EF; --g-stage-c:#FBF6E6;
+  --g-bg-1:rgba(22,101,79,.13); --g-bg-2:rgba(22,101,79,.06);          /* no warm (amber) glow in the page corner */
+  --g-stage-a:#FFFFFF; --g-stage-b:#F2F8EF; --g-stage-c:#EEF5EC;     /* no cream corner in the diagram window */
   --g-panel-a:#FFFFFF; --g-panel-b:#EBF4EA; --g-block-a:#F5F9F3; --g-block-b:#E4EEE1;
   --g-on-a:#1F7F61; --g-on-b:#0F4E3C;
   --g-sig-a:rgba(242,180,60,.42); --g-sig-b:rgba(227,154,18,.12);
@@ -89,8 +89,8 @@
   --lbl-bg:#0B110E; --lbl-ink:#F2F7F4; --lbl-edge:#5B6D65;
   --lbl-hi:#8BE8C6; --lbl-hi-inv:#8BE8C6; --on-accent:#05140E;
   --pin-in:#4DC39C; --pin-out:#FFB23A; --pin-bi:#86A9FF; --pin-pwr:#F08A78; --pin-nc:#8E9C95;
-  --g-bg-1:rgba(77,195,156,.11); --g-bg-2:rgba(255,178,58,.07);
-  --g-stage-a:#17231E; --g-stage-b:#141E19; --g-stage-c:#1B1E15;
+  --g-bg-1:rgba(77,195,156,.11); --g-bg-2:rgba(77,195,156,.05);
+  --g-stage-a:#17231E; --g-stage-b:#141E19; --g-stage-c:#131C18;
   --g-panel-a:#1E2B25; --g-panel-b:#17221D; --g-block-a:#27362F; --g-block-b:#1F2C26;
   --g-on-a:#6ADAB3; --g-on-b:#3AA884;
   --g-sig-a:rgba(255,178,58,.36); --g-sig-b:rgba(255,178,58,.10);
@@ -368,6 +368,25 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .lk-t em{font-style:normal;font-weight:500;font-size:12.5px;color:var(--ink-3)}
 .lk-go{flex:none;color:var(--ink-3)}
 .lk:hover .lk-go,.lk:focus-visible .lk-go{color:var(--accent)}
+.lk-thumb{position:relative;flex:none;width:120px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--line)}
+.lk-thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.lk-thumb-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
+.lk-thumb-play svg{width:15px;height:15px;margin-left:2px}
+.lk:hover .lk-thumb-play,.lk:focus-visible .lk-thumb-play{background:#D93025}
+.tip .lk-thumb{width:84px;border-radius:6px}
+.tip .lk-thumb-play{width:24px;height:24px}
+.tip .lk-thumb-play svg{width:12px;height:12px}
+@media (max-width: 420px){.lk-thumb{width:96px}}
+.lk-play{flex:none;font:700 12px var(--font-ui);color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.lk:hover .lk-play,.lk:focus-visible .lk-play{border-color:var(--accent)}
+dialog.vd{width:min(960px,calc(100vw - 32px),calc((80vh - 140px) * 16 / 9))}
+/* the page behind a playing video: darker and more blurred, so the video stands out */
+dialog.vd::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.vd .dlg-head h2{font-size:18px;line-height:1.3}
+.vd-frame{aspect-ratio:16/9;background:#000}
+.vd-frame iframe{display:block;width:100%;height:100%;border:0}
+.vd-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .p-sec p.learn-note{margin-top:10px;font-family:var(--font-ui);font-size:12.5px;line-height:1.4;color:var(--ink-3)}
 .tip .dp-learn-h{margin:12px 0 6px;font-size:13px;color:var(--ink)}
 .tip .lk{padding:7px 9px;gap:9px}
@@ -383,6 +402,8 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .pw-standby .pw-legend{opacity:1}
 [data-theme="dark"] .pw-legend{filter:drop-shadow(0 0 10px rgba(255,255,255,.16))}
 .pw-legend rect{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.pw-tag{font:700 14px var(--font-ui);fill:var(--signal-ink);stroke:var(--surface);stroke-width:4px;paint-order:stroke;pointer-events:none}
+.pw-tag.is-power{fill:var(--power)}
 .pw-legend text{font:700 13px var(--font-ui);fill:var(--ink);dominant-baseline:central}
 .pw-legend .k-pow{fill:var(--power)}
 .pw-legend .k-sig{fill:var(--signal)}
@@ -411,6 +432,51 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .pw-btn .i-play{display:none}
 .pw-btn.is-play .i-play{display:block}
 .pw-btn.is-play .i-pause{display:none}
+
+/* "How it works" on the I/O devices' inside views (engine.js, scenes/device-anims.js) */
+.dv-bar{position:absolute;right:16px;bottom:14px;z-index:6;display:flex;align-items:center;gap:6px;padding:6px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.dv-bar[hidden]{display:none}
+.dv-bar .pw-btn{height:32px}
+.dv-bar .pw-btn.pw-ic{width:32px}
+.dv-bar .pw-btn svg{width:14px;height:14px}
+.dv-bar .dv-run{display:inline-flex;align-items:center;gap:7px;padding:0 14px;font-weight:700;font-size:14px}
+.dv-bar .dv-run.is-stop svg{display:none}
+.dv-bar:not(.running) .pw-ctrl .pw-ic:not(.sfx-btn){display:none}
+.pw-btn.sfx-btn.is-off{color:var(--ink-3)}
+.sfx-pop{position:fixed;z-index:1000;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 6px 6px;border-radius:12px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow),0 12px 30px -12px rgba(0,0,0,.35);color:var(--ink)}
+.sfx-pop[hidden]{display:none}
+.sfx-pop.below{flex-direction:column-reverse;padding:6px 6px 10px}
+.sfx-pop .pw-btn{width:32px;height:32px}
+.sfx-pop .pw-btn svg{width:15px;height:15px}
+/* vertical: bottom is 0, top is 100 */
+.sfx-pop input[type=range]{writing-mode:vertical-lr;direction:rtl;width:28px;height:130px;margin:0;accent-color:var(--accent);cursor:pointer}
+.sfx-pop output{font:600 12px var(--font-ui);color:var(--ink-2);text-align:center;min-width:40px}
+.dv-note{max-width:min(720px,calc(100% - 80px))}
+.dv-note .fn-txt{font-size:15.5px;line-height:1.45}
+.dv-note .fn-step{font-size:13px}
+.dv-note .fn-txt > b{color:var(--ink)}
+.dfx{pointer-events:none}
+.dfx-dot{stroke:var(--surface);stroke-width:2;filter:drop-shadow(0 0 4px currentColor)}
+.dfx-bits{font:700 13px var(--font-mono,ui-monospace,monospace);fill:var(--signal-ink);stroke:var(--surface);stroke-width:4px;paint-order:stroke;letter-spacing:.04em}
+.dfx-wave{fill:none;stroke-width:4;stroke-linecap:round}
+.dfx-sine{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.dfx-ring{fill:none;stroke-width:3}
+.dfx-spoke{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round}
+.dfx-roll{fill:none;stroke:var(--signal);stroke-width:6;stroke-dasharray:8 16;stroke-linecap:round}
+.dfx-ink{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round}
+.dfx-tag rect{fill:var(--surface);stroke:var(--signal);stroke-width:1.5}
+.dfx-tag text{font:600 12.5px var(--font-ui,system-ui,sans-serif);fill:var(--ink)}
+@media (max-width: 760px){
+  .dv-bar{right:10px;bottom:10px;padding:5px}
+  .dv-bar .dv-run{font-size:13px;padding:0 11px}
+}
+/* one-column layout (tablets, phones): the note goes just below the diagram, so it never covers the drawing */
+.stage .dv-note.center{left:50%;right:auto;transform:translateX(-50%);max-width:min(680px,calc(100% - 160px))}
+.dv-note.below.center{transform:none}
+.dv-note.below{position:static;width:auto;max-width:none;margin:0;box-shadow:none;align-items:flex-start}
+.dv-note.below .fn-txt{font-size:15px}
 /* what is always powered / what a press changes: lit lines over the cables and the PWR_SW# wire */
 .pw-glow{fill:none;stroke:var(--signal);stroke-linecap:round;opacity:0;pointer-events:none;transition:opacity .35s,stroke-width .35s;filter:drop-shadow(0 0 3px var(--signal))}
 .pw-glow.pw-sb,.pw-glow.pw-sb-mb,.pw-glow.pw-main{stroke:var(--power);stroke-dasharray:2 11;filter:drop-shadow(0 0 4px var(--power))}
@@ -578,9 +644,16 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .scene.focus-mode .hot:not(.focused):not(.focus-anc){opacity:.22}
 .scene.focus-mode .focused .hot{opacity:1}
 .scene.focus-mode .focused>.hl{opacity:1;stroke-dasharray:6 6}
-.scene.select-dim .bg,.scene.select-dim .ov{opacity:.28}
-.scene.select-dim .hot:not(.selected){opacity:.22}
-.scene.select-dim .lbl:not(.selected-lbl){opacity:.28}
+.scene.select-dim .bg,.scene.select-dim .ov{opacity:.42;filter:blur(3px) brightness(.62)}
+.scene.select-dim .hot:not(.selected){opacity:.38;filter:blur(3.4px) brightness(.55)}
+.scene.select-dim .lbl:not(.selected-lbl){opacity:.3;filter:blur(2.2px) brightness(.6)}
+/* the stage's own background darkens too while something is in focus */
+.stage{transition:box-shadow .35s ease}
+.stage:has(.scene.select-dim){box-shadow:inset 0 0 0 3000px rgba(10,20,16,.16)}
+:root[data-theme="dark"] .stage:has(.scene.select-dim){box-shadow:inset 0 0 0 3000px rgba(0,0,0,.32)}
+/* focus: what isn't in focus fades and blurs, smoothly (power-on, "How it works", right-click, the camera/mic flows) */
+.scene .bg,.scene .ov,.scene .hot,.scene .lbl{transition:opacity .35s ease,filter .35s ease}
+@media (prefers-reduced-motion: reduce){.scene .bg,.scene .ov,.scene .hot,.scene .lbl{transition:none}}
 
 /* ---------- signal flow, gate evaluation ---------- */
 .flow{fill:none;stroke:#fff;stroke-width:1.6;stroke-linecap:round;stroke-dasharray:3 13;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -956,3 +1029,46 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .x86-exs-ov::-webkit-scrollbar,.x86-flow::-webkit-scrollbar{width:8px}
 .x86-exs-ov::-webkit-scrollbar-thumb,.x86-flow::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
 .x86-exs-ov,.x86-flow{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+
+/* ---------- the start screen (engine.js) ---------- */
+.intro{position:fixed;inset:0;z-index:2000;opacity:0;transition:opacity .45s ease}
+.intro.show{opacity:1}
+.intro.leaving{opacity:0;pointer-events:none}
+.intro.leaving-go{opacity:0;pointer-events:none;transition:opacity .6s ease .1s}
+/* the hole: a circle over the power button whose huge shadow is the dark screen */
+.intro-hole{position:fixed;border-radius:50%;border:0;padding:0;margin:0;background:transparent;cursor:pointer;
+  box-shadow:0 0 0 200vmax rgba(0,0,0,.94),0 0 0 3px rgba(255,255,255,.85) inset;outline:none}
+.intro-hole::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:3px solid var(--accent-2,#4DC39C);animation:intro-pulse 1.6s ease-out infinite}
+.intro-hole:focus-visible{box-shadow:0 0 0 200vmax rgba(0,0,0,.94),0 0 0 4px #fff inset}
+.intro-hole.nudge::after{animation:intro-pulse .5s ease-out 3}
+.intro.leaving-go .intro-hole{transition:transform .6s ease;transform:scale(6)}
+@keyframes intro-pulse{0%{transform:scale(.9);opacity:1}100%{transform:scale(1.6);opacity:0}}
+@media (prefers-reduced-motion: reduce){.intro-hole::after{animation:none}.intro.leaving-go .intro-hole{transform:none}}
+.intro-msg{position:fixed;max-width:280px;color:#fff;text-align:right;pointer-events:none}
+.intro-msg b{display:block;font:700 22px/1.25 var(--font-ui);letter-spacing:-.01em}
+.intro-msg span{display:block;margin-top:4px;font:500 15px/1.4 var(--font-ui);color:rgba(255,255,255,.72)}
+.intro-skip{position:fixed;right:20px;bottom:20px;height:36px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.35);
+  background:transparent;color:rgba(255,255,255,.8);font:600 14px var(--font-ui);cursor:pointer}
+.intro-skip:hover,.intro-skip:focus-visible{color:#fff;border-color:#fff}
+
+/* the first-visit intro's fast boot: only the diagram shows, the rest fades in afterwards */
+.intro-cinema .topbar,.intro-cinema .toolbar,.intro-cinema .panel,.intro-cinema .strip,.intro-cinema .foot,.intro-cinema .fbk-btn,
+.intro-cinema .hint,.intro-cinema .fs-btn,.intro-cinema .zoom-btn,.intro-cinema .flow-pop,.intro-cinema .dv-note,.intro-cinema .stage-tools{
+  opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
+.intro-reveal .topbar,.intro-reveal .toolbar,.intro-reveal .panel,.intro-reveal .strip,.intro-reveal .foot,.intro-reveal .fbk-btn,.intro-reveal .hint,.intro-reveal .fs-btn{
+  animation:intro-in .9s ease both}
+.intro-reveal .panel,.intro-reveal .strip{animation-delay:.15s}
+.intro-reveal .foot,.intro-reveal .fbk-btn{animation-delay:.3s}
+@keyframes intro-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.intro-reveal *{animation:none !important}}
+/* the film look: letterbox bars and a soft vignette while the intro's camera moves */
+.cine{position:fixed;inset:0;z-index:1600;pointer-events:none}
+.cine-bar{position:absolute;left:0;right:0;height:9vh;background:#000;transition:transform .8s cubic-bezier(.45,0,.2,1)}
+.cine-bar.top{top:0;transform:translateY(-100%)}
+.cine-bar.bottom{bottom:0;transform:translateY(100%)}
+.cine.on .cine-bar{transform:none}
+.cine-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.42) 100%);opacity:0;transition:opacity .8s ease}
+.cine.on .cine-vignette{opacity:1}
+.cinema-skip{z-index:2100;bottom:calc(4.5vh - 18px)}
+.intro-cinema .stage{box-shadow:none;border:0}
+.intro-cinema .stage .layer{will-change:transform}
