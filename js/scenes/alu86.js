@@ -272,7 +272,7 @@ function alu86Scene(n){
   /* ---- explanation ---- */
   s += T(320,650,'','t t-sm','data-txt="ex1"') + T(320,672,'','t t-sm t-mut','data-txt="ex2"') + T(320,694,'','t t-sm t-mut','data-txt="ex3"');
   s += aluModeSwitch(VB[0]/2 + 10, '8086');
-  return {svg: s, vb: VB, init: el => {
+  return {svg: s, vb: VB, cls: 'a86', init: el => {
     requestWide(true);
     el.dataset.scrollStart = 'left';
     const st = SIM.alu86 && SIM.alu86.regs ? SIM.alu86 : (SIM.alu86 = A86_DEFAULT());

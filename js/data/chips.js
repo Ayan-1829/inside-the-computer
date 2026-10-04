@@ -148,7 +148,7 @@ Object.assign(CHIPS, {
      arrows:[['i2c','cnt','both'],['i2c','cmp'],['cnt','arr','both'],['wp','arr']], left:[['SDA','bi','i2c'],['SCL','in','i2c']], bottom:[['A0–A2','in','cmp'],['WP','in','wp']]}},
  'ic-555':{part:'NE555',desc:'Timer',labels:['GND','TRIG','OUT','~RESET','CTRL','THR','DIS','VCC'],kinds:'pioiiiop', power:[1,8], pkg:'DIP-8',
    units:[['Timing inputs',[2,6]],['Output',[3]],['Discharge',[7]],['Reset, control',[4,5]]],
-   inside:{cols:[[{id:'div',t:'Voltage divider',s:'three 5 kΩ resistors:\n⅓ and ⅔ of VCC'}],[{id:'c1',t:'Comparator 1',s:'THR above ⅔ VCC?'},{id:'c2',t:'Comparator 2',s:'TRIG below ⅓ VCC?'}],[{id:'ff',t:'Flip-flop',s:'set / reset',k:'acc'}],[{id:'out',t:'Output stage'},{id:'dis',t:'Discharge\ntransistor'}]],
+   inside:{cols:[[{id:'div',t:'Voltage divider',s:'three 5 kΩ\nresistors: ⅓\nand ⅔ of VCC'}],[{id:'c1',t:'Comparator 1',s:'THR above\n⅔ VCC?'},{id:'c2',t:'Comparator 2',s:'TRIG below\n⅓ VCC?'}],[{id:'ff',t:'Flip-flop',s:'set / reset',k:'acc'}],[{id:'out',t:'Output stage'},{id:'dis',t:'Discharge\ntransistor'}]],
      arrows:[['div','c1'],['div','c2'],['c1','ff'],['c2','ff'],['ff','out'],['ff','dis']], left:[['CTRL','in','div']], right:[['OUT','out','out'],['DIS','out','dis']], bottom:[['THR','in','c1'],['TRIG','in','c2'],['RESET','in','ff']]}},
  'ic-74161':{part:'74LS161',desc:'4-bit binary counter',labels:['~CLR','CLK','A','B','C','D','ENP','GND','~LOAD','ENT','QD','QC','QB','QA','RCO','VCC'],kinds:'iiiiiiipiiooooop',
    units:[['Load inputs',[3,4,5,6]],['Outputs',[14,13,12,11]],['Count control',[2,7,10,15]],['Load, clear',[1,9]]],

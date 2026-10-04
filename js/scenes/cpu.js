@@ -114,7 +114,7 @@ SCENES.control = (n) => {
   s += `<g class="bg">${box('pc',380,96,170,76,'Program counter',T(396,156,'','t t-lg t-num','data-v="pc"'))}
     ${box('ir',600,96,340,76,'Instruction register',T(616,156,'','t t-lg t-num','data-v="ir"'))}
     ${R(380,222,170,112,12,'m-acc-soft','data-u="cu"')}${T(396,250,'Control unit','t t-sm')}${T(396,288,'','t t-lg','data-v="phase"')}${T(396,316,'','t t-xs t-mut','data-v="tick"')}</g>`;
-  s += hot('decoder',[600,222,180,112], box('dec',600,222,180,112,'Decoder',T(614,270,'','t','data-v="d1"')+T(614,298,'','t t-sm t-mut','data-v="d2"')),{label:'Instruction decoder'});
+  s += hot('decoder',[600,222,180,112], box('dec',600,222,180,112,'Decoder',T(614,276,'','t','data-v="d1"')+T(614,304,'','t t-sm t-mut','data-v="d2"')),{label:'Instruction decoder'});
   s += hot('clock',[810,222,130,112], box('clk',810,222,130,112,'Clock',`<path class="ln" d="M826 300h14v-30h20v30h20v-30h20v30h14"/>`));
   s += hot('registers',[380,384,170,116], box('reg',380,384,170,116,'Registers',T(396,440,'','t t-num','data-v="r1"')+T(396,474,'','t t-num','data-v="r2"')));
   s += hot('alu',[600,384,180,116], box('alu',600,384,180,116,'ALU',T(614,454,'','t t-num','data-v="alu"')));

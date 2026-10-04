@@ -23,9 +23,9 @@ SCENES.sm = () => {
   s += hot('sm-rt', [120,432,370,44], R(120,432,370,44,5,'m-accent'));
   s += hot('sm-shared', [510,432,370,44], R(510,432,370,44,5,'m-chip'));
   s += NOTE('Each quarter has its own scheduler, cores, tensor core and texture unit.');
-  return {svg: s + LAYER(LB(500,159,'Warp schedulers and dispatch',{for:'sm-scheduler',tone:'inv',size:14}) + LB(500,209,'Register file (256 KB)',{for:'sm-registers',tone:'inv',size:14}) +
-    LB(500,309,'Shader cores (128 in all)',{for:'sm-cores',tone:'inv',size:14}) + LB(500,353,'Tensor cores (4)',{for:'sm-tensor',tone:'inv',size:14}) +
-    LB(500,402,'Texture units (4)',{for:'sm-texture',tone:'inv',size:14}) + LB(305,454,'Ray-tracing core',{for:'sm-rt',tone:'inv',size:14}) + LB(695,454,'Shared memory + L1',{for:'sm-shared',tone:'inv',size:14}))};
+  return {svg: s + LAYER(LB(500,159,'Warp schedulers and dispatch',{for:'sm-scheduler',tone:'inv',size:16}) + LB(500,209,'Register file (256 KB)',{for:'sm-registers',tone:'inv',size:16}) +
+    LB(500,309,'Shader cores (128 in all)',{for:'sm-cores',tone:'inv',size:16}) + LB(500,353,'Tensor cores (4)',{for:'sm-tensor',tone:'inv',size:16}) +
+    LB(500,402,'Texture units (4)',{for:'sm-texture',tone:'inv',size:16}) + LB(305,454,'Ray-tracing core',{for:'sm-rt',tone:'inv',size:16}) + LB(695,454,'Shared memory + L1',{for:'sm-shared',tone:'inv',size:16}))};
 };
 
 /* ---------------- Inside a shader core: fused multiply-add ---------------- */
@@ -44,7 +44,7 @@ SCENES.fma = () => {
   s += hot('fma-adder', [470,270,140,110], R(470,270,140,110,8,'m-chip') + `<g class="bg">${T(540,336,'+','t t-lg t-inv t-mid')}</g>`);
   s += hot('fma-normalise', [690,270,170,110], R(690,270,170,110,8,'m-chip') + `<g class="bg">${T(775,336,'1.xxx','t t-sm t-inv t-mid')}</g>`);
   s += NOTE('Fused: nothing is rounded until the last step, so the result is more accurate.');
-  return {svg: s + LAYER(LB(305,158,'Multiplier',{for:'fma-multiplier'}) + LB(305,458,'Alignment shifter',{for:'fma-align',tone:'inv',size:13}).replace('y="458"','y="458"') + LB(540,250,'Adder',{for:'fma-adder'}) + LB(775,250,'Normalise and round',{for:'fma-normalise'}))};
+  return {svg: s + LAYER(LB(305,158,'Multiplier',{for:'fma-multiplier'}) + LB(305,458,'Alignment shifter',{for:'fma-align',tone:'inv',size:16}).replace('y="458"','y="458"') + LB(540,250,'Adder',{for:'fma-adder'}) + LB(775,250,'Normalise and round',{for:'fma-normalise'}))};
 };
 
 /* ---------------- VRAM: GDDR chips and HBM stacks ---------------- */
@@ -81,8 +81,8 @@ SCENES.gddr = () => {
   s += hot('gddr-signalling', [180,400,640,70], R(180,400,640,70,6,'m-chip') + T(500,442,'Fast clock, drivers, receivers, training','t t-xs t-inv t-mid'));
   let pins = ''; for (let i = 0; i < 24; i++) pins += R(196+i*26,550,10,22,1,'m-gold');
   s += `<g class="bg">${pins}${T(500,600,'Pins to the GPU','t t-xs t-mut t-mid')}</g>`;
-  return {svg: s + LAYER(LB(335,148,'Channel A',{for:'gddr-channels',tone:'inv',size:14}) + LB(665,148,'Channel B',{for:'gddr-channels',tone:'inv',size:14}) +
-    LB(500,364,'Banks and bank groups',{for:'gddr-banks',size:14}) + LB(500,488,'High-speed interface',{for:'gddr-signalling',tone:'inv',size:14}))};
+  return {svg: s + LAYER(LB(335,148,'Channel A',{for:'gddr-channels',tone:'inv',size:16}) + LB(665,148,'Channel B',{for:'gddr-channels',tone:'inv',size:16}) +
+    LB(500,364,'Banks and bank groups',{for:'gddr-banks',size:16}) + LB(500,488,'High-speed interface',{for:'gddr-signalling',tone:'inv',size:16}))};
 };
 
 /* ---------------- The GPU memory controller ---------------- */

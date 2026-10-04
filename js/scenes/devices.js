@@ -4,9 +4,31 @@
    monitor, keyboard, mouse, joystick, game controller, printer and webcam.
    The parts they draw are defined in data/devices-inside.js.
    ========================================================== */
-const ld = (x1,y1,x2,y2) => `<g class="bg"><path class="ln-thin" d="M${x1} ${y1}L${x2} ${y2}"/></g>`;   /* leader line from a part to its label */
-const TITLE = t => `<g class="bg">${T(90,70,t,'t t-sm t-mut')}</g>`;
+/* Part names in these diagrams are a quarter bigger than elsewhere, to read clearly, and point at their part:
+   o.to = [x, y] (or a list of them) is the point on the part; a short arrow runs there from the edge of the
+   name. The arrow belongs to the name, so it lights up and dims with it. */
+const DLB = (x, y, text, o = {}) => {
+  const size = Math.round((o.size || 16) * 1.25), s = LB(x, y, text, Object.assign({}, o, {size}));
+  if (!o.to) return s;
+  const f = v => Math.round(v * 10) / 10, a = o.anchor || 'middle';
+  const hw = plainLen(text) * size * 0.29, hh = size * 0.55, cx = a === 'start' ? x + hw : a === 'end' ? x - hw : x;
+  const ptr = (typeof o.to[0] === 'number' ? [o.to] : o.to).map(([tx, ty]) => {
+    const dx = tx - cx, dy = ty - y, k = Math.min(dx ? (hw + 5) / Math.abs(dx) : Infinity, dy ? (hh + 4) / Math.abs(dy) : Infinity);
+    const sx = cx + dx * k, sy = y + dy * k, len = Math.hypot(tx - sx, ty - sy) || 1, ux = (tx - sx) / len, uy = (ty - sy) / len;
+    const ex = tx - ux * 2, ey = ty - uy * 2, bx = ex - ux * 9, by = ey - uy * 9;
+    return `<path class="lbl-ptr" d="M${f(sx)} ${f(sy)}L${f(bx)} ${f(by)}"/>` +
+      `<path class="lbl-ptr-h" d="M${f(ex)} ${f(ey)}L${f(bx - uy * 4.5)} ${f(by + ux * 4.5)}L${f(bx + uy * 4.5)} ${f(by - ux * 4.5)}Z"/>`;
+  }).join('');
+  return s.replace(/<\/g>$/, ptr + '</g>');
+};
+const TITLE = t => `<g class="bg scene-title">${T(90,70,t,'t t-sm t-mut')}</g>`;   /* hidden while "How it works" plays: its note says more */
 const NOTE = t => `<g class="bg">${T(90,655,t,'t t-sm t-mut')}</g>`;
+/* the same note for the device diagrams, whose text is bigger: split into two lines when long */
+const DNOTE = t => {
+  if (t.length <= 72) return `<g class="bg">${T(90,700,t,'t t-sm t-mut')}</g>`;
+  let cut = t.lastIndexOf(' ', Math.ceil(t.length / 2) + 6); if (cut < 20) cut = t.indexOf(' ', t.length / 2);
+  return `<g class="bg">${T(90,690,t.slice(0, cut),'t t-sm t-mut')}${T(90,716,t.slice(cut + 1),'t t-sm t-mut')}</g>`;
+};
 /* an arrow along the bottom with a short caption under each stage: caps = [[x, text], ...] */
 const FLOW = (y, caps) => `<g class="bg"><path class="arr" d="M90 ${y}H900"/><path class="arr-h" d="M900 ${y-6}l10 6-10 6Z"/>${caps.map(([x,t]) => T(x,y+30,t,'t t-xs t-mut t-mid')).join('')}</g>`;
 const WAVE = (x, y1, y2, bulge) => `<path d="M${x} ${y1}Q${x+bulge} ${(y1+y2)/2} ${x} ${y2}" style="fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round"/>`;
@@ -19,12 +41,12 @@ SCENES.mic = () => {
   s += `<g class="bg"><polyline class="ln-trace" points="340,300 410,300"/><polyline class="ln-trace" points="500,300 560,300"/><polyline class="ln-trace" points="650,300 700,300"/><polyline class="ln-trace" points="760,300 850,300"/></g>`;
   let mesh = ''; [188,204,220].forEach(x => mesh += `<line class="ln-thin" x1="${x}" y1="210" x2="${x}" y2="390"/>`);
   s += hot('mic-capsule',[170,190,170,220], R(170,190,170,220,70,'m-metal-lt') + mesh + R(238,235,8,130,3,'m-accent') + R(276,235,12,130,2,'m-metal2'));
-  s += `<g class="bg">${T(242,435,'Diaphragm','t t-xs t-mut t-mid')}${T(322,435,'Backplate','t t-xs t-mut t-mid')}</g>`;
+  s += `<g class="bg">${T(254,435,'Diaphragm','t t-xs t-mut t-end')}${T(266,435,'Backplate','t t-xs t-mut')}</g>`;
   s += hot('mic-preamp',[410,270,90,60], R(410,270,90,60,6,'m-chip') + T(455,305,'AMP','t t-xs t-inv t-mid'));
   s += hot('mic-adc',[560,270,90,60], R(560,270,90,60,6,'m-chip') + T(605,305,'ADC','t t-xs t-inv t-mid'));
   s += hot('mic-usb',[700,262,220,76], R(700,270,60,60,6,'m-chip') + R(850,266,70,68,8,'m-metal') + R(868,284,34,10,2,'m-slot') + R(868,304,34,10,2,'m-slot'));
-  s += FLOW(560, [[255,'Sound waves'],[455,'Weak voltage'],[605,'Stronger voltage'],[730,'Digital numbers'],[885,'USB data']]);
-  return {svg: s + LAYER(LB(255,160,'Capsule',{for:'mic-capsule'}) + LB(455,205,'Preamp',{for:'mic-preamp'}) + LB(605,205,'ADC',{for:'mic-adc'}) + LB(810,205,'USB interface',{for:'mic-usb'}))};
+  s += FLOW(560, [[255,'Sound waves'],[455,'Weak voltage'],[590,'Stronger voltage'],[758,'Digital numbers'],[905,'USB data']]);
+  return {svg: s + LAYER(DLB(255,150,'Capsule',{for:'mic-capsule',to:[255,188]}) + DLB(455,205,'Preamp',{for:'mic-preamp',to:[455,268]}) + DLB(605,205,'ADC',{for:'mic-adc',to:[605,268]}) + DLB(810,205,'USB interface',{for:'mic-usb',to:[[735,268],[885,264]]}))};
 };
 
 /* ---------------- Inside the speakers ---------------- */
@@ -39,10 +61,10 @@ SCENES.speakers = () => {
   s += hot('speaker-cone',[796,180,120,260], P('M800 282L905 190V430L800 338Z','m-metal-lt') + R(898,178,16,22,4,'m-plastic') + R(898,420,16,22,4,'m-plastic') + R(796,282,10,56,3,'m-metal'));
   let wind = ''; [752,764,776,788].forEach(x => wind += `<line class="ln-thin" x1="${x}" y1="284" x2="${x}" y2="340"/>`);
   s += hot('speaker-coil',[744,276,60,72], R(744,280,56,64,3,'m-gold') + wind);
-  s += `<g class="bg">${WAVE(935,260,360,26)}${WAVE(955,235,385,34)}</g>` + ld(772,344,772,390);
+  s += `<g class="bg">${WAVE(935,260,360,26)}${WAVE(955,235,385,34)}</g>`;
   s += FLOW(560, [[175,'Digital audio'],[345,'Small voltage'],[540,'Strong current'],[735,'Coil moves'],[900,'Sound waves']]);
-  return {svg: s + LAYER(LB(180,207,'DAC',{for:'speaker-dac'}) + LB(335,207,'Amplifier',{for:'speaker-amp'}) + LB(685,412,'Magnet',{for:'speaker-magnet'}) +
-    LB(790,404,'Voice coil',{for:'speaker-coil'}) + LB(880,470,'Cone',{for:'speaker-cone'}))};
+  return {svg: s + LAYER(DLB(180,207,'DAC',{for:'speaker-dac',to:[180,268]}) + DLB(335,207,'Amplifier',{for:'speaker-amp',to:[335,260]}) + DLB(682,418,'Magnet',{for:'speaker-magnet',to:[682,382]}) +
+    DLB(795,406,'Voice coil',{for:'speaker-coil',to:[772,350]}) + DLB(882,456,'Cone',{for:'speaker-cone',to:[880,412]}))};
 };
 
 /* ---------------- Inside the monitor ---------------- */
@@ -57,9 +79,9 @@ SCENES.monitor = () => {
   let cf = ''; for (let i = 0; i < 10; i++) cf += R(406,170+i*30,14,30,0,'',`style="fill:${['#E5533D','#3CB371','#3B82F6'][i%3]}"`);
   s += hot('monitor-panel',[330,170,110,300], R(330,170,10,300,2,'m-metal-lt') + R(350,170,14,300,2,'m-panel') + R(374,170,22,300,2,'m-block') + cf + R(430,170,10,300,2,'m-metal-lt'));
   s += `<g class="bg"><path d="M700 330Q750 285 800 330Q750 375 700 330Z" class="m-panel"/>${C(750,330,17,'m-chip')}${C(750,330,6,'m-hub')}${T(750,400,'You','t t-sm t-mut t-mid')}</g>`;
-  s += `<g class="bg">${T(385,600,'Polarizer, transistor glass, liquid crystal, colour filter, polarizer','t t-xs t-mut t-mid')}</g>` + NOTE('The backlight makes the light. The liquid crystal only decides how much of it each subpixel lets through.');
-  return {svg: s + LAYER(LB(135,152,'Power board',{for:'monitor-power'}) + LB(135,492,'Controller board',{for:'monitor-controller'}) + LB(104,388,'Video inputs',{for:'monitor-ports',anchor:'end'}) +
-    LB(258,548,'Backlight',{for:'monitor-backlight'}) + LB(385,148,'LCD panel',{for:'monitor-panel'}))};
+  s += `<g class="bg">${T(385,592,'Polarizer, transistor glass, liquid crystal,','t t-xs t-mut t-mid')}${T(385,614,'colour filter, polarizer','t t-xs t-mut t-mid')}</g>` + DNOTE('The backlight makes the light. The liquid crystal only decides how much of it each subpixel lets through.');
+  return {svg: s + LAYER(DLB(135,140,'Power board',{for:'monitor-power',to:[135,178]}) + DLB(135,506,'Controller board',{for:'monitor-controller',to:[135,472]}) + DLB(72,368,'Inputs',{for:'monitor-ports',to:[84,407]}) +
+    DLB(258,560,'Backlight',{for:'monitor-backlight',to:[258,522]}) + DLB(385,134,'LCD panel',{for:'monitor-panel',to:[385,168]}))};
 };
 
 /* ---------------- Inside the keyboard ---------------- */
@@ -79,7 +101,7 @@ SCENES.keyboard = () => {
   s += hot('kb-usb',[850,410,70,120], R(860,420,50,40,4,'m-metal') + R(870,430,30,14,2,'m-slot') + `<path class="m-cable" d="M885 460V530" style="stroke-width:6"/>`);
   s += `<g class="bg">${T(395,232,'Pressed','t t-xs t-mut t-mid')}</g>`;
   s += FLOW(610, [[250,'Key pressed'],[480,'Row and column found'],[720,'Key code'],[880,'USB report']]);
-  return {svg: s + LAYER(LB(315,155,'Keys and switches',{for:'kb-keys'}) + LB(300,440,'Switch matrix',{for:'kb-matrix'}) + LB(885,296,'Controller',{for:'kb-controller'}) + LB(838,500,'USB interface',{for:'kb-usb',anchor:'end'}))};
+  return {svg: s + LAYER(DLB(315,150,'Keys and switches',{for:'kb-keys',to:[[235,188],[372,216]]}) + DLB(300,440,'Switch matrix',{for:'kb-matrix',to:[300,402]}) + DLB(885,282,'Controller',{for:'kb-controller',to:[885,316]}) + DLB(838,500,'USB interface',{for:'kb-usb',anchor:'end',to:[860,456]}))};
 };
 
 /* ---------------- Inside the mouse ---------------- */
@@ -93,9 +115,8 @@ SCENES.mouse = () => {
   s += hot('mouse-controller',[660,357,80,38], R(660,357,80,38,4,'m-chip') + T(700,381,'MCU','t t-xs t-inv t-mid'));
   s += hot('mouse-sensor',[380,395,150,90], R(420,417,90,26,3,'m-chip') + C(395,426,7,'m-on') + `<path class="ln-dash" d="M395 434L455 472L490 445"/>`);
   s += `<path class="m-cable" d="M770 406H940" style="stroke-width:6"/><g class="bg">${T(890,440,'To the computer','t t-xs t-mut t-mid')}</g>`;
-  s += ld(520,262,520,178);
-  s += NOTE('Light from the LED bounces off the desk into the sensor, which photographs the texture thousands of times a second.');
-  return {svg: s + LAYER(LB(282,125,'Buttons',{for:'mouse-buttons'}) + LB(520,160,'Scroll wheel',{for:'mouse-wheel'}) + LB(455,510,'Optical sensor',{for:'mouse-sensor'}) + LB(700,458,'Controller',{for:'mouse-controller'}))};
+  s += DNOTE('Light from the LED bounces off the desk into the sensor, which photographs the texture thousands of times a second.');
+  return {svg: s + LAYER(DLB(262,300,'Buttons',{for:'mouse-buttons',anchor:'end',to:[256,348]}) + DLB(520,226,'Scroll wheel',{for:'mouse-wheel',to:[520,262]}) + DLB(455,522,'Optical sensor',{for:'mouse-sensor',to:[455,487]}) + DLB(700,452,'Controller',{for:'mouse-controller',to:[700,397]}))};
 };
 
 /* ---------------- Inside the joystick ---------------- */
@@ -108,10 +129,10 @@ SCENES.joystick = () => {
   s += `<g class="bg"><polyline class="ln-trace" points="475,513 520,513 520,538 735,538 735,520"/></g>`;
   s += hot('joy-controller',[395,494,80,38], R(395,494,80,38,4,'m-chip') + T(435,517,'MCU','t t-xs t-inv t-mid'));
   s += `<path class="m-cable" d="M735 520H940" style="stroke-width:6"/>`;
-  s += `<g class="bg">${T(570,205,'Tilt in any direction','t t-xs t-mut')}</g>` + ld(322,528,322,575) + ld(678,528,678,575) + ld(435,532,435,575);
-  s += NOTE('Tilting the stick moves the sensors, and they report the angle as a voltage.');
-  return {svg: s + LAYER(LB(575,150,'Stick and gimbal',{for:'joy-stick',anchor:'start'}) + LB(415,180,'Trigger',{for:'joy-buttons',anchor:'end'}) + LB(300,395,'Buttons',{for:'joy-buttons'}) +
-    LB(322,592,'Position sensors',{for:'joy-sensors'}) + LB(678,592,'Position sensors',{for:'joy-sensors'}) + LB(450,592,'Controller',{for:'joy-controller'}))};
+  s += `<g class="bg">${T(570,205,'Tilt in any direction','t t-xs t-mut')}</g>`;
+  s += DNOTE('Tilting the stick moves the sensors, and they report the angle as a voltage.');
+  return {svg: s + LAYER(DLB(578,150,'Stick and gimbal',{for:'joy-stick',anchor:'start',to:[552,150]}) + DLB(392,180,'Trigger',{for:'joy-buttons',anchor:'end',to:[422,180]}) + DLB(300,378,'Buttons',{for:'joy-buttons',to:[300,412]}) + DLB(700,378,'Buttons',{for:'joy-buttons',to:[700,412]}) +
+    DLB(296,588,'Position sensors',{for:'joy-sensors',to:[318,530]}) + DLB(704,588,'Position sensors',{for:'joy-sensors',to:[682,530]}) + DLB(470,588,'Controller',{for:'joy-controller',to:[442,534]}))};
 };
 
 /* ---------------- Inside the game controller ---------------- */
@@ -125,10 +146,9 @@ SCENES.gamepad = () => {
   s += hot('pad-sticks',[[368,298,84,84],[548,298,84,84]], C(410,340,40,'m-metal2') + C(410,340,24,'m-metal') + C(590,340,40,'m-metal2') + C(590,340,24,'m-metal'));
   s += hot('pad-rumble',[[140,395,64,32],[796,395,64,32]], R(140,395,64,32,14,'m-metal2') + C(178,411,9,'m-hub') + R(796,395,64,32,14,'m-metal2') + C(822,411,9,'m-hub'));
   s += hot('pad-controller',[[470,215,60,44],[430,268,140,40],[486,160,28,20]], R(470,215,60,44,5,'m-chip') + R(430,268,140,40,8,'m-plastic') + T(500,293,'Battery','t t-xs t-inv t-mid') + R(486,164,28,12,3,'m-metal'));
-  s += ld(220,255,220,158) + ld(785,248,785,158) + ld(500,160,500,146) + ld(410,380,410,530) + ld(590,380,590,530) + ld(172,427,172,530) + ld(828,427,828,530);
-  s += NOTE('Every input is read by the controller board many times a second and sent to the computer.');
-  return {svg: s + LAYER(LB(220,140,'D-pad',{for:'pad-buttons'}) + LB(785,140,'Buttons',{for:'pad-buttons'}) + LB(500,130,'Controller and battery',{for:'pad-controller'}) +
-    LB(410,545,'Thumbstick',{for:'pad-sticks'}) + LB(590,545,'Thumbstick',{for:'pad-sticks'}) + LB(172,545,'Rumble motor',{for:'pad-rumble'}) + LB(828,545,'Rumble motor',{for:'pad-rumble'}))};
+  s += DNOTE('Every input is read by the controller board many times a second and sent to the computer.');
+  return {svg: s + LAYER(DLB(220,218,'D-pad',{for:'pad-buttons',to:[220,253]}) + DLB(785,212,'Buttons',{for:'pad-buttons',to:[785,246]}) + DLB(500,126,'Controller and battery',{for:'pad-controller',to:[500,162]}) +
+    DLB(410,434,'Thumbstick',{for:'pad-sticks',to:[410,382]}) + DLB(590,434,'Thumbstick',{for:'pad-sticks',to:[590,382]}) + DLB(172,540,'Rumble motor',{for:'pad-rumble',to:[172,429]}) + DLB(828,540,'Rumble motor',{for:'pad-rumble',to:[828,429]}))};
 };
 
 /* ---------------- Inside the printer ---------------- */
@@ -143,9 +163,8 @@ SCENES.printer = () => {
   s += hot('printer-carriage',[250,180,510,70], R(250,190,500,10,5,'m-metal2') + `<path class="ln-thin" d="M262 232H738"/>` + C(262,232,12,'m-metal') + C(738,232,16,'m-chip') + C(738,232,6,'m-hub') + R(440,180,100,64,8,'m-chip'));
   let ink = ''; ['#20B5E6','#E4419B','#F6D523','#2B2B2B'].forEach((c,i) => ink += R(444+i*24,246,20,30,3,'',`style="fill:${c}"`));
   s += hot('printer-cartridge',[440,244,100,40], ink);
-  s += ld(238,450,220,450) + ld(280,304,220,304) + ld(280,600,220,600) + ld(750,205,780,205) + ld(540,262,780,262);
-  return {svg: s + LAYER(LB(215,450,'Controller board',{for:'printer-board',anchor:'end'}) + LB(215,304,'Paper rollers',{for:'printer-rollers',anchor:'end'}) + LB(215,600,'Paper rollers',{for:'printer-rollers',anchor:'end'}) +
-    LB(785,205,'Carriage and belt',{for:'printer-carriage',anchor:'start'}) + LB(785,262,'Ink cartridges',{for:'printer-cartridge',anchor:'start'}))};
+  return {svg: s + LAYER(DLB(212,450,'Controller board',{for:'printer-board',anchor:'end',to:[236,450]}) + DLB(212,304,'Paper rollers',{for:'printer-rollers',anchor:'end',to:[278,304]}) + DLB(212,600,'Paper rollers',{for:'printer-rollers',anchor:'end',to:[278,600]}) +
+    DLB(785,205,'Carriage and belt',{for:'printer-carriage',anchor:'start',to:[760,205]}) + DLB(566,262,'Ink cartridges',{for:'printer-cartridge',anchor:'start',to:[542,262]}))};
 };
 
 /* ---------------- Inside the webcam ---------------- */
@@ -161,15 +180,18 @@ SCENES.webcam = () => {
   s += hot('webcam-isp',[520,280,80,100], R(520,280,80,100,6,'m-chip') + T(560,335,'ISP','t t-xs t-inv t-mid'));
   s += hot('webcam-usb',[[650,290,80,80],[212,222,28,28]], R(650,290,80,80,6,'m-chip') + T(690,335,'USB','t t-xs t-inv t-mid') + C(226,236,8,'m-on'));
   s += `<path class="m-cable" d="M730 330H940" style="stroke-width:7"/>`;
-  s += ld(226,222,226,175) + ld(315,240,315,175) + ld(433,260,433,175) + ld(560,280,560,175) + ld(690,290,690,175);
   s += FLOW(560, [[170,'Light'],[315,'Focused'],[435,'Pixel values'],[560,'Video'],[690,'USB data']]);
-  return {svg: s + LAYER(LB(226,160,'LED',{for:'webcam-usb'}) + LB(315,160,'Lens',{for:'webcam-lens'}) + LB(433,160,'Sensor',{for:'webcam-sensor'}) + LB(560,160,'Image processor',{for:'webcam-isp'}) + LB(690,160,'USB and LED',{for:'webcam-usb'}))};
+  return {svg: s + LAYER(DLB(226,160,'LED',{for:'webcam-usb',to:[226,220]}) + DLB(315,160,'Lens',{for:'webcam-lens',to:[315,238]}) + DLB(425,160,'Sensor',{for:'webcam-sensor',to:[435,268]}) + DLB(562,160,'Image processor',{for:'webcam-isp',to:[560,278]}) + DLB(712,160,'USB chip',{for:'webcam-usb',to:[690,288]}))};
 };
 
-/* The "How it works" controls sit at the bottom right of these diagrams: each gets an empty strip
-   along the bottom of its drawing area (780 units tall instead of 700), so the notes and captions
-   near the bottom never end up under the controls. */
+/* Room for "How it works": its step note sits along the top of these diagrams while it plays, and its
+   controls at the bottom right. */
 ['mic', 'speakers', 'monitor', 'keyboard', 'mouse', 'joystick', 'gamepad', 'printer', 'webcam'].forEach(k => {
   const draw = SCENES[k];
-  SCENES[k] = n => Object.assign({vb: [1000, 780]}, draw(n));
+  /* At rest the drawing is big, with just a slim strip at the bottom for the "How it works" button. When the
+     animation starts, the view widens smoothly to vbPlay (engine.js), leaving room for the caption at the
+     top and the controls at the bottom. Phones and tablets put the caption below the diagram, so there the
+     view stays as it is, with a taller strip for the controls. */
+  SCENES[k] = n => Object.assign({cls: 'devscene', vb: innerWidth <= 980 ? [0, 0, 1000, 850] : [0, 0, 1000, 770],
+    vbPlay: innerWidth <= 980 ? null : [0, -120, 1000, 900]}, draw(n));
 });

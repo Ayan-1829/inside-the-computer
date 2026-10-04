@@ -14,6 +14,10 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 7.3.2 | 2026-10-05 | — | Real site address in every page's links and previews; Google Search Console verification tag |
+| 7.3.1 | 2026-09-29 | — | Device diagrams: arrows from each name to its part, names moved closer; step captions are one or two plain lines with no heading |
+| 7.3.0 | 2026-09-28 | — | Five text sizes across the site (8086 excepted); bigger text in the nine device diagrams, which shrink smoothly while a step's note shows; louder sounds; a louder, 15-second first-visit intro |
+| 7.2.0 | 2026-09-28 | — | The nine devices' "How it works" is narrated: each step's title and explanation are read aloud in a natural voice (Google's first), and the next step waits for the voice |
 | 7.1.2 | 2026-09-28 | — | The "How it works" controls no longer cover text in the device diagrams; the intro is about 19 seconds |
 | 7.1.1 | 2026-09-28 | — | Videos: no "Play" label (a click on the item opens it); the page behind the video window is darker and blurred |
 | 7.1.0 | 2026-09-28 | — | Intro: now 25 seconds, with the OS loading from storage into RAM, and a final wide shot that shows the whole system; chip and gate diagrams centred; focus darker and more blurred; no yellow tint in the window corners |
@@ -90,6 +94,134 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 ---
 
 ## Versions
+
+### 7.3.2: Real site address, Google verification
+
+**Prompt** (2026-10-05, exact time not in the saved record):
+> modify the meta tags where the demo links are given.
+>
+> original site link: https://ayan-1829.github.io/inside-the-computer/
+>
+> push it to github
+>
+> I have also added google search meta link. Guide me what to do next
+
+**Changes**
+- **`build/site.config.json` now holds the real address**, `https://ayan-1829.github.io/inside-the-computer/`, instead of the placeholder `https://example.com/`. Every build now writes the real address into each of the 220 pages:
+  - the canonical link and `og:url`
+  - `og:image` and `twitter:image`
+  - the sitemap link and the structured data (JSON-LD)
+  - and into `sitemap.xml` and `robots.txt`
+
+  Earlier pushes had the right address only because it was given when building; a plain `node build/build.mjs` gave example.com.
+- **The Google Search Console tag** (`google-site-verification`) was added by hand to the built `index.html`, where the next build would have removed it. It is now in `build/template.html`, so every page carries it. The token is public by design: it only proves ownership and grants nothing.
+
+### 7.3.1: Arrows to the parts, plainer captions
+
+**Prompts** (2026-09-29, exact times not in the saved record):
+> There are components name written under the components, Use arrow to them for better clarity, try to keep them closer.
+>
+> The captions have one short heading. then it tell the details that is ambiguous. Remove the short sentence at the begining and just tell one/two lines describing the step.
+
+**Changes**
+- **Arrows in the nine device diagrams**:
+  - Every part name has a short arrow from the name to its part. Where one name covers two things, it has two arrows: the keyboard's two keys, and the microphone's USB chip and connector.
+  - The arrows replace the old thin leader lines.
+  - The arrow belongs to the name, so it lights up on hover and dims with the name when another part is in focus.
+  - `DLB(..., {to: [x, y]})` in `js/scenes/devices.js`.
+- **Names moved closer** to their parts, about 20 to 40 drawing units away. Other changes:
+  - The joystick's right-hand button now has its own "Buttons" name.
+  - The webcam's "USB and LED" is now "USB chip" (the LED has its own name).
+  - The mouse's "up to 10,000 pictures a second" label moved down, clear of "Optical sensor".
+- **Captions without a heading**:
+  - A step's caption is now just its step number and one or two lines that say what happens, for example "The power board supplies the low voltages and drives the LED backlight, the source of all the light."
+  - All 45 captions were rewritten, to at most 107 characters. Before, they were up to 185 characters after a heading.
+  - The narrator reads the same lines, so the voice matches the caption.
+- Checked for every step of the nine devices at 1440×860, 1280×720, 1100×700 and on a phone: 0 overlaps.
+
+### 7.3.0: Five text sizes, bigger device text, louder sound
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> For the 9 components, enlarge the texts (make sure no text overlap with each other). Make the whole frame smaller when the caption appears (with a smooth animation) otherwise keep the components big as before). Try to make keep the texts big enough to be read clearly.
+>
+> There are different font sizes for whole website. That makes it unprofessional. Use 4/5 font sizes for all the components, and adjust the texts within this limit. Keep the lowest size big enough (similar as claude website's lowest size). Adjust all the sections with the font sizes. Increase the sound of the components. Intro should have more sound.
+>
+> skip the 8086 as it is tightly fitted.
+>
+> Remove the continuous buzzing sound at intro. Make the intro a bit slower (15 seconds in total).
+>
+> remove the swiping sound in intro while chaning the scene. Only keep the component sounds.
+>
+> Make the intro parts sound louder.
+>
+> The click sound is okay. but the last sounds need to be louder a bit. Also reduce the speed of the voice of the persons a bit. show me the code position to edit these
+
+**Changes**
+- **Five text sizes for the whole site**, set once at the top of `css/styles.css`:
+  - Page text: 13, 15, 17, 20 and 30 px (`--fs-1` to `--fs-5`). The smallest, 13 px, is kept for small print such as hints, counters and the footer. Before this there were 29 different sizes.
+  - Diagram text: 16, 18, 20, 24 and 36 drawing units (`--ts-1` to `--ts-5`). A diagram is shown at about 0.85 of its size, so these come out close to the same five sizes on screen.
+  - Every rule, the diagrams' own inline sizes, and the feedback box now use these sizes. The smallest diagram text went up from 11–15 to 16.
+  - **The 8086 is left as it was**: the simulator page and the ALU's 8086 mode keep their own sizes, because they are packed tight.
+- **Text fitted to the new sizes**:
+  - The chips' "Inside the chip" block diagrams have more space between lines.
+  - The 555's block notes are wrapped onto more lines.
+  - Other fixes: the motherboard's "CMOS battery" name, the ALU's "Operation decoder", the CPU decoder's values, the DRAM "Column select + data" block, the memory-controller box and the NAND page rows.
+  - Checked on every diagram and view at 1280×720 and on a phone: text against text, text running off the drawing, and text wider than, or sticking out of, its box. There are no new problems. The two already there are in the 8086 diagrams, which were left alone.
+- **The nine device diagrams**:
+  - Part names are a quarter bigger, and small texts and animation labels are bigger.
+  - While "How it works" plays, the drawing smoothly shrinks to make room for the step's note, then grows back when it ends.
+  - The notes along the bottom wrap onto two lines when they are long.
+  - Labels were moved so nothing overlaps. The monitor's port is now called "Inputs", so its name fits on a phone.
+  - Checked for every step at 1440×860, 1280×720, 1100×700 and on a phone: 0 overlaps.
+- **Louder sound**:
+  - The effects are about twice as loud at the same slider position.
+  - The limiter is firmer, so loud moments stay clean.
+  - The voices are louder too (the browser's maximum at 100 %).
+- **A louder intro**:
+  - The first-visit film plays louder than the other animations: `setBoost(15)` in `js/engine.js` (set by hand after 2.6 was tried); the limiter holds the loudest moments down.
+  - It plays only the parts' own sounds.
+  - Afterwards everything returns to the normal level.
+  - The last sounds of the boot are louder everywhere they play: the firmware and OS data ticks (0.035 to 0.06), the POST beep (0.1 to 0.17) and the welcome chime (0.07 to 0.12 per note).
+- **The demonstration voices speak slower**: the person talking into the microphone and the voice from the speakers are at 0.9 of normal speed (`DEMO_RATE` in `js/sfx.js`). The narrator is unchanged.
+  - A low background chord under the whole film, and a rush of air on each camera move, were tried and then removed.
+- **The intro takes about 15 seconds** (measured 14.8 s): the dots move at 2.7 times normal speed, and each shot holds 1.1 seconds (`PACE` in `js/engine.js`).
+
+### 7.2.0: "How it works" is narrated
+
+**Prompts** (2026-09-28, exact times not in the saved record):
+> For all the animations, add voices (google voice for more clear sounds). When how it works button is clicked, it should describe each step.
+>
+> Please try to add the voices again for the 9 components
+>
+> For the mic and speakers, use different voices for audio recording and delevering to the speaker. Increse the speed of the speech and use less gap between lines.
+>
+> Some captions are overlapping the components beneath it. Try to avoid them.
+>
+> For each speech, start with a intro (don't need to add caption on top) like (This is a simplified internal structure of a monitor... it is an output device that helps us... Let's understand how it works....). Then start the focus on each components in each step with the caption on top) For the intro, try to end the animation in 12 seconds. Show me the place where the speed of the speech is controlled. I will adjust myself.
+
+**Changes**
+- **A spoken introduction for each device**: "How it works" first says what the diagram shows and what the device does, for example "This is a simplified inside view of a monitor… A monitor is an output device: it turns the computer's video signal into the picture you see. Let's see how it works." Meanwhile the whole diagram shows, with no caption and nothing in focus. Then step 1 starts, with its caption on top and its parts in focus. "Next step" skips the introduction.
+- **Nothing covered**:
+  - Seven animation labels that sat on a part, board or case were moved to clear space: "× 100 to 1,000", "digital audio", the joystick's "X/Y: 0 to 3.3 V" and "X = 812, Y = 498", "drops of a few picolitres", and the webcam's two labels.
+  - The device diagrams now have an empty strip at the top as well, so the step note never covers a part or a name. The diagram's small grey subtitle is hidden while the animation plays, since the note says more.
+  - On phones and tablets, where the note sits below the diagram, the strip is at the bottom only, and taller, so the controls never cover the diagram's bottom note there either.
+  - Checked for every step of the nine devices at 1440×860, 1280×720 and 1100×700 (the note and the controls against every part, name and label) and on a phone (the controls).
+- **The first-visit intro takes about 12 seconds** (measured 11.9 s): dots at 3.4 times normal speed, and each shot holds 0.85 seconds.
+- **Speech speed in one place**: `NARRATION_RATE`, `DEMO_RATE` and `PIECE_CHARS` at the top of `js/sfx.js`, and `STEP_GAP_MS` (the pause between steps) in `js/engine.js`.
+- **Three voices**: the narrator, the person speaking into the microphone, and the voice coming out of the speakers are different voices where the browser has enough natural ones. In Chrome, for example, that is Google US English, then Google UK English Female, then Google UK English Male. Where there are fewer, the demonstrations are told apart by pitch: higher going into the microphone, deeper from the speakers.
+- **Brisker, with fewer pauses**: the narration speaks at 1.15 times normal speed. Sentences are grouped into pieces of up to about 220 characters instead of being sent one by one, so a step is usually one smooth piece. The pause before the next step is 0.25 seconds, and a step now stays at least 2.5 seconds.
+- **Every step of the nine devices' "How it works" is read aloud**, its title and then its explanation. The voice is the best natural one available, Google's first, then Microsoft's "Natural" voices, then Apple's, and never a robotic one. Where there is none, or the sound is muted, the steps play as before, without narration.
+- **Paced by the voice**: the next step starts once the narration has finished and the step has been on screen for a minimum time, so nothing is cut off. Without narration each step stays for its reading time, as before.
+- **The microphone and speakers keep their demonstration voice** ("Hello! Can you hear me?…"): it is spoken first, then the narration.
+- **Clear speech**:
+  - The sound effects are turned down to about a third while the voice speaks.
+  - Symbols and units are spoken as words: "PWR_SW#" as "power switch", "+12 V" as "12 volts", "0x04" as "hex 04", "mV", "GHz" and "ms" in full, and "→" as "to".
+  - Long explanations are split into pieces, because Chrome's Google voices stop by themselves after about 15 seconds of one long passage.
+- **Controls**:
+  - Pause pauses the voice too, and Play goes on from there.
+  - Back and Next step speak the new step. While paused, its narration is heard in full and the effects hold.
+  - Stop, Escape or opening another part silence it, and the volume slider sets its level too.
+- The first-visit intro, the power-on walkthrough and the 8086 simulation are not narrated.
 
 ### 7.1.2: Controls clear of the text, a 19-second intro
 

@@ -53,7 +53,8 @@ function buildLayer(ownId){
   const vb = sc.vb || [1000,700];
   svg.setAttribute('viewBox', (vb.length === 4 ? vb : [0, 0].concat(vb)).join(' '));
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
-  svg.setAttribute('class','layer scene');
+  svg.setAttribute('class','layer scene' + (sc.cls ? ' ' + sc.cls : ''));
+  if (sc.vbPlay) svg.dataset.vbPlay = sc.vbPlay.join(' ');   /* a view that makes room for an animation's caption and controls */
   svg.setAttribute('role','group');
   svg.setAttribute('aria-label', n.name + ', interactive diagram');
   svg.innerHTML = sc.svg;
@@ -751,7 +752,7 @@ const stepNote = (() => {
     show(step, title, text, o = {}){
       clearTimeout(fadeTimer);
       el.querySelector('.fn-step').textContent = step;
-      el.querySelector('.fn-txt > b').textContent = title ? title + (/[.!?:]$/.test(title) ? '' : '.') : '';
+      const b = el.querySelector('.fn-txt > b'); b.textContent = title ? title + (/[.!?:]$/.test(title) ? '' : '.') : ''; b.hidden = !title;
       el.querySelector('.fn-txt > span').innerHTML = fmt(text || '');
       el.classList.toggle('center', !!o.center);
       el.hidden = false; place();
@@ -1526,6 +1527,22 @@ var devStop = () => {}, devSync = () => {};                                /* se
   S.syncButtons();
   const animFor = () => (typeof DEVICE_ANIMS !== 'undefined' && curOwner && N[curOwner] && DEVICE_ANIMS[N[curOwner].scene]) || null;
 
+  /* The view of the diagram, changed smoothly: big at rest, and smaller while the animation plays, to make
+     room for its caption at the top and its controls at the bottom (a scene's vbPlay; see scenes/devices.js) */
+  function viewTo(lay, to, ms){
+    const parse = v => String(v).trim().split(/[\s,]+/).map(Number);
+    const from = parse(lay.getAttribute('viewBox')), end = parse(to);
+    if (reduce.matches || !ms){ lay.setAttribute('viewBox', end.join(' ')); return; }
+    cancelAnimationFrame(lay._vbRaf);
+    const t0 = performance.now(), ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    const frame = now => {
+      const k = Math.min(1, (now - t0) / ms), e = ease(k);
+      lay.setAttribute('viewBox', from.map((f, i) => (f + (end[i] - f) * e).toFixed(2)).join(' '));
+      if (k < 1) lay._vbRaf = requestAnimationFrame(frame);
+    };
+    lay._vbRaf = requestAnimationFrame(frame);
+  }
+
   /* dv: the animation playing {anim, lay, i, timer, paused, fx, lit} */
   let dv = null;
   const prevSim = simRunning;
@@ -1545,6 +1562,7 @@ var devStop = () => {}, devSync = () => {};                                /* se
     if (dv.lit.length) dv.lay.classList.add('select-dim');
   }
   const dwell = st => Math.min(9000, Math.max(4500, 1800 + st.x.replace(/\*\*/g, '').length * 38));   /* time to read the note */
+  const STEP_GAP_MS = 250;           /* the pause between one step's narration ending and the next step (speech speed: see sfx.js) */
 
   function show(i){
     clearTimeout(dv.timer);
@@ -1562,21 +1580,43 @@ var devStop = () => {}, devSync = () => {};                                /* se
     dv.fx = g;
     light(st.parts || []);
     S.cue(st.sfx);
-    stepNote.show(`${dv.i + 1}/${steps.length}${dv.paused ? ' · paused' : ''}`, st.t, st.x);
-    if (!dv.paused) dv.timer = setTimeout(() => dv && show(dv.i + 1), dwell(st));
+    stepNote.show(`${dv.i + 1}/${steps.length}${dv.paused ? ' · paused' : ''}`, '', st.x);   /* the caption alone: no heading */
+    /* The step is read aloud (after any demonstration voice, such as the microphone's "Hello!"). The next
+       step starts once the narration has ended and the step has been on screen for at least 3 seconds.
+       Without a natural voice (or with the sound muted) the narration ends at once, and the step stays
+       for its reading time instead. */
+    const tok = dv.tok = (dv.tok || 0) + 1, began = Date.now();
+    dv.narrDone = false; dv.minDone = false;
+    const mine = () => dv && dv.tok === tok;
+    dv.timer = setTimeout(() => { if (mine()){ dv.minDone = true; advance(); } }, 2500);
+    S.narrate ? S.narrate(st.x, () => {
+      if (!mine()) return;
+      dv.narrDone = true;
+      if (Date.now() - began < 400){                       /* nothing was spoken: give it time to be read */
+        clearTimeout(dv.timer); dv.minDone = false;
+        dv.timer = setTimeout(() => { if (mine()){ dv.minDone = true; advance(); } }, dwell(st));
+      } else setTimeout(() => { if (mine()) advance(); }, STEP_GAP_MS);   /* a short breath before the next step */
+    }) : (dv.narrDone = true);
     sync();
   }
+  /* go on to the next step, if this one is done and the animation isn't paused */
+  function advance(){ if (dv && !dv.paused && dv.narrDone && dv.minDone) show(dv.i + 1); }
   function start(){
     const anim = animFor();
     if (!anim || !layer || dv) return;
     powerStop();
     tipPinned = false; hideTip(); setSelected(null); setHover(null); clearTimeout(tipTimer);
     dv = {anim, lay: layer, i: 0, timer: null, paused: false, fx: null, lit: []};
+    if (layer.dataset.vbPlay){ dv.vbRest = layer.getAttribute('viewBox'); viewTo(layer, layer.dataset.vbPlay, 550); }
     if (typeof dv.lay.unpauseAnimations === 'function') dv.lay.unpauseAnimations();
     if (window.trackEvent) window.trackEvent('how_it_works', N[curOwner].scene);
     /* a device that speaks later on (the speakers): get the voice ready now, during this click */
     if (anim.steps.some((st, i) => i > 0 && (st.sfx || []).some(e => /^say/.test(e))) && S.warm) S.warm();
-    show(0);
+    /* first a spoken introduction, over the whole diagram (no caption, nothing in focus), then step 1 */
+    if (anim.intro && S.narrate){
+      const me = dv; dv.intro = true; sync();
+      S.narrate(anim.intro, () => { if (dv === me && dv.intro){ dv.intro = false; show(0); } });
+    } else show(0);
   }
   function finish(){
     if (!dv) return;
@@ -1584,6 +1624,7 @@ var devStop = () => {}, devSync = () => {};                                /* se
     if (dv.fx) dv.fx.remove();
     unlight();
     if (typeof dv.lay.unpauseAnimations === 'function') dv.lay.unpauseAnimations();
+    if (dv.vbRest && dv.lay === layer) viewTo(dv.lay, dv.vbRest, 550);   /* back to the big view */
     dv = null;
     S.stop();
     stepNote.hide();
@@ -1594,15 +1635,22 @@ var devStop = () => {}, devSync = () => {};                                /* se
     dv.paused = !dv.paused;
     const lay = dv.lay;
     if (dv.paused){ clearTimeout(dv.timer); if (lay.pauseAnimations) lay.pauseAnimations(); S.pause(); }
-    else { if (lay.unpauseAnimations) lay.unpauseAnimations(); S.resume(); dv.timer = setTimeout(() => dv && show(dv.i + 1), 2500); }
+    else {                                                  /* go on once the narration (resumed here) has ended */
+      if (lay.unpauseAnimations) lay.unpauseAnimations(); S.resume();
+      clearTimeout(dv.timer); dv.minDone = false;
+      const tok = dv.tok;
+      dv.timer = setTimeout(() => { if (dv && dv.tok === tok){ dv.minDone = true; advance(); } }, 1500);
+    }
     stepNote.step(`${dv.i + 1}/${dv.anim.steps.length}${dv.paused ? ' · paused' : ''}`);
     sync();
   }
   function stepBy(d){
     if (!dv){ if (d > 0){ start(); if (dv) pause(); } return; }       /* Next step from rest: start paused on step 1 */
     if (dv.paused && dv.lay.unpauseAnimations){ dv.lay.unpauseAnimations(); }
+    if (dv.intro){ if (d > 0){ dv.intro = false; show(0); } return; }   /* skip the introduction */
     show(dv.i + d);
-    if (dv && dv.paused && dv.lay.pauseAnimations){ setTimeout(() => { if (dv && dv.paused){ dv.lay.pauseAnimations(); S.pause(); } }, 1500); }   /* let the new step's motion (and sound) play briefly */
+    /* while paused, the new step's motion and sounds play briefly and then hold; its narration is heard in full */
+    if (dv && dv.paused && dv.lay.pauseAnimations){ setTimeout(() => { if (dv && dv.paused){ dv.lay.pauseAnimations(); (S.pauseFx || S.pause)(); } }, 1500); }
   }
   function sync(){
     const anim = animFor();
@@ -1702,7 +1750,7 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
     const STEPS = [1, 2, 3, 5, 6, 7, 8];                /* button, the chip's PS_ON# to the PSU, main power, firmware, POST, loading the OS, desktop */
     const SHOTS = {1: ['power-button', 'chipset'], 2: ['chipset', 'psu'], 3: ['psu', 'motherboard'], 5: ['cpu', 'bios'], 6: ['monitor', 'webcam'],
       7: ['bios', 'storage', 'ram'], 8: null};
-    const PACE = {speed: 2.2, hold: 1550};              /* dot speed (× normal) and how long each shot holds: about 19 s in all */
+    const PACE = {speed: 2.7, hold: 1100};              /* dot speed (× normal) and how long each shot holds: about 15 s in all */
     const lay = layer, st = stage.style;
     const EASE = 'cubic-bezier(.45,0,.2,1)';
     html.classList.add('intro-cinema');
@@ -1732,6 +1780,9 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
         const r = e.getBoundingClientRect(); x1 = Math.min(x1, r.left); y1 = Math.min(y1, r.top); x2 = Math.max(x2, r.right); y2 = Math.max(y2, r.bottom); });
       if (x1 < Infinity) rects[k] = {cx: (x1 + x2) / 2 - box.left, cy: (y1 + y2) / 2 - box.top, w: x2 - x1, h: y2 - y1};
     });
+    /* the film's sounds (the parts' own) are louder than in the other animations */
+    const snd = typeof SFX !== 'undefined' ? SFX : null;
+    if (snd) snd.setBoost(4);
     const shoot = i => {
       lay.style.transition = `transform 1.2s ${EASE}`;
       const r = rects[i], W = box.width, H = box.height;
@@ -1750,6 +1801,7 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
     const end = () => {
       removeEventListener('keydown', onEsc, true);
       skip.remove();
+      if (snd) setTimeout(() => snd.setBoost(1), 2500);   /* after the welcome chime */
       /* pull back to the whole scene and lose the bars, then glide back into the page */
       lay.style.transition = `transform .9s ${EASE}`; lay.style.transform = '';
       film.classList.remove('on');

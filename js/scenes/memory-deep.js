@@ -20,13 +20,13 @@ SCENES.dram = () => {
   s += hot('dram-row-decoder', boxD, dec, {pad:3, rx:4});
   s += hot('dram-sense-amps', boxA, amps, {pad:3, rx:4});
   s += hot('dram-control', [126,292,270,66], R(126,292,270,66,5,'m-die-block') + T(261,325,'Command decoder, refresh, timing','t t-xs t-die t-mid'));
-  s += hot('dram-column-io', [416,292,186,66], R(416,292,186,66,5,'m-die-block') + T(509,325,'Column select, data path','t t-xs t-die t-mid'));
+  s += hot('dram-column-io', [416,292,186,66], R(416,292,186,66,5,'m-die-block') + T(509,318,'Column select + data','t t-xs t-die t-mid'));
   s += hot('dram-io', [622,292,110,66], R(622,292,110,66,5,'m-die-block') + T(677,325,'I/O, data pins','t t-xs t-die t-mid'));
   s += ld(750,385,732,385) + ld(275,113,275,138);
   s += FLOW(600, [[170,'Command + address'],[330,'Row opens'],[490,'Sense amps read the row'],[660,'Column picks bits'],[850,'Data on the pins']]);
   return {svg: s + LAYER(LB(191,167,'Memory banks',{for:'dram-banks',tone:'inv'}) + LB(270,104,'Row decoders',{for:'dram-row-decoder'}) +
-    LB(768,385,'Sense amplifiers',{for:'dram-sense-amps',anchor:'start'}) + LB(261,343,'Control',{for:'dram-control',tone:'inv',size:13}) +
-    LB(509,343,'Column I/O',{for:'dram-column-io',tone:'inv',size:13}) + LB(677,343,'I/O',{for:'dram-io',tone:'inv',size:13}))};
+    LB(768,385,'Sense amplifiers',{for:'dram-sense-amps',anchor:'start'}) + LB(261,343,'Control',{for:'dram-control',tone:'inv',size:16}) +
+    LB(509,343,'Column I/O',{for:'dram-column-io',tone:'inv',size:16}) + LB(677,343,'I/O',{for:'dram-io',tone:'inv',size:16}))};
 };
 
 /* ---------------- Inside one DRAM cell ---------------- */
@@ -68,13 +68,13 @@ SCENES.sram = () => {
 /* ---------------- Inside the SPD chip ---------------- */
 SCENES.spd = () => {
   let s = TITLE('SPD hub chip on a memory module (simplified)');
-  s += `<g class="bg">${R(330,230,300,200,10,'m-chip')}${R(760,260,140,140,8,'m-board')}${T(830,336,'Motherboard','t t-sm t-inv t-mid')}${T(830,358,'memory controller','t t-xs t-inv t-mid')}</g>`;
+  s += `<g class="bg">${R(330,230,300,200,10,'m-chip')}${R(745,260,170,140,8,'m-board')}${T(830,336,'Motherboard','t t-sm t-inv t-mid')}${T(830,358,'memory controller','t t-xs t-inv t-mid')}</g>`;
   s += hot('spd-eeprom', [350,270,120,120], R(350,270,120,120,6,'m-panel') + T(410,318,'Speed','t t-xs t-mid') + T(410,338,'Timings','t t-xs t-mid') + T(410,358,'Size, maker','t t-xs t-mid'));
   s += hot('spd-sensor', [490,270,120,50], R(490,270,120,50,6,'m-panel') + T(550,301,'Thermometer','t t-xs t-mid'));
   s += hot('spd-bus', [[490,340,120,50],[610,340,150,40]], R(490,340,120,50,6,'m-panel') + T(550,371,'Bus interface','t t-xs t-mid') +
     `<path class="ln" d="M610 352H760"/><path class="ln" d="M610 376H760"/>${T(700,346,'SDA','t t-xs t-mut t-mid')}${T(700,394,'SCL','t t-xs t-mut t-mid')}`);
   s += FLOW(560, [[410,'Stored table'],[550,'Temperature'],[690,'Two-wire bus'],[830,'Read at start-up']]);
-  return {svg: s + LAYER(LB(410,250,'EEPROM',{for:'spd-eeprom',size:14,tone:'inv'}) + LB(550,250,'Sensor',{for:'spd-sensor',size:14,tone:'inv'}) + LB(690,318,'Serial bus',{for:'spd-bus',size:14}))};
+  return {svg: s + LAYER(LB(410,250,'EEPROM',{for:'spd-eeprom',size:16,tone:'inv'}) + LB(550,250,'Sensor',{for:'spd-sensor',size:16,tone:'inv'}) + LB(690,318,'Serial bus',{for:'spd-bus',size:16}))};
 };
 
 /* ---------------- The CPU cache hierarchy ---------------- */
@@ -101,7 +101,7 @@ SCENES.nand = () => {
   let blocks = ''; for (let r = 0; r < 6; r++) for (let c = 0; c < 4; c++) blocks += R(106 + c*58, 166 + r*46, 50, 38, 4, (r === 2 && c === 1) ? 'm-on' : 'm-chip');
   s += `<g class="bg">${blocks}<path class="ln-dash" d="M212 250L420 150M212 288L420 400"/></g>`;
   s += hot('nand-block', [420,150,220,250], R(420,150,220,250,8,'m-panel'));
-  let pages = ''; for (let i = 0; i < 8; i++) pages += R(430,160 + i*28,200,20,3,'m-chip') + T(530,174 + i*28,'Page ' + (i+1),'t t-xs t-inv t-mid');
+  let pages = ''; for (let i = 0; i < 8; i++) pages += R(430,158 + i*28,200,24,3,'m-chip') + T(530,176 + i*28,'Page ' + (i+1),'t t-xs t-inv t-mid');
   s += hot('nand-page', [430,160,200,224], pages, {pad:4});
   let bl = ''; [450,490,530,570,610].forEach(x => bl += `<line class="ln-thin" x1="${x}" y1="400" x2="${x}" y2="430"/>`);
   s += bl + hot('nand-buffer', [420,430,220,40], R(420,430,220,40,6,'m-chip') + T(530,455,'Page buffer','t t-xs t-inv t-mid'));

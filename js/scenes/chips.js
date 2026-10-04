@@ -34,10 +34,10 @@ function pinViewH(c){
     const py = bottom ? 400 : 204, ly = bottom ? 470 : 186, ny = bottom ? 390 : 263, lab = c.labels[p-1], two = lab.includes(' ');
     const txt = two ? (([a,b]) => `<tspan x="${cx}" dy="${bottom ? 0 : -17}">${pinLabel(a)}</tspan><tspan x="${cx}" dy="17">${esc(b)}</tspan>`)(lab.split(' ')) : pinLabel(lab);
     s += `<g class="pin ${PIN_KIND[c.kinds[p-1]]}" data-pin="${p}"><title>Pin ${p}: ${esc(plainPin(lab))}</title>${R(cx-12,py,24,36,3,'m-pin')}
-      <text class="pin-l" x="${cx}" y="${ly}"${two || lab.length > 5 ? ' style="font-size:15px"' : ''}>${txt}</text>${T(cx,ny,p,'t t-xs t-inv t-mid t-num')}</g>`;
+      <text class="pin-l" x="${cx}" y="${ly}"${two || lab.length > 5 ? ' style="font-size:16px"' : ''}>${txt}</text>${T(cx,ny,p,'t t-xs t-inv t-mid t-num')}</g>`;
   }
   const units = chipUnits(c), bw = Math.min(124, 820/units.length - 10), total = units.length*(bw+10)-10, bx = 500-total/2;
-  units.forEach(([name],i) => { s += `<g class="ctl btn-s ukey" data-u="${i}" role="button" tabindex="0" aria-label="Highlight ${esc(name)} pins">${R(bx+i*(bw+10),512,bw,44,10,'')}${T(bx+i*(bw+10)+bw/2,539,esc(name),'', name.length > 11 ? 'style="font-size:13.5px"' : '')}</g>`; });
+  units.forEach(([name],i) => { s += `<g class="ctl btn-s ukey" data-u="${i}" role="button" tabindex="0" aria-label="Highlight ${esc(name)} pins">${R(bx+i*(bw+10),512,bw,44,10,'')}${T(bx+i*(bw+10)+bw/2,539,esc(name),'', name.length > 11 ? 'style="font-size:16px"' : '')}</g>`; });
   s += `<g class="bg">${T(500,600,'','t t-sm t-mid','data-info="1"')}</g>`;
   return s + legend(500, 648);
 }
@@ -50,10 +50,10 @@ function pinViewV(c){
     const left = p <= per, k = left ? p-1 : pins-p, cy = top + pitch*(k+.5), lab = c.labels[p-1];
     const px = left ? 398 : 580, lx = left ? 390 : 610, nx = left ? 434 : 566;
     s += `<g class="pin ${PIN_KIND[c.kinds[p-1]]}" data-pin="${p}"><title>Pin ${p}: ${esc(plainPin(lab))}</title>${R(px,cy-5,22,10,2,'m-pin')}
-      <text class="pin-l" x="${lx}" y="${cy+5.5}" style="text-anchor:${left ? 'end' : 'start'};font-size:${pitch < 30 ? 15 : 16}px">${pinLabel(lab)}</text>${T(nx,cy+5,p,'t t-xs t-inv t-mid t-num', pitch < 30 ? 'style="font-size:12px"' : '')}</g>`;
+      <text class="pin-l" x="${lx}" y="${cy+5.5}" style="text-anchor:${left ? 'end' : 'start'};font-size:${pitch < 30 ? 15 : 16}px">${pinLabel(lab)}</text>${T(nx,cy+5,p,'t t-xs t-inv t-mid t-num', pitch < 30 ? 'style="font-size:16px"' : '')}</g>`;
   }
   const units = chipUnits(c);
-  units.forEach(([name],i) => { s += `<g class="ctl btn-s ukey" data-u="${i}" role="button" tabindex="0" aria-label="Highlight ${esc(name)} pins">${R(760,140+i*48,210,40,10,'')}${T(865,165+i*48,esc(name),'', name.length > 18 ? 'style="font-size:14px"' : '')}</g>`; });
+  units.forEach(([name],i) => { s += `<g class="ctl btn-s ukey" data-u="${i}" role="button" tabindex="0" aria-label="Highlight ${esc(name)} pins">${R(760,140+i*48,210,40,10,'')}${T(865,165+i*48,esc(name),'', name.length > 18 ? 'style="font-size:16px"' : '')}</g>`; });
   s += `<text class="t t-sm" x="40" y="250" data-info="1" data-wrap="30"></text>`;
   return s + legend(40, 520, true);
 }
@@ -84,7 +84,7 @@ function insideGates(c){
   for (let p = 1; p <= pins; p++){
     const bottom = p <= per, x = px(p), lab = c.labels[p-1];
     s += `<g class="pin ${PIN_KIND[c.kinds[p-1]]}" data-pin="${p}">${R(x-10, bottom ? yB : yT-30, 20, 30, 3,'m-pin')}
-      <text class="pin-l" x="${x}" y="${bottom ? yB+54 : yT-40}" style="font-size:15px">${pinLabel(lab)}</text>${T(x, bottom ? yB+76 : yT-62, p, 't t-xs t-mut t-mid t-num')}</g>`;
+      <text class="pin-l" x="${x}" y="${bottom ? yB+54 : yT-40}" style="font-size:16px">${pinLabel(lab)}</text>${T(x, bottom ? yB+76 : yT-62, p, 't t-xs t-mut t-mid t-num')}</g>`;
   }
   const g = c.gate, wires = [], syms = [];
   c.units.forEach(([, ps]) => {
@@ -273,10 +273,10 @@ function insideBlocks(c){
     groups += `<rect x="${x}" y="${y}" width="${x2-x}" height="${y2-y}" rx="16" class="ln-dash" style="fill:none"/>${T(x+8, y-8, esc(title), 't t-xs t-mut')}`; });
   let blocks = '';
   Object.values(B).forEach(b => {
-    const tl = b.t.split('\n'), sl = b.s ? b.s.split('\n') : [], tot = tl.length*18 + sl.length*16, y0 = b.cy - tot/2 + 13;
+    const tl = b.t.split('\n'), sl = b.s ? b.s.split('\n') : [], tot = tl.length*20 + sl.length*19, y0 = b.cy - tot/2 + 14;
     blocks += R(b.x, b.y, b.w, b.h, 10, 'ib' + (b.k ? ' ' + b.k : ''));
-    tl.forEach((t, i) => blocks += `<text class="ib-t" x="${b.cx}" y="${y0 + i*18}">${esc(t)}</text>`);
-    sl.forEach((t, i) => blocks += `<text class="ib-s" x="${b.cx}" y="${y0 + tl.length*18 + i*16 + 2}">${esc(t)}</text>`);
+    tl.forEach((t, i) => blocks += `<text class="ib-t" x="${b.cx}" y="${y0 + i*20}">${esc(t)}</text>`);
+    sl.forEach((t, i) => blocks += `<text class="ib-s" x="${b.cx}" y="${y0 + tl.length*20 + i*19 + 1}">${esc(t)}</text>`);
   });
   return `${groups}<path class="ia" d="${lines}"/>${heads}${blocks}${labels}<g class="bg">${T(500,668,'Simplified block diagram of the inside of the chip.','t t-xs t-mut t-mid')}</g>`;
 }

@@ -132,14 +132,14 @@ SCENES.pc = () => {
   s += DW('printer', hot('printer',[240,512,180,88], R(284,512,92,28,2,'m-panel') + R(270,528,120,14,4,'m-metal') + R(240,540,180,60,10,'m-case') + R(268,556,124,6,3,'m-chip') + R(284,560,92,8,1,'m-panel') + C(398,582,6,'m-accent')));
 
   /* ---- labels (top layer) ---- */
-  L += LB(248.5,323,'Monitor',{for:'monitor',dot:'out',tone:'inv',size:14}) + LB(269,46,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(505,74,'Mic',{for:'mic',dot:'in'}) + LB(500,180,'Speakers',{for:'speakers',dot:'out'}) +
+  L += LB(248.5,323,'Monitor',{for:'monitor',dot:'out',tone:'inv',size:16}) + LB(269,46,'Webcam',{for:'webcam',dot:'in',anchor:'start'}) + LB(505,74,'Mic',{for:'mic',dot:'in'}) + LB(500,180,'Speakers',{for:'speakers',dot:'out'}) +
        LB(210,410,'Keyboard',{for:'keyboard',dot:'in'}) + LB(434,410,'Mouse',{for:'mouse',dot:'in'}) + LB(505,572,'Joystick',{for:'joystick',dot:'in'}) +
        LB(130,626,'Game controller',{for:'gamepad',dot:'in'}) + LB(330,626,'Printer',{for:'printer',dot:'out'});
   [['io',288,100,'I/O'],['ram',363,122,'RAM',1],['cpu',475,240,'CPU'],['cooling',686,230,'Cooling'],['gpu',380,408,'GPU',1],
    ['motherboard',470,482,'Motherboard',1],['psu',404,580,'Power supply',1,15],['storage',644,580,'Storage']].forEach(([id,x,y,t,inv,size]) => { const [a,b] = tp(x,y); L += LB(a,b,t,{for:id,size:size||16,tone:inv?'inv':''}); });
   [['bios',578,155,'BIOS',13],['chipset',578,320,'Chipset',13]].forEach(([id,x,y,t,size]) => { const [a,b] = tp(x,y); L += LB(a,b,t,{for:id,size,tone:'inv'}); });
-  { const [a,b] = tp(630,472); L += LB(a,b,'24-pin',{for:'atx-power',size:13,anchor:'start'}); }
-  { const [a,b] = tp(330,724); L += LB(a,b,'Wall AC',{size:13}); }
+  { const [a,b] = tp(630,472); L += LB(a,b,'24-pin',{for:'atx-power',size:16,anchor:'start'}); }
+  { const [a,b] = tp(330,724); L += LB(a,b,'Wall AC',{size:16}); }
   /* colour key for the power-on walkthrough, centred above the tower; shown only while it runs (see .pw-legend in styles.css) */
   L += `<g class="pw-legend" aria-hidden="true"><rect x="676" y="112" width="244" height="30" rx="15"/>
     <circle class="k-pow" cx="696" cy="127" r="6"/><text x="708" y="127">Power</text>
@@ -191,8 +191,8 @@ SCENES.board = () => {
   s += DW('fan-header', hot('fan-header',[690,150,36,60], R(694,154,28,52,4,'m-metal2') + [0,1,2,3].map(i => C(708,164+i*12,3,'m-gold')).join('')));
   const L = LB(370,354,'VRM',{for:'vrm',tone:'inv'}) + LB(600,334,'CPU socket',{for:'cpu-socket',tone:'inv'}) + LB(470,404,'RAM slots',{for:'ram-slots',tone:'inv'}) +
     LB(290,561,'PCIe slots',{for:'pcie',anchor:'start',tone:'inv'}) + LB(657,552,'Chipset',{for:'chipset',tone:'inv'}) +
-    LB(398,638,'CMOS battery',{for:'cmos',tone:'inv',size:13}) + LB(482,638,'BIOS chip',{for:'bios',tone:'inv',size:13}) +
-    LB(726,138,'Fan header',{for:'fan-header',tone:'inv',size:11,anchor:'end'});
+    LB(424,638,'CMOS battery',{for:'cmos',tone:'inv',size:16,anchor:'end'}) + LB(482,638,'BIOS chip',{for:'bios',tone:'inv',size:16}) +
+    LB(726,138,'Fan header',{for:'fan-header',tone:'inv',size:16,anchor:'end'});
   return {svg: s + LAYER(L), drag: true};
 };
 
@@ -216,7 +216,7 @@ SCENES.ram = () => {
     `<path class="ln" d="M${i1.o[0]} ${i1.o[1]}H842V512H802M731 512H618V452H654"/>`+i1.svg+
     R(590,540,46,34,6,'m-block')+T(613,562,'T','t t-xs t-mid')+R(794,540,46,34,6,'m-block')+T(817,562,'T','t t-xs t-mid')+
     T(580,606,'Two inverters hold each other in place.','t t-xs t-mut')+T(580,626,'6 transistors per bit, no refresh.','t t-xs t-mut'));
-  return {svg: s + LAYER(LB(500,214,'SPD',{for:'spd',size:15,tone:'inv'}) + LB(290,228,'DRAM chips',{for:'dram',tone:'inv'}) + LB(710,228,'DRAM chips',{for:'dram',tone:'inv'}))};
+  return {svg: s + LAYER(LB(500,214,'SPD',{for:'spd',size:16,tone:'inv'}) + LB(290,228,'DRAM chips',{for:'dram',tone:'inv'}) + LB(710,228,'DRAM chips',{for:'dram',tone:'inv'}))};
 };
 
 /* ---------------- GPU ---------------- */
@@ -239,7 +239,7 @@ SCENES.gpu = () => {
   let cu=''; for (let r=0;r<6;r++) for (let c=0;c<5;c++){ const x=608+c*54, y=132+r*56; cu += R(x,y,48,50,4,'m-die-block')+R(x+6,y+8,36,8,2,'m-die-cell')+R(x+6,y+22,36,8,2,'m-die-cell')+R(x+6,y+36,36,8,2,'m-die-cell'); }
   s += hot('compute-units',[606,130,272,340], cu,{pad:5});
   return {svg: s + LAYER(LB(292,462,'VRAM chips',{for:'vram',tone:'inv'}) + LB(40,512,'Display outputs',{for:'display-outputs',anchor:'start'}) +
-    LB(742,300,'Compute units',{for:'compute-units',tone:'inv'}) + LB(556,94,'Memory controllers',{for:'memory-controller',anchor:'start'}) + LB(452,236,'Power',{for:'gpu-power',size:11}))};
+    LB(742,300,'Compute units',{for:'compute-units',tone:'inv'}) + LB(556,94,'Memory controllers',{for:'memory-controller',anchor:'start'}) + LB(452,236,'Power',{for:'gpu-power',size:16}))};
 };
 
 /* ---------------- Storage ---------------- */

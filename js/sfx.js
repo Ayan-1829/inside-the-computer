@@ -19,6 +19,14 @@
    SFX.pause() / SFX.resume() / SFX.stop()
    ========================================================== */
 var SFX = (function(){
+  /* ==================== SPEECH SPEED: change these numbers ====================
+     NARRATION_RATE  the narrator reading each step (1 = normal speed, 1.15 = 15 % faster, 0.9 = slower)
+     DEMO_RATE       the demonstration voices (into the microphone, out of the speakers)
+     PIECE_CHARS     how much is spoken in one go: longer = fewer pauses between sentences, but keep it
+                     under about 250, because Chrome's Google voices stop after about 15 seconds of one piece
+     (the pause between steps is STEP_GAP_MS in engine.js) */
+  const NARRATION_RATE = 1.11, DEMO_RATE = .98, PIECE_CHARS = 220;
+  /* ============================================================================ */
   /* One volume for every animation, 0 to 1, remembered in this browser (localStorage 'itc-volume',
      in percent). 0 is muted. The older on/off setting ('itc-sound') is read once so a mute carries over. */
   const KEY = 'itc-volume', DEF = 1;          /* 100 % unless the visitor has chosen a level */
@@ -30,7 +38,10 @@ var SFX = (function(){
   } catch(_){}
   let lastVol = vol || DEF;                   /* what unmuting goes back to */
   const on = () => vol > 0;
-  const gainFor = v => v * .8;                /* the slider scales evenly from 0 (silent) to 100 % (full) */
+  /* the slider scales evenly from 0 (silent) to 100 % (full); boost > 1 makes one animation louder
+     than the rest (the first-visit introduction), and the limiter below keeps it from distorting */
+  let boost = 1;
+  const gainFor = v => v * 1.7 * boost;
   let ctx = null, master = null, noiseBuf = null, unlocked = false, talking = false;
   let loops = [], timers = [], voiceTimer = null;
 
@@ -42,7 +53,7 @@ var SFX = (function(){
     master = ctx.createGain(); master.gain.value = gainFor(vol);
     /* a gentle limiter, so overlapping sounds at full volume never distort */
     const lim = ctx.createDynamicsCompressor();
-    lim.threshold.value = -10; lim.knee.value = 6; lim.ratio.value = 8; lim.attack.value = .003; lim.release.value = .2;
+    lim.threshold.value = -8; lim.knee.value = 6; lim.ratio.value = 12; lim.attack.value = .003; lim.release.value = .2;
     master.connect(lim); lim.connect(ctx.destination);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
@@ -85,14 +96,14 @@ var SFX = (function(){
     clack(t){ noise(t, .03, .4, 'bandpass', 1500, 1.2); tone('sine', 120, t, .04, .18); },                     /* a key reaching the bottom */
     thock(t){ noise(t, .025, .22, 'bandpass', 1100, 1.2); },                                                    /* the key coming back up */
     relay(t){ noise(t, .02, .3, 'bandpass', 1300, 2); noise(t + .03, .02, .22, 'bandpass', 1000, 2); },
-    beep(t){ tone('sine', 880, t, .25, .1, {a: .01, r: .06}); },                                                /* one short POST beep */
+    beep(t){ tone('sine', 880, t, .25, .17, {a: .01, r: .06}); },                                                /* one short POST beep */
     blip(t){ tone('sine', 660, t, .06, .06); },                                                                 /* a single soft data tick */
     chirp(t){ tone('sine', 800, t, .05, .05); tone('sine', 800, t + .09, .05, .04); },                          /* two soft pips: a radio packet */
     ding(t){ tone('sine', 784, t, .6, .1, {r: .55}); tone('sine', 1175, t, .45, .03, {r: .4}); },
     shutter(t){ noise(t, .03, .35, 'bandpass', 1100, 1); noise(t + .09, .04, .3, 'bandpass', 900, 1); },
     whoosh(t){ noise(t, .8, .12, 'bandpass', 500, .8, {a: .3, r: .4}); },                                       /* a soft rush of air */
     drop(t){ noise(t, .012, .12, 'bandpass', 2400, 2); },                                                       /* an ink nozzle firing: a tiny tick */
-    chime(t){ [523.25, 659.25, 783.99].forEach(f => tone('sine', f, t, 1.6, .07, {a: .05, r: 1.3})); },       /* a soft chord, all at once */
+    chime(t){ [523.25, 659.25, 783.99].forEach(f => tone('sine', f, t, 1.6, .12, {a: .05, r: 1.3})); },       /* a soft chord, all at once */
     zap(t){ tone('sine', 100, t, .7, .06, {a: .25, r: .35}); }                                                  /* power coming on: a low swell */
   };
 
@@ -108,7 +119,7 @@ var SFX = (function(){
   const noiseSrc = (out, type, f, q, gain) => { const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), g = ctx.createGain();
     s.buffer = noiseBuf; s.loop = true; fl.type = type; fl.frequency.value = f; fl.Q.value = q; g.gain.value = gain; s.connect(fl); fl.connect(g); g.connect(out); s.start(); return s; };
   const LOOPS = {
-    bits: () => every(180, () => { const t = now(); tone('sine', 620, t, .035, .035); }),                          /* data: even, quiet ticks */
+    bits: () => every(180, () => { const t = now(); tone('sine', 620, t, .035, .06); }),                          /* data: even, quiet ticks */
     'bits-fast': () => every(110, () => { const t = now(); tone('sine', 620, t, .03, .03); }),
     hum: () => held(g => [osc('sine', 100, g, .06), osc('sine', 200, g, .02)]),                          /* mains and electronics */
     'tone-weak': () => held(g => [osc('sine', 330, g, .025)]),                                             /* the signal, before amplifying */
@@ -139,28 +150,43 @@ var SFX = (function(){
     /^(Samantha|Ava|Zoe|Allison|Susan|Nicky|Evan|Tom|Serena|Daniel|Karen|Moira|Tessa|Kate|Oliver|Stephanie)( \((Enhanced|Premium)\))?$/,
     /(Enhanced|Premium|Neural|Natural)/];
   const ROBOTIC = /eSpeak|espeak|Microsoft (David|Zira|Mark|Hazel|George|Susan) Desktop|^(Fred|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Junior|Kathy|Organ|Pipe Organ|Princess|Ralph|Superstar|Trinoids|Whisper|Wobble|Zarvox)\b/;
+  /* voice: the narrator (the best natural voice). CAST: the natural voices in order of preference, so the
+     microphone's speaker and the speakers' voice can be other people: CAST[1] is heard going into the
+     microphone, CAST[2] (or CAST[1]) coming out of the speakers. With a single natural voice, the two are
+     told apart by pitch instead. */
+  let CAST = [];
   function pickVoice(){
     const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
     const en = vs.filter(v => /^en(-|_|$)/i.test(v.lang) && !ROBOTIC.test(v.name));
-    voice = null;
-    for (const re of GOOD){ voice = en.find(v => re.test(v.name) && /en[-_]US/i.test(v.lang)) || en.find(v => re.test(v.name)); if (voice) break; }
+    CAST = [];
+    for (const re of GOOD){
+      en.filter(v => re.test(v.name)).sort((a, b) => (/en[-_]US/i.test(b.lang) ? 1 : 0) - (/en[-_]US/i.test(a.lang) ? 1 : 0))
+        .forEach(v => { if (CAST.indexOf(v) < 0) CAST.push(v); });
+    }
+    voice = CAST[0] || null;
   }
   if (window.speechSynthesis){ pickVoice(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', pickVoice); }
-  function speakNow(text, volume){
+  /* who speaks a demonstration: 'rec' is the person talking into the microphone, 'play' the voice from the speakers */
+  const ROLE = {rec: {i: 1, pitch: 1.2}, play: {i: 2, pitch: .82}};
+  function speakNow(text, volume, role){
     speechSynthesis.cancel(); speechSynthesis.resume();   /* a paused queue would hold the new words back */
     const u = new SpeechSynthesisUtterance(text);
-    u.voice = voice; u.lang = voice.lang;
-    u.volume = Math.min(1, volume * vol); u.rate = .95; u.pitch = 1;
+    const recV = CAST[1] || voice, playV = CAST[2] || CAST[1] || voice;
+    const v = role === 'rec' ? recV : role === 'play' ? playV : voice;
+    /* a voice already used by someone else sounds different by its pitch: higher into the microphone, deeper from the speakers */
+    const pitch = role === 'rec' && recV === voice ? ROLE.rec.pitch : role === 'play' && (playV === recV || playV === voice) ? ROLE.play.pitch : 1;
+    u.voice = v; u.lang = v.lang;
+    u.volume = Math.min(1, volume * vol / .6); u.rate = DEMO_RATE; u.pitch = pitch;
     talking = true; u.onend = u.onerror = () => { talking = false; };
     speechSynthesis.speak(u);
   }
-  function say(text, volume, delay){
+  function say(text, volume, delay, role){
     if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
     if (!voice) pickVoice();        /* the list can arrive late */
     if (!voice) return;             /* no natural-sounding voice here: better silent than robotic */
     clearTimeout(voiceTimer);
-    if (delay) voiceTimer = setTimeout(() => speakNow(text, volume), delay);
-    else speakNow(text, volume);    /* at once: the first step's words start with the click itself */
+    if (delay) voiceTimer = setTimeout(() => speakNow(text, volume, role), delay);
+    else speakNow(text, volume, role);   /* at once: the first step's words start with the click itself */
   }
   /* Get the voice ready before it is needed: a silent, empty sentence in the chosen voice. Google's
      voices are fetched over the network, so the first real sentence would otherwise start late. It also
@@ -173,7 +199,52 @@ var SFX = (function(){
     speechSynthesis.speak(u); unlocked = true;
   }
 
+  /* ---- narration: a step's explanation, read aloud ----
+     Written text becomes speakable words first (signal names, units, symbols). It is spoken one sentence
+     at a time, because Chrome's Google voices stop by themselves after about 15 seconds of one long
+     utterance, and it is queued after any demonstration voice already speaking (the microphone's "Hello!").
+     While it speaks, the sound effects are turned down so the words stay clear. done() runs when it has
+     finished, or at once when there is no natural voice or the sound is muted; a time limit covers
+     browsers that never report the end. */
+  const SPEAK = [
+    [/\*\*/g, ''], [/\s*→\s*/g, ' to '], [/PWR_SW#/g, 'power switch'], [/PS_ON#/g, 'P S on'], [/PWR_OK/g, 'power OK'],
+    [/\+5\s?VSB/g, '5 volt standby'], [/\+?(\d+(?:\.\d+)?)\s?V\b/g, '$1 volts'], [/\b0x([0-9A-F]+)\b/gi, 'hex $1'],
+    [/(\d)\s?mV\b/g, '$1 millivolts'], [/(\d)\s?fF\b/g, '$1 femtofarads'], [/(\d)\s?µs\b/g, '$1 microseconds'], [/(\d)\s?ms\b/g, '$1 milliseconds'],
+    [/(\d)\s?GHz\b/g, '$1 gigahertz'], [/(\d)\s?MHz\b/g, '$1 megahertz'], [/(\d)\s?kHz\b/g, '$1 kilohertz'], [/(\d)\s?Hz\b/g, '$1 hertz'],
+    [/(\d)\s?GB\/s\b/g, '$1 gigabytes per second'], [/(\d)\s?Gbit\/s\b/g, '$1 gigabits per second'], [/(\d)\s?MB\b/g, '$1 megabytes'], [/(\d)\s?KB\b/g, '$1 kilobytes'],
+    [/(\d)\s?°C\b/g, '$1 degrees'], [/\bmV\b/g, 'millivolts'], [/×/g, ' times '], [/~/g, 'about '], [/#/g, ''], [/_/g, ' '], [/\s+/g, ' ']
+  ];
+  const speakable = t => SPEAK.reduce((s, [re, to]) => s.replace(re, to), String(t || '')).trim();
+  let narrToken = 0;
+  function duck(down){ if (master && ctx) master.gain.setTargetAtTime(gainFor(vol) * (down ? .3 : 1), ctx.currentTime, .15); }
+  function narrate(text, done){
+    const token = ++narrToken, finish = () => { if (token !== narrToken) return; duck(false); if (done) done(); };
+    if (!on() || !window.speechSynthesis || !window.SpeechSynthesisUtterance){ setTimeout(finish, 0); return; }
+    if (!voice) pickVoice();
+    if (!voice){ setTimeout(finish, 0); return; }         /* no natural-sounding voice here: silent, not robotic */
+    /* sentences grouped into pieces of up to about 220 characters: fewer pauses between them, and each
+       piece still well under the ~15 seconds after which Chrome's Google voices stop */
+    const words = speakable(text), parts = [];
+    (words.match(/[^.!?]+[.!?]*/g) || []).forEach(s => {
+      const last = parts.length - 1;
+      if (last >= 0 && parts[last].length + s.length <= PIECE_CHARS) parts[last] += ' ' + s.trim(); else parts.push(s.trim());
+    });
+    if (!parts.length){ setTimeout(finish, 0); return; }
+    speechSynthesis.resume();
+    talking = true; duck(true);
+    const limit = setTimeout(finish, 4000 + words.length * 95);   /* in case the end is never reported */
+    parts.forEach((p, i) => {
+      const u = new SpeechSynthesisUtterance(p.trim());
+      u.voice = voice; u.lang = voice.lang; u.volume = Math.min(1, vol / .6); u.rate = NARRATION_RATE; u.pitch = 1;
+      if (i === parts.length - 1) u.onend = u.onerror = () => { clearTimeout(limit); talking = false; finish(); };
+      speechSynthesis.speak(u);
+    });
+  }
+  /* the sound effects only (the voice goes on), for when a step is shown while paused */
+  function pauseFx(){ if (ctx && ctx.state === 'running') ctx.suspend(); }
+
   function stop(){
+    narrToken++; duck(false);
     loops.forEach(f => { try { f(); } catch(_){} }); loops = [];
     timers.forEach(id => { clearInterval(id); clearTimeout(id); }); timers = [];
     clearTimeout(voiceTimer);
@@ -193,7 +264,7 @@ var SFX = (function(){
     if (ctx.state === 'suspended') ctx.resume();
     list.forEach((e, i) => {
       const m = /^(say|say-soft|say-loud):(.*)$/.exec(e);
-      if (m){ say(m[2], m[1] === 'say-soft' ? .45 : 1, 0); return; }
+      if (m){ say(m[2], m[1] === 'say-soft' ? .45 : 1, 0, m[1] === 'say-loud' ? 'play' : 'rec'); return; }   /* into the microphone, or out of the speakers */
       const l = /^loop:(.+)$/.exec(e);
       if (l){ if (LOOPS[l[1]]) loops.push(LOOPS[l[1]]()); return; }
       const d = /^(\w+)@([\d.]+)$/.exec(e);                 /* 'beep@0.6': a one-shot after a delay (seconds) */
@@ -235,6 +306,7 @@ var SFX = (function(){
     }
   }
   const toggle = () => setVolume(vol > 0 ? 0 : lastVol, {preview: true});
+  function setBoost(b){ boost = b; if (master) master.gain.setTargetAtTime(gainFor(vol), ctx.currentTime, .05); }
 
   let pop = null, popFor = null;
   function buildPop(){
@@ -280,5 +352,5 @@ var SFX = (function(){
   addEventListener('resize', closePop);
   addEventListener('scroll', () => { if (pop && !pop.hidden && popFor) placePop(popFor); }, true);
 
-  return { cue, stop, pause, resume, toggle, setVolume, syncButtons, warm, isOn: on, volume: () => vol };
+  return { cue, stop, pause, resume, pauseFx, narrate, speakable, toggle, setVolume, setBoost, syncButtons, warm, isOn: on, volume: () => vol };
 })();

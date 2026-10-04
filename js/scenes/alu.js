@@ -38,7 +38,7 @@ SCENES.alu = (n) => (SIM['alu:mode'] === '8086' ? alu86Scene(n) : aluSimpleScene
 function aluSimpleScene(n){
   let s = '';
   /* operation decoder column */
-  s += hot('alu-control',[30,84,112,540], R(30,84,112,540,14,'m-panel') + T(86,114,'Operation','t t-sm t-mid') + T(86,134,'decoder','t t-sm t-mid'),{rx:18});
+  s += hot('alu-control',[30,84,112,540], R(30,84,112,540,14,'m-panel') + T(86,114,'Operation','t t-sm t-mid') + T(86,138,'decoder','t t-sm t-mid'),{rx:18});
   /* operand + result registers (one hotspot, three frames) */
   s += hot('alu-registers',[[160,84,310,76],[530,84,310,76],[320,580,300,66]],
     R(160,84,310,76,12,'m-block') + T(182,132,'A','t t-lg') + R(530,84,310,76,12,'m-block') + T(552,132,'B','t t-lg') +
