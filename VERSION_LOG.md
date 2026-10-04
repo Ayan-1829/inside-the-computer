@@ -14,6 +14,7 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 7.3.3 | 2026-10-05 | — | Author links go to the portfolio's new address, https://ayan-1829.github.io/ |
 | 7.3.2 | 2026-10-05 | — | Real site address in every page's links and previews; Google Search Console verification tag |
 | 7.3.1 | 2026-09-29 | — | Device diagrams: arrows from each name to its part, names moved closer; step captions are one or two plain lines with no heading |
 | 7.3.0 | 2026-09-28 | — | Five text sizes across the site (8086 excepted); bigger text in the nine device diagrams, which shrink smoothly while a step's note shows; louder sounds; a louder, 15-second first-visit intro |
@@ -94,6 +95,17 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 ---
 
 ## Versions
+
+### 7.3.3: The portfolio's new address
+
+**Prompt** (2026-10-05, exact time not in the saved record):
+> for the https://ayan-1829.github.io/portfolio repo, make changes that redirects to https://ayan-1829.github.io/
+>
+> Make necessary changes to all the projects in my Project file of this device.
+
+**Changes**
+- The portfolio moved to the site root, https://ayan-1829.github.io/ (repo `Ayan-1829.github.io`). The old `/portfolio/` address now redirects there.
+- Every link to it now uses the new address: the footer, the Privacy and Feedback windows, the portfolio window on the monitor in the computer diagram, and the README. The old links would still have worked through the redirect.
 
 ### 7.3.2: Real site address, Google verification
 

@@ -148,7 +148,7 @@ SCENES.pc = () => {
   return {svg: s + LAYER(L), vb: [1012, 700], drag: true, init: el => {
     const link = el.querySelector('.dev-link');
     if (!link) return;
-    const open = () => window.open('https://ayan-1829.github.io/portfolio', '_blank', 'noopener');
+    const open = () => window.open('https://ayan-1829.github.io/', '_blank', 'noopener');
     link.addEventListener('click', e => { e.stopPropagation(); open(); });
     link.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); open(); } });
   }};

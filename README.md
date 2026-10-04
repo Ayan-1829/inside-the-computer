@@ -20,7 +20,7 @@ Anyone curious about what's actually happening inside the computer they're using
 
 ---
 
-Built by **Ayan Sarkar**, Lecturer, CSE, Green University of Bangladesh — [ayan-1829.github.io/portfolio](https://ayan-1829.github.io/portfolio)
+Built by **Ayan Sarkar**, Lecturer, CSE, Green University of Bangladesh — [ayan-1829.github.io](https://ayan-1829.github.io/)
 
 ## Privacy
 
