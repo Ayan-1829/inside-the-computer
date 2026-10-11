@@ -149,12 +149,14 @@ var SFX = (function(){
     /Microsoft (Aria|Jenny|Ava|Emma|Andrew|Brian|Guy|Sonia|Libby|Natasha).*(Natural|Online)/,
     /^(Samantha|Ava|Zoe|Allison|Susan|Nicky|Evan|Tom|Serena|Daniel|Karen|Moira|Tessa|Kate|Oliver|Stephanie)( \((Enhanced|Premium)\))?$/,
     /(Enhanced|Premium|Neural|Natural)/];
-  const ROBOTIC = /eSpeak|espeak|Microsoft (David|Zira|Mark|Hazel|George|Susan) Desktop|^(Fred|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Junior|Kathy|Organ|Pipe Organ|Princess|Ralph|Superstar|Trinoids|Whisper|Wobble|Zarvox)\b/;
-  /* voice: the narrator (the best natural voice). CAST: the natural voices in order of preference, so the
-     microphone's speaker and the speakers' voice can be other people: CAST[1] is heard going into the
-     microphone, CAST[2] (or CAST[1]) coming out of the speakers. With a single natural voice, the two are
-     told apart by pitch instead. */
-  let CAST = [];
+  const ROBOTIC = /eSpeak|espeak|Microsoft (David|Zira|Mark|Hazel|George|Susan) Desktop|^(Fred|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Deranged|Good News|Hysterical|Jester|Junior|Kathy|Organ|Pipe Organ|Princess|Ralph|Superstar|Trinoids|Whisper|Wobble|Zarvox|Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b/;
+  /* men's voices among the natural ones, so the person at the microphone sounds clearly unlike the narrator */
+  const MALE = /\bMale\b|\b(Guy|Andrew|Brian|Davis|Ryan|Christopher|Eric|Roger|Steffan|Daniel|Tom|Evan|Oliver|Aaron|Arthur|Gordon|Lee|Rishi)\b/i;
+  /* voice: the narrator (the best natural voice; in Chrome, Google US English). CAST: the natural voices in
+     order of preference. The person talking into the microphone is another person, a man where there is a
+     natural man's voice (in Chrome, Google UK English Male); the voice from the speakers is a third where
+     there is one. Pitch is never changed: a raised or lowered voice sounds robotic. */
+  let CAST = [], recVoice = null, playVoice = null;
   function pickVoice(){
     const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
     const en = vs.filter(v => /^en(-|_|$)/i.test(v.lang) && !ROBOTIC.test(v.name));
@@ -164,19 +166,18 @@ var SFX = (function(){
         .forEach(v => { if (CAST.indexOf(v) < 0) CAST.push(v); });
     }
     voice = CAST[0] || null;
+    const others = CAST.filter(v => v !== voice);
+    recVoice = others.find(v => MALE.test(v.name)) || others[0] || voice;
+    playVoice = others.find(v => v !== recVoice) || recVoice;
   }
   if (window.speechSynthesis){ pickVoice(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', pickVoice); }
   /* who speaks a demonstration: 'rec' is the person talking into the microphone, 'play' the voice from the speakers */
-  const ROLE = {rec: {i: 1, pitch: 1.2}, play: {i: 2, pitch: .82}};
   function speakNow(text, volume, role){
     speechSynthesis.cancel(); speechSynthesis.resume();   /* a paused queue would hold the new words back */
     const u = new SpeechSynthesisUtterance(text);
-    const recV = CAST[1] || voice, playV = CAST[2] || CAST[1] || voice;
-    const v = role === 'rec' ? recV : role === 'play' ? playV : voice;
-    /* a voice already used by someone else sounds different by its pitch: higher into the microphone, deeper from the speakers */
-    const pitch = role === 'rec' && recV === voice ? ROLE.rec.pitch : role === 'play' && (playV === recV || playV === voice) ? ROLE.play.pitch : 1;
+    const v = (role === 'rec' ? recVoice : role === 'play' ? playVoice : voice) || voice;
     u.voice = v; u.lang = v.lang;
-    u.volume = Math.min(1, volume * vol / .6); u.rate = DEMO_RATE; u.pitch = pitch;
+    u.volume = Math.min(1, volume * vol / .6); u.rate = DEMO_RATE; u.pitch = 1;
     talking = true; u.onend = u.onerror = () => { talking = false; };
     speechSynthesis.speak(u);
   }

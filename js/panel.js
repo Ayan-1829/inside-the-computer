@@ -116,9 +116,9 @@ function detailsHeadHTML(n){
 }
 function detailsHTML(n){
   return detailsHeadHTML(n) +
-    '<div class="dp-scroll"><p class="dp-short">' + n.short + '</p>' +
+    '<div class="dp-scroll">' + photoStrip(n) + '<p class="dp-short">' + n.short + '</p>' +
     '<div class="dp-body"><p>' + n.does + '</p></div>' +
-    '<p class="dp-hint">Right-click for more options</p></div>';
+    '<p class="dp-hint">' + (n.scene ? icon('zoom') + '<b>Click to go inside</b>' : '<b>Click for the full details</b>') + '<span>Right-click for more options</span></p></div>';
 }
 function detailsFullHTML(n){
   var h = '<p>' + n.what + '</p><p>' + n.does + '</p><p>' + n.why + '</p>';
@@ -136,7 +136,7 @@ function detailsExamplesHTML(n){
    section at a time in the empty .dp-section below them. */
 function actionCardHTML(n){
   var h = detailsHeadHTML(n) +
-    '<div class="dp-scroll"><p class="dp-short">' + n.short + '</p>' +
+    '<div class="dp-scroll">' + photoStrip(n) + '<p class="dp-short">' + n.short + '</p>' +
     '<div class="dp-actions"><button type="button" class="dp-act" data-act="full">Details</button>';
   /* "Inside" only makes sense when going there actually shows something new:
      a part with its own dedicated diagram (n.scene) -- including every real
@@ -152,10 +152,82 @@ function actionCardHTML(n){
   h += '</div><div class="dp-section"></div></div>';
   return h;
 }
+/* Small line icons for the levels (and for the way down in the welcome card), drawn on a 24-unit grid
+   in the current text colour. Also used by js/guide.js for the depth gauge and the zoom badges. */
+var ICON = {
+  computer: '<rect x="2.5" y="4" width="13" height="10" rx="1.5"/><path d="M6.5 18h5M9 14v4"/><rect x="17.5" y="4" width="4" height="15" rx="1"/><path d="M19.5 7.5v.01"/>',
+  chip: '<rect x="6" y="6" width="12" height="12" rx="1.5"/><rect x="9.5" y="9.5" width="5" height="5" rx=".6"/><path d="M9 3v3M12 3v3M15 3v3M9 18v3M12 18v3M15 18v3M3 9h3M3 12h3M3 15h3M18 9h3M18 12h3M18 15h3"/>',
+  blocks: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
+  alu: '<path d="M2.5 5h7.5l2 3.2L14 5h7.5l-5.2 14H7.7Z"/>',
+  gate: '<path d="M7 5h5a7 7 0 0 1 0 14H7Z"/><path d="M2 9h5M2 15h5M19 12h3"/>',
+  dip: '<rect x="7" y="3" width="10" height="18" rx="1.5"/><path d="M4 6.5h3M4 10h3M4 14h3M4 17.5h3M17 6.5h3M17 10h3M17 14h3M17 17.5h3"/><circle cx="12" cy="6" r=".9"/>',
+  zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M7.5 10.5h6M10.5 7.5v6"/>',
+  camera: '<path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.3l1.4-2h7.6l1.4 2h2.3A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/><circle cx="12" cy="12.5" r="3.6"/>',
+};
+var LEVEL_ICON = {1:'computer', 2:'chip', 3:'blocks', 4:'gate', 5:'dip'};
+function icon(name, cls){ return '<svg class="' + (cls || 'ico') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[name] + '</svg>'; }
+
+/* Real photos (data/photos.js). In the browser engine.js sets PHOTO_BASE; the build passes
+   page-relative links, so the base is taken from the link to the home page. */
+function photoBase(href){ return href ? href('computer').replace(/index\.html$/, '') + 'img/photos/' : (typeof PHOTO_BASE !== 'undefined' ? PHOTO_BASE : 'img/photos/'); }
+function photosFor(id){ return typeof PHOTOS !== 'undefined' && PHOTOS[id] ? PHOTOS[id] : null; }
+function photoCredit(p){
+  return 'Photo: ' + esc(p[4]) + ', ' + (p[6] ? '<a href="' + p[6] + '" target="_blank" rel="noopener">' + p[5] + '</a>' : p[5]) +
+    ', <a href="' + p[7] + '" target="_blank" rel="noopener">Wikimedia Commons</a>';
+}
+function photosHTML(id, href){
+  var ps = photosFor(id); if (!ps) return '';
+  var base = photoBase(href), p = ps[0];
+  return '<figure class="ph"><button type="button" class="ph-main" data-photo="' + id + '" data-i="0" aria-label="See the real photos of the ' + esc(N[id].name) + '">' +
+      '<img src="' + base + p[0] + '" width="' + p[1] + '" height="' + p[2] + '" alt="' + esc(p[3]) + '" loading="lazy" decoding="async">' +
+      '<span class="ph-tag">' + icon('camera') + 'Real photo' + (ps.length > 1 ? 's · ' + ps.length : '') + '</span></button>' +
+    (ps.length > 1 ? '<div class="ph-row">' + ps.slice(1).map(function(q, i){
+      return '<button type="button" class="ph-th" data-photo="' + id + '" data-i="' + (i + 1) + '" aria-label="Photo ' + (i + 2) + ': ' + esc(q[3]) + '"><img src="' + base + q[0] + '" alt="" loading="lazy" decoding="async"></button>'; }).join('') + '</div>' : '') +
+    '<figcaption>' + p[3] + '<span class="ph-by">' + photoCredit(p) + '</span></figcaption></figure>';
+}
+function photoStrip(n){
+  var ps = photosFor(n.id); if (!ps) return '';
+  return '<button type="button" class="dp-photo" data-photo="' + n.id + '" data-i="0" aria-label="See the real photos"><img src="' + photoBase() + ps[0][0] + '" alt="" decoding="async"><span>' + icon('camera') + 'Real photo</span></button>';
+}
+
+/* The home page's "start here" card: what the site is, what to do, and the way down
+   from the whole computer to one real chip. Its buttons are run by js/guide.js. */
+var JOURNEY = ['computer', 'cpu', 'alu', 'logic-unit', 'and-gate', 'ic-7408'];
+var JOURNEY_ICON = {computer:'computer', cpu:'chip', alu:'alu', 'logic-unit':'blocks', 'and-gate':'gate', 'ic-7408':'dip'};
+function welcomeHTML(href){
+  var chips = ORDER.filter(function(c){ return N[c].ic; }).length;
+  var steps = JOURNEY.filter(function(c){ return N[c]; }).map(function(c, i){
+    return '<li style="--c:var(--lv-' + N[c].level + ')">' + link(href, c, 'wl-step' + (i ? '' : ' here'),
+      '<i>' + icon(JOURNEY_ICON[c]) + '</i><b>' + N[c].name + '</b><small>' + (i ? 'Level ' + N[c].level : 'You are here') + '</small>') + '</li>'; }).join('');
+  return '<section class="welcome" aria-label="Start here">' +
+    '<p class="wl-eyebrow">Interactive · free · no sign-up</p>' +
+    '<p class="wl-title">Open up a real computer and zoom inside, all the way down to a single chip</p>' +
+    '<p class="wl-sub"><b>Every part in the picture is clickable.</b> Click one to go inside it, then keep going: ' +
+    '5 levels deep, ' + ORDER.length + ' parts, ' + chips + ' real chips and a working Intel 8086.</p>' +
+    '<div class="wl-acts">' +
+      '<button type="button" class="btn btn-p wl-go" data-guide="tour"><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 4.2v11.6a.6.6 0 0 0 .9.5l9-5.8a.6.6 0 0 0 0-1L6.9 3.7a.6.6 0 0 0-.9.5Z"/></svg>Take the 30-second tour</button>' +
+      '<button type="button" class="btn" data-guide="power"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 2.8v6.4M6 5.3a6.2 6.2 0 1 0 8 0"/></svg>Watch it boot</button>' +
+      link(href, 'i8086', 'btn', '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="10" height="10" rx="1.5"/><path d="M8 2.5V5M12 2.5V5M8 15v2.5M12 15v2.5M2.5 8H5M2.5 12H5M15 8h2.5M15 12h2.5"/></svg>Run real 8086 code') +
+    '</div>' +
+    '<p class="wl-path-h">The way down: each click zooms one level deeper</p><ol class="wl-path">' + steps + '</ol>' +
+  '</section>';
+}
+/* "Go inside": the parts you can click in this part's own picture, near the top of the panel */
+function goInsideHTML(n, href){
+  if (!n.scene || n.id === 'computer') return '';
+  var kids = n.children.filter(function(c){ return !N[c].ic; });
+  if (!kids.length) return '';
+  var more = kids.length - 4;
+  return '<div class="go-in"><p><b>' + (n.scene === 'ic' ? 'Look closer:' : 'Go deeper:') + '</b> click a part in the picture, or start with</p><div class="chips">' +
+    kids.slice(0, 4).map(function(c){ return link(href, c, 'chip', '<i></i>' + N[c].name); }).join('') +
+    (more > 0 ? '<span class="go-more">+' + more + ' more</span>' : '') + '</div></div>';
+}
 function panelHTML(id, href){
   var n = N[id];
-  var h = '<p class="p-level">Level ' + n.level + ': ' + levelName(n) + '</p><h1 class="p-title">' + n.name + '</h1><p class="p-short">' + n.short + '</p>';
+  var h = (id === 'computer' ? welcomeHTML(href) : '') +
+    '<p class="p-level">Level ' + n.level + ': ' + levelName(n) + '</p><h1 class="p-title">' + n.name + '</h1><p class="p-short">' + n.short + '</p>' + goInsideHTML(n, href);
   if (n.device) h += '<span class="p-badge"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="var(--' + (n.device === 'input' ? 'accent' : 'out') + ')"/></svg>' + (n.device === 'input' ? 'Input device' : 'Output device') + '</span>';
+  h += photosHTML(id, href);
   h += sec('What is it?', '<p>' + n.what + '</p>');
   h += sec('What does it do?', '<p>' + n.does + '</p>');
   h += sec('Why it matters', '<p>' + n.why + '</p>');
@@ -209,7 +281,7 @@ function panelHTML(id, href){
 }
 function crumbsHTML(id, href){
   var p = pathTo(id);
-  return p.map(function(c, i){ return '<li><a href="' + href(c) + '" data-go="' + c + '"' + (i === p.length-1 ? ' aria-current="page"' : '') + '>' + N[c].name + '</a></li>'; }).join('');
+  return p.map(function(c, i){ return '<li style="--c:var(--lv-' + N[c].level + ')"><a href="' + href(c) + '" data-go="' + c + '"' + (i === p.length-1 ? ' aria-current="page"' : '') + '>' + N[c].name + '</a></li>'; }).join('');
 }
 function treeHTML(id, cur, href){
   var n = N[id];

@@ -10,10 +10,17 @@ From 6.0.0 on, work is done in the `v6` folder. The `v5` folder keeps the site a
 
 From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site as it was at 6.10.1, so it can be rolled back to.
 
+From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site as it was at 7.3.3, so it can be rolled back to.
+
 ## Summary
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 8.2.1 | 2026-10-11 | — | Every part's photos start with the real thing as you'd see it, then opened up: 7 new photos (an opened microphone module and a microphone taken apart; outside photos of the keyboard, mouse, printer, game controller and hard drive), and the RAM and storage galleries reordered |
+| 8.2.0 | 2026-10-11 | — | A shorter tour (5 steps; its description step shows the part's own description); the "Click me" ring leads Computer → CPU → ALU → Logic unit → AND gate and has you flip its switches; level gauge removed and the instruction centred under the picture; darker page background in both themes; Privacy, credit and Feedback in one slim line at the bottom; after the gate the ring points back to the computer; a distinct natural man's voice at the microphone |
+| 8.1.1 | 2026-10-08 | — | Text back on the five sizes (13 px smallest) and the main new texts one size larger; the diagrams back to v7's size (the bar under the picture had shrunk them by up to 10 %) |
+| 8.1.0 | 2026-10-08 | — | Fresher emerald green on cool grey; real photos (38, from Wikimedia Commons) for 19 parts in the panel, hover card and a photo viewer; a level gauge, a "Real photos" button and the instruction in a bar under the picture (never over it); level icons in the welcome card, breadcrumb and gauge; animated pictures in the tour; a magnifier on the hovered part |
+| 8.0.0 | 2026-10-08 | — | v8: a visitor guide that shows what to do. A "start here" card on the home page, a glow that sweeps across the clickable parts, a "Click me" ring on one part, a bold instruction pill (also on phones), a guided tour with a spotlight (first visit, "How to use"), an explored-parts counter with ticks in the Overview, a note on reaching each new level, and "Go deeper" links near the top of every part |
 | 7.3.3 | 2026-10-05 | — | Author links go to the portfolio's new address, https://ayan-1829.github.io/ |
 | 7.3.2 | 2026-10-05 | — | Real site address in every page's links and previews; Google Search Console verification tag |
 | 7.3.1 | 2026-09-29 | — | Device diagrams: arrows from each name to its part, names moved closer; step captions are one or two plain lines with no heading |
@@ -95,6 +102,117 @@ From 7.0.0 on, work is done in the `v7` folder. The `v6` folder keeps the site a
 ---
 
 ## Versions
+
+### 8.2.1: Real photos: outside first, then inside
+
+**Prompt** (2026-10-11, exact time not in the saved record):
+> For each components, add the real photo of the image first, then the inside view. For example, mic has real image, then add the internal image shat shows all components. This change is for the real images
+>
+>
+> After adding all the new images, Push it to the github.
+
+**Changes**
+- **Every gallery starts with the part as you would see it, then shows it opened up.** 7 new photos from Wikimedia Commons, credited under each:
+  - **Microphone**: after the microphone itself, a microphone module opened up (grille, capsule in its foam, circuit board; Raimond Spekking, CC BY-SA 4.0), then a microphone taken apart (grille, capsule, body, cable; Dmitry G, CC BY-SA 3.0). The capsules photo comes last.
+  - New outside photos first: **keyboard** (D-Kuru, CC BY-SA 3.0), **mouse** (Raysonho, CC0), **printer** (an HP inkjet; public domain), **game controller** (an Xbox 360 controller; Evan-Amos, public domain), **hard drive** (a closed 3.5-inch drive; Grind24, CC BY-SA 3.0).
+  - **RAM**: the module with its heat spreader first, then a bare module showing the memory chips. **Storage**: the SSD outside and inside, then the hard drive outside and opened.
+  - The **I/O ports** keep their one photo (the back panel), because no openly licensed photo showed the inside of a port clearly.
+- 45 photos in all, 5.7 MB. A page loads only the photos of its own part.
+- Pushed to GitHub (Ayan-1829/inside-the-computer).
+
+
+### 8.2.0: A shorter tour, a "Click me" path down to a gate, a darker background, a one-line footer
+
+**Prompts** (2026-10-11, exact times not in the saved record):
+> Remove the step 3, step 4, step 7 in the introduction to different sectinons, for step 5 show the description part (computer, now it's showing the quick use manual notes)
+>
+> For the click me flow, when use enters CPU, it should point to ALU instead of control unit and go farther to basic gate operations.
+
+Sent while that was in progress:
+> Remove the lower left navigation and bring the 'Click any part to go inside it, or drag it to move it' at the middle of the window.
+>
+> for both the dark and light theme, make the background more darker.
+
+> Take the privacy, developers info and feedback to a single line at the bottom of the webpage. Try to keep the height as small as possible.
+
+> take the privacy and feedback to two sides keeping the developers info at middle.
+>
+> For the click me navigation, after and gate, show the nav button point to the comuter to bring back to the home page.
+
+> For the mic how to play button, the voice is the same. it should be different. Make the google's suitable voice for the speech. Now it sounds robotic.
+
+**Changes**
+- **The tour has 5 steps**: the picture, clicking a part, the part's description, Overview, and "You are ready". "Your path", "How deep you are" and "Press the power button" are gone, along with their two animated pictures. The description step ("Read about the Computer") scrolls the panel past the welcome card and spotlights the part's own description: level, name, summary and "What is it?". The panel goes back to its top when the tour ends.
+- **The "Click me" ring follows the way down**: Computer → CPU → ALU (no longer the control unit) → Logic unit → AND gate. On the gate it points at switch A ("Flip A"), then B ("Now flip B"). When both are on, a note says "You made the AND gate work. Both inputs are 1, so the output is 1." (other gates get their own note). Along this path the ring shows for every visitor, not only newcomers, until a gate has been worked. This is remembered as `itc-journey` in the browser, and the Privacy window says so. The ring now sits where a click really reaches the part: inside the ALU, the logic unit's centre is covered by its small gate drawings, so the ring moves to a free spot on the unit.
+- **After the gate, the way back**: about 2.5 seconds after the "You made the AND gate work" note, the ring points at "Computer", the first name in the path ("Back to the computer"). On a phone, where that name is scrolled out of sight, it points at the Home button. Reaching the home page ends it. The ring is now placed in window coordinates, so it can point outside the picture.
+- **The microphone's voice**: the person talking into the microphone is now a man's natural voice, clearly unlike the narrator: Google UK English Male in Chrome (the narrator is Google US English), Daniel in Safari, and Microsoft Guy (Natural) in Edge. The voice from the speakers is a third natural voice. Before, the microphone's voice was Google UK English Female, close to the narrator's, and a single voice was told apart by raising or lowering its pitch, which sounded robotic. Pitch is now never changed. Apple's robotic "Eloquence" voices (Eddy, Flo, Grandma, Grandpa, Reed, Rocko, Sandy, Shelley) are never used.
+- **The level gauge is removed** from the lower left. The instruction ("Click any part to go inside it, or drag it to move it") is centred under the picture, with the "Real photos" button on the left.
+- **A darker page background**: light `#EEF2F6` → `#D9E1E9`, dark `#0A1016` → `#04070A`. The white and dark cards stand out more against it. The chip diagrams' input-pin green is a shade darker (`#036B4D`) so it still passes the 4.5:1 contrast check on the new background.
+- **One slim line at the bottom**, 32 px high: Privacy at the left, "© Ayan Sarkar, Lecturer, CSE, Green University of Bangladesh · ayan-1829.github.io" in the middle, and Feedback at the right. The Feedback button no longer floats in the corner here. `js/feedback.js` puts it in an element with `data-fbk-slot` when a page has one, and floats it otherwise, so the other sites are unchanged. On phones the credit takes one line, with Privacy and Feedback at the two sides under it. The credit at the foot of the panel (8.1.1) is gone. The top bar's and toolbar's spacing is a little tighter, so the diagrams stay within about 1.5 % of v7's size on laptop screens.
+
+### 8.1.1: Text sizes back on the scale, diagrams back to full size
+
+**Prompt** (2026-10-08, exact time not in the saved record):
+> the website looks more atrractive now. but the fonts have become small again.
+
+**Changes**
+- **Back on the five text sizes** (13, 15, 17, 20, 30 px, from 7.3.0). Several new labels used 11–14 px: the welcome card's way down, the level gauge, photo credits and the tour's pictures. These are now on the scale, nothing is under 13 px, and the main new texts are one size larger: the welcome card's text, the instruction, the tour, notes and photo captions.
+- **The diagrams were smaller than in v7.** The bar under the picture had taken about 54 px of height, so diagrams were drawn up to 10 % smaller (0.687 vs 0.765 at 1280×720). The bar became its own row, and the footer's credit line moved to the foot of the panel; 8.2.0 later replaced that with a one-line footer. Diagrams were back to v7's size or larger.
+
+
+### 8.1.0: Real photos, a fresher green, and pictures that show how to navigate
+
+**Prompts** (2026-10-08, exact times not in the saved record):
+> It's more attractive now. But along with texts, add more visual parts to identify the process to navigate. Check if any farther betterment can be done or not.
+>
+> I think the theme colour itself is not attractive.
+
+Sent while that was in progress:
+> For the inside viewo fo the components, try to add some real life photos, like in webcam, one cannot uderstand what it is . If related photos are there in side, it would be more eye catchy.
+>
+> The green is not eye catchy itseelf. can you make different shade of green?
+
+> The search buttons look messy. the bottom texts are covering components
+
+**Changes**
+- **A fresher green.** The old sage green, with green-tinted greys everywhere, is replaced by a brighter emerald (`#047857` light, `#34D399` dark) on cool, clean greys. The page glow is emerald and sky blue. The level colours are clearer: emerald, cyan, indigo, purple and amber. The diagrams' greys, the circuit board and dark mode follow. Every text colour still passes the build's 4.5:1 contrast check in both themes. The logo (black chip on green, gold "AS") is unchanged. Three palettes were tried along the way (emerald, indigo, ocean); green was chosen, and the other two were removed. `v7` keeps the old colours.
+- **Real photos.** 38 photos of 19 parts: webcam, microphone, speakers, keyboard, mouse, monitor, printer, joystick, game controller, CPU, motherboard, RAM, GPU, storage, SSD, hard drive, power supply, cooling and I/O ports. Most parts have one photo of the real thing and one taken apart, matching the drawing. For the webcam: a USB webcam, the camera board with its lens and image processor chip, and the lens, focusing coil and sensor taken apart.
+  - In the panel: a large photo with the others as thumbnails, a caption, and a credit line (author, licence, Wikimedia Commons link).
+  - In the hover card on the home page: the part's photo at the top.
+  - In the bar under the picture: a "Real photos" button with a small round thumbnail. On the parts inside a device, it shows the device's photos.
+  - Any photo opens the photo viewer: large, with arrows (← → keys) and thumbnails.
+  - All photos are from Wikimedia Commons under free licences (CC0, public domain, CC BY, CC BY-SA), resized to 900 px (5.1 MB in all; a page loads only its own). They are stored in `img/photos/`, with captions and credits in `js/data/photos.js`. A "Photos" note was added to the Privacy window.
+- **Nothing covers the picture any more.** The level gauge, the instruction and short notes ("Level 3 of 5 …", "New here?") sit in a bar under the diagram instead of over it.
+- **Visual navigation.**
+  - A level gauge: five icons (computer, chip, blocks, logic gate, real chip), one per level. The current level is lit, earlier ones can be clicked to climb back, and the next one nudges downward when there is more inside.
+  - The welcome card's "way down" is a row of level icons joined by arrows.
+  - Breadcrumb names carry a dot in their level's colour.
+  - The tour has a new step for the gauge, and five steps have small animated pictures: parts lighting up, a pointer clicking the CPU and the picture zooming in, the path growing and climbing back, the panel filling in, Overview ticking parts off, and the power button sending power, then data, to a monitor.
+  - The hover card ends with "Click to go inside" and a magnifier icon.
+- **Magnifier badges** were first shown on every part that has an inside. That looked cluttered, so a part's badge now appears only while it is hovered.
+- Fixed: on the device pages, the instruction overlapped the "How it works" player.
+- Files: new `js/data/photos.js` and `img/photos/`. Icons, photos and the welcome row in `js/panel.js`. Gauge, photo viewer and tour pictures in `js/guide.js`. The bar under the picture and the photo viewer in `build/template.html`. Tokens and styles in `css/styles.css`, and `PHOTO_BASE` in `js/engine.js`.
+
+
+### 8.0.0: A visitor guide that shows what to do
+
+**Prompt** (2026-10-08, exact time not in the saved record):
+> The website is so much informative but still it's not getting reach. I have found out that nobody understand what to do. Less people understand that the components are clickable. No proper visualization to tell them what to do. What can be done to make this website more attracking, eye catchy?
+>
+> Make new folder v8 for the updates
+
+**Changes**
+- **New `v8` folder**, copied from `v7`. `v7` stays as it was at 7.3.3, as the rollback point.
+- **The home page's panel opens with a "Start here" card.** It has a one-line pitch: open up a real computer and zoom inside, down to a single chip. It says that every part in the picture is clickable, and it gives the numbers: 5 levels, 220 parts, 34 real chips and a working 8086. It has three buttons (*Take the 30-second tour*, *Watch it boot*, *Run real 8086 code*) and "the way down" as six clickable steps: Computer → CPU → ALU → Logic unit → AND gate → 74LS08 chip. It is part of the built page, so search engines see it too.
+- **Parts now show that they can be clicked.** Every few seconds, while the visitor is idle, an amber glow sweeps left to right across every clickable part. A pulsing ring with a hand and a "Click me" label ("Tap me" on touch screens) sits on one suggested part: the CPU on the home page, and an unexplored part on other pages. Both calm down after the first few parts have been explored, and they pause during animations.
+- **The instruction pill.** The small grey "Click a part…" line in the corner is now a pill at the bottom centre of the diagram, with a hand icon. It is solid green with a tapping hand for newcomers and turns plain once the visitor has explored a few parts. Phones now show it too, at the top of the diagram, worded for touch: "Tap a part, then press Inside".
+- **A guided tour.** It dims the page and puts a spotlight on one thing at a time, with a card that explains it: the picture, a part to click, the path (Back, Home, breadcrumb), the panel, Overview, the power button, and the *How to use* button. Steps that don't apply on the current page are left out. The tour starts by itself once, after the start screen on the first visit. It can be opened again from the new *How to use* button in the top bar or from the welcome card. Keys: → or Enter for next, ← for back, Esc to close. Someone who first arrives on a part's own page (from a search, say) is offered the tour ("New here? Show me how") instead of having it start.
+- **Progress.** The top bar counts the parts explored ("12 / 220 explored", with a ring; hidden on phones), and Overview ticks the parts already seen. The first time the visitor reaches each new level, a short note says which level it is ("Level 3 of 5 · Component architecture …").
+- **"Go deeper" near the top of every part that has its own picture**: up to four of its clickable parts as links, plus how many more there are.
+- **A tagline under the site name**: "Click any part to look inside it" (hidden on phones).
+- **Privacy note updated.** The site now also remembers in the browser which parts were explored and that the tour was seen (`itc-visited`, `itc-tour`). These two never leave the device. The "What is recorded" list now also names the guide's events, which go to the existing analytics as `trackEvent('guide', …)`: tour started (and from where), finished or skipped at step N, a level first reached, and the welcome card's boot button. These show which help visitors actually use.
+- Files: new `js/guide.js`. Hooks in `js/engine.js` (`window.ITC`, an `itc:nav` event, `itc:intro-done`). The welcome card and "Go deeper" in `js/panel.js`. Top-bar buttons and the script tag in `build/template.html`. Styles at the end of `css/styles.css`. Add `?tour` to the address to see the tour again.
+
 
 ### 7.3.3: The portfolio's new address
 

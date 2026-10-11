@@ -22,6 +22,7 @@ const SITE = html.dataset.site || ROOT.href;
 let cur = null, curOwner = null, layer = null, sceneFocus = null;
 const LASTKEY = {}, LIVE = {};
 
+window.PHOTO_BASE = new URL('img/photos/', ROOT).href;   /* for the real photos in panel.js */
 const urlFor = id => new URL(id === 'computer' ? (HTTP ? './' : 'index.html') : `parts/${id}.html`, ROOT).href;
 const canonicalFor = id => SITE + (id === 'computer' ? '' : `parts/${id}.html`);
 
@@ -303,6 +304,7 @@ function go(id, opts = {}){
     const oN = N[own];
     hintEl.textContent = hintFor(oN);
     hintEl.hidden = !hintEl.textContent;
+    dispatchEvent(new CustomEvent('itc:nav', {detail: {id, own, changed: changingLayer}}));   /* for js/guide.js */
   };
   if (changingLayer && animated){
     requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(rest, 0)));
@@ -330,8 +332,8 @@ function hintFor(n){
   if (n.scene === 'control') return 'Press Next step or Run';
   if (n.scene === 'ic') return CHIPS[n.id].inside ? `${tap} a button to highlight pins, or open Inside the chip` : `${tap} a button to highlight its pins`;
   if (n.scene === 'i8086') return '';
-  if (n.scene === 'pc' || n.scene === 'board') return `${tap} a part to open it, or drag it to move it`;
-  return `${tap} a part to zoom in`;
+  if (n.scene === 'pc' || n.scene === 'board') return coarse.matches ? 'Tap a part, then press Inside' : 'Click any part to go inside it, or drag it to move it';
+  return coarse.matches ? 'Tap a part, then press Inside' : 'Click any part to go inside it';
 }
 function renderPanel(id){
   inner.innerHTML = panelHTML(id, urlFor);
@@ -607,6 +609,7 @@ window.rebuildScene = function(){
   swapLayer(curOwner, true);
   applyFocus();
   hintEl.textContent = hintFor(N[curOwner]); hintEl.hidden = !hintEl.textContent;
+  dispatchEvent(new CustomEvent('itc:nav', {detail: {id: cur, own: curOwner, changed: true}}));
 };
 
 /* ---------- collapsible details panel ----------
@@ -1699,6 +1702,17 @@ themeBtn.addEventListener('click', () => setTheme(html.dataset.theme === 'dark' 
 /* start */
 go(idFromLocation(), {animate:false, replace:true});
 
+/* ---------- for js/guide.js (the visitor guide: tour, "click me" hints, progress) ---------- */
+window.ITC = {
+  go: id => go(id),
+  cur: () => cur, owner: () => curOwner, layer: () => layer,
+  busy: () => simRunning(),
+  powerOn: () => { if (!simRunning() && layer && layer.querySelector('.hot[data-id="power-button"]')) powerToggle(); },
+  coarse, reduce,
+  introPending: false,                                 /* true while the first-visit start screen is showing or playing */
+};
+const introDone = () => { ITC.introPending = false; dispatchEvent(new Event('itc:intro-done')); };
+
 /* ---------- the start screen ----------
    Opening the home page shows the computer in the dark, with only its power button
    lit, and a short prompt. Pressing it (or Enter) fades the dark away and plays the
@@ -1710,6 +1724,7 @@ go(idFromLocation(), {animate:false, replace:true});
 const introSeen = () => { try { return localStorage.getItem('itc-intro') === 'seen'; } catch(_){ return false; } };
 const introQ = new URLSearchParams(location.search);
 if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
+  ITC.introPending = true;
   const btnFor = () => layer && layer.querySelector('.hot[data-id="power-button"]');
   const intro = document.createElement('div');
   intro.className = 'intro';
@@ -1739,7 +1754,7 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
     setTimeout(() => intro.remove(), 650);
     try { localStorage.setItem('itc-intro', 'seen'); } catch(_){}
     if (window.trackEvent) window.trackEvent('start_screen', start ? 'power_on' : 'skip');
-    if (start) cinema();
+    if (start) cinema(); else setTimeout(introDone, 700);
   }
   /* The fast boot, filmed: the diagram fills the whole window between letterbox bars, and a "camera"
      frames the parts of each step (the power button, the power supply, the CPU and firmware, the monitor
@@ -1819,7 +1834,7 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
         ph.remove(); film.remove();
         ['position', 'left', 'top', 'width', 'height', 'zIndex', 'borderRadius', 'margin', 'transition'].forEach(k => { st[k] = ''; });
         lay.style.transition = ''; lay.style.transformOrigin = '';
-        setTimeout(() => html.classList.remove('intro-reveal'), 1000);
+        setTimeout(() => { html.classList.remove('intro-reveal'); introDone(); }, 1000);
         dispatchEvent(new Event('resize'));             /* anything sized to the stage settles again */
       }, T * 1000 + 60);
     }
@@ -1839,7 +1854,7 @@ if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
   /* a click anywhere else in the dark just draws the eye back to the button */
   intro.addEventListener('click', e => { if (e.target === intro){ hole.classList.remove('nudge'); void hole.offsetWidth; hole.classList.add('nudge'); } });
   const show = () => {
-    const b = btnFor(); if (!b) return;
+    const b = btnFor(); if (!b){ introDone(); return; }
     const r = b.getBoundingClientRect();
     if (r.bottom > innerHeight || r.top < 0) b.scrollIntoView({block: 'center'});
     document.body.appendChild(intro); open = true;

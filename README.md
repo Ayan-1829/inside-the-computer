@@ -12,6 +12,8 @@ An interactive, zoomable tour of a whole desktop computer — click into any par
 - **Live circuits you can operate**, not just diagrams: single logic gates with truth tables, a full adder that steps through its own gates one at a time, a 4-bit ALU with all nine operations, an 8-bit barrel shifter, a 4-bit comparator, and a fetch-decode-execute walkthrough.
 - **Parts you can drag around** on the desk and motherboard views, to see what's underneath.
 - Built for **keyboard and touch** as well as mouse: every part and control is reachable by keyboard, phones get large tap targets and a part list, and reduced-motion preferences are respected.
+- **Real photos** of 19 parts, from outside and taken apart, next to the drawings (from Wikimedia Commons, credited under each photo).
+- **A guide for first-time visitors**: a "start here" card, a glow that shows which parts can be clicked, a guided tour (open it again with *How to use*), and a count of the parts you have explored.
 - **Light and dark themes**, remembered between visits.
 
 ## Who it's for

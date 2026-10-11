@@ -12,8 +12,8 @@
 <link rel="canonical" href="https://ayan-1829.github.io/inside-the-computer/parts/sm-registers.html">
 <meta name="application-name" content="Inside the Computer">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#EDF0EC">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0F1613">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#D9E1E9">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#04070A">
 
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Inside the Computer">
@@ -32,12 +32,12 @@
 <!-- Google Search Console: proves the site belongs to its owner (a public token, not a secret) -->
 <meta name="google-site-verification" content="5F-FBRlAZaLNaIYnfYIqKzIGeswl8YDUZCfYrZxCjEg">
 
-<link rel="icon" href="../favicon.ico?v=661cf8ee" sizes="48x48" type="image/x-icon">
-<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=661cf8ee">
-<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png?v=661cf8ee">
-<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png?v=661cf8ee">
-<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=661cf8ee">
-<link rel="manifest" href="../site.webmanifest?v=661cf8ee">
+<link rel="icon" href="../favicon.ico?v=9272f67a" sizes="48x48" type="image/x-icon">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg?v=9272f67a">
+<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png?v=9272f67a">
+<link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png?v=9272f67a">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=9272f67a">
+<link rel="manifest" href="../site.webmanifest?v=9272f67a">
 <link rel="sitemap" type="application/xml" href="https://ayan-1829.github.io/inside-the-computer/sitemap.xml">
 <script type="application/ld+json" id="ld-page">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://ayan-1829.github.io/inside-the-computer/#website","url":"https://ayan-1829.github.io/inside-the-computer/","name":"Inside the Computer","inLanguage":"en"},{"@type":"LearningResource","@id":"https://ayan-1829.github.io/inside-the-computer/parts/sm-registers.html#resource","url":"https://ayan-1829.github.io/inside-the-computer/parts/sm-registers.html","name":"Register file","description":"A very large, fast memory that holds the registers of all the threads running on the compute unit. An NVIDIA SM has 65,536 32-bit registers, which is 256 KB…","inLanguage":"en","isAccessibleForFree":true,"learningResourceType":["Interactive resource","Diagram"],"interactivityType":"active","educationalLevel":["High school","Undergraduate"],"audience":{"@type":"EducationalAudience","educationalRole":"student"},"about":{"@type":"Thing","name":"Register file"},"isPartOf":{"@id":"https://ayan-1829.github.io/inside-the-computer/#website"},"image":"https://ayan-1829.github.io/inside-the-computer/og-image.png"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Computer","item":"https://ayan-1829.github.io/inside-the-computer/"},{"@type":"ListItem","position":2,"name":"GPU","item":"https://ayan-1829.github.io/inside-the-computer/parts/gpu.html"},{"@type":"ListItem","position":3,"name":"Compute units","item":"https://ayan-1829.github.io/inside-the-computer/parts/compute-units.html"},{"@type":"ListItem","position":4,"name":"Register file","item":"https://ayan-1829.github.io/inside-the-computer/parts/sm-registers.html"}]}]}</script>
 
@@ -72,9 +72,15 @@
   <header class="topbar">
     <a class="brand" href="../index.html" aria-label="Inside the Computer, go to the start">
       <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="asGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE9A8"/><stop offset=".55" stop-color="#E39A12"/><stop offset="1" stop-color="#9A6510"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="#16654F"/><rect x="14" y="14" width="36" height="36" rx="5" fill="#0D0D0D"/><path d="M24 8v6M32 8v6M40 8v6M24 50v6M32 50v6M40 50v6M8 24h6M8 32h6M8 40h6M50 24h6M50 32h6M50 40h6" stroke="#0D0D0D" stroke-width="3" stroke-linecap="round"/><text x="32" y="33" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="800" letter-spacing="-.5" font-family="Arial, sans-serif" fill="url(#asGold)" stroke="#6B4300" stroke-width="0.4">AS</text></svg>
-      <p class="brand-name">Inside the Computer</p>
+      <span class="brand-text"><span class="brand-name">Inside the Computer</span><span class="brand-tag">Click any part to look inside it</span></span>
     </a>
     <div class="spacer"></div>
+    <button class="btn prog" id="btn-progress" type="button" aria-haspopup="dialog" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle class="prog-bg" cx="12" cy="12" r="9"/><circle class="prog-fg" cx="12" cy="12" r="9" pathLength="100" stroke-dasharray="0 100"/></svg>
+      <span class="lbl"><b id="prog-n">0</b> / <span id="prog-t">0</span> explored</span></button>
+    <button class="btn guide-btn" id="btn-guide" type="button">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M7.9 7.8a2.2 2.2 0 1 1 3 2c-.6.3-.9.8-.9 1.4v.3M10 14.2v.1"/></svg>
+      <span class="lbl">How to use</span></button>
     <button class="btn" id="btn-overview" type="button" aria-haspopup="dialog">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="2.5" y="2.5" width="6" height="5" rx="1.2"/><path d="M5.5 7.5v8h4M5.5 11.5h4"/><rect x="11.5" y="9" width="6" height="5" rx="1.2"/></svg>
       <span class="lbl">Overview</span></button>
@@ -86,12 +92,13 @@
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg><span class="lbl">Back</span></button>
     <button class="btn icon" id="btn-home" type="button" aria-label="Go to the whole computer and reset">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 9.2 10 3.5l7 5.7V16a1 1 0 0 1-1 1h-3.5v-5h-5v5H4a1 1 0 0 1-1-1Z"/></svg></button>
-    <nav class="crumbs" aria-label="Breadcrumb"><ol id="crumbs"><li><a href="../index.html" data-go="computer">Computer</a></li><li><a href="gpu.html" data-go="gpu">GPU</a></li><li><a href="compute-units.html" data-go="compute-units">Compute units</a></li><li><a href="sm-registers.html" data-go="sm-registers" aria-current="page">Register file</a></li></ol></nav>
+    <nav class="crumbs" aria-label="Breadcrumb"><ol id="crumbs"><li style="--c:var(--lv-1)"><a href="../index.html" data-go="computer">Computer</a></li><li style="--c:var(--lv-2)"><a href="gpu.html" data-go="gpu">GPU</a></li><li style="--c:var(--lv-3)"><a href="compute-units.html" data-go="compute-units">Compute units</a></li><li style="--c:var(--lv-4)"><a href="sm-registers.html" data-go="sm-registers" aria-current="page">Register file</a></li></ol></nav>
     <button class="btn panel-btn" id="btn-panel" type="button" aria-controls="panel" aria-expanded="true">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M12.5 3.5v13"/></svg><span>Hide details</span></button>
   </div>
 
   <main class="main">
+    <div class="stage-col">
     <section class="stage" id="stage" aria-label="Interactive computer visualization">
       <div class="scroller" id="scroller"><div id="layers"></div></div>
       <button class="btn zoom-btn" id="btn-zoom" type="button" aria-pressed="false"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4.5 4.5M6 8.5h5M8.5 6v5"/></svg><span>Zoom diagram</span></button>
@@ -105,15 +112,18 @@
       </div>
       <p class="nojs">The interactive diagram needs JavaScript. The full explanation is in the panel.</p>
       <div class="stage-tools" id="stage-tools"><button class="btn" id="btn-reset-layout" type="button"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3.5V6h2.5"/></svg><span>Reset positions</span></button></div>
-      <div class="hint" id="hint" aria-hidden="true">Click a part to zoom in</div>
       <div class="tip" id="tip" role="tooltip"></div>
     </section>
+    </div>
+    <!-- below the picture, never over it: the depth gauge, real photos, the instruction and short notes (js/guide.js) -->
+    <div class="stage-bar" id="stage-bar"><div class="hint" id="hint" aria-hidden="true">Click a part to zoom in</div></div>
     <nav class="strip" id="strip" aria-label="Parts in this view"><span class="strip-label">In this view</span><a class="chip" href="sm-scheduler.html" data-go="sm-scheduler"><i></i>Warp scheduler and dispatch</a><a class="chip" href="sm-cores.html" data-go="sm-cores"><i></i>Shader cores (CUDA cores)</a><a class="chip" href="sm-tensor.html" data-go="sm-tensor"><i></i>Tensor cores (matrix engines)</a><a class="chip" href="sm-rt.html" data-go="sm-rt"><i></i>Ray-tracing core</a><a class="chip cur" href="sm-registers.html" data-go="sm-registers"><i></i>Register file</a><a class="chip" href="sm-shared.html" data-go="sm-shared"><i></i>Shared memory and L1 cache</a><a class="chip" href="sm-texture.html" data-go="sm-texture"><i></i>Texture units</a></nav>
     <aside class="panel" id="panel" aria-label="Component information">
       <article class="panel-inner" id="panel-inner"><p class="p-level">Level 4: Internal components</p><h1 class="p-title">Register file</h1><p class="p-short">A very large, fast memory that holds the registers of all the threads running on the compute unit.</p><section class="p-sec"><h3>What is it?</h3><p>An NVIDIA SM has 65,536 32-bit registers, which is 256 KB (as much as an entire small CPU’s L2 cache), for the threads on it. Each thread has its own registers, and they stay there for the thread’s whole life.</p></section><section class="p-sec"><h3>What does it do?</h3><p>When the warp scheduler issues an instruction, the operands are read from this file, and the results are written back. The register file is split into banks so that many reads can happen in a cycle.</p></section><section class="p-sec"><h3>Why it matters</h3><p>Holding every thread’s values on the chip is what lets the GPU switch warps instantly, without saving anything. It also limits how many threads can run: more registers per thread means fewer threads fit.</p></section><section class="p-sec"><h3>Real-life examples</h3><ul class="ex"><li><b>NVIDIA Ada SM</b><span>256 KB of registers per SM</span></li><li><b>AMD RDNA 3</b><span>Vector register file per SIMD</span></li><li><b>Register pressure</b><span>Using too many registers cuts the number of threads</span></li><li><b>Register spilling</b><span>Extra values spill to slower memory</span></li></ul></section><section class="p-sec"><h3>Key specifications</h3><dl class="specs"><dt>Size</dt><dd>256 KB per SM (Ada)</dd><dt>Registers</dt><dd>65,536 × 32 bit</dd><dt>Access</dt><dd>many reads per cycle</dd></dl></section><section class="p-sec"><h3>How it connects</h3><ul class="rel"><li><a class="" href="registers.html" data-go="registers"><b>Registers</b><span>A CPU has just a few dozen</span></a></li><li><a class="" href="sm-scheduler.html" data-go="sm-scheduler"><b>Warp scheduler and dispatch</b><span>Decides who reads next</span></a></li><li><a class="" href="sram-cell.html" data-go="sram-cell"><b>Six-transistor cell</b><span>The register file is made of SRAM cells</span></a></li></ul></section><div class="fact"><h3>Fun fact</h3><p>The register files of a whole RTX 4090 add up to about 32 MB, as much as the L3 cache of many desktop CPUs.</p></div><section class="p-sec"><h3>Learn more</h3><ul class="learn"><li><a class="lk lk-v" href="https://www.youtube.com/watch?v=Q1Y-vkXqCKM" target="_blank" rel="noopener noreferrer" data-yt="Q1Y-vkXqCKM" data-yt-title="GPU Memory Hierarchy Explained: Registers, Shared Memory, L2, HBM, and PCIe (Visual)" data-yt-by="Parallel Routines"><span class="lk-thumb" aria-hidden="true"><img src="https://i.ytimg.com/vi/Q1Y-vkXqCKM/mqdefault.jpg" alt="" loading="lazy" width="120" height="68"><span class="lk-thumb-play"><svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 4.5v11l9-5.5z"/></svg></span></span><span class="lk-t">GPU Memory Hierarchy Explained: Registers, Shared Memory, L2, HBM, and PCIe (Visual)<em>Video · Parallel Routines · 4:34</em></span><span class="sr-only"> (plays in a window on this page)</span></a></li><li><a class="lk lk-v" href="https://www.youtube.com/watch?v=9zeAcO2Etlk" target="_blank" rel="noopener noreferrer" data-yt="9zeAcO2Etlk" data-yt-title="CUDA Memory Architecture of GPU" data-yt-by="Comrevo"><span class="lk-thumb" aria-hidden="true"><img src="https://i.ytimg.com/vi/9zeAcO2Etlk/mqdefault.jpg" alt="" loading="lazy" width="120" height="68"><span class="lk-thumb-play"><svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M7 4.5v11l9-5.5z"/></svg></span></span><span class="lk-t">CUDA Memory Architecture of GPU<em>Video · Comrevo · 7:52</em></span><span class="sr-only"> (plays in a window on this page)</span></a></li></ul><p class="note learn-note">Videos play here, from YouTube; articles open Wikipedia in a new tab.</p></section></article>
     </aside>
   </main>
-  <footer class="foot"><button class="foot-priv" id="btn-privacy" type="button" aria-haspopup="dialog"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 4 5v4.5c0 3.7 2.6 6.8 6 8 3.4-1.2 6-4.3 6-8V5z"/><path d="m7.5 10 1.8 1.8 3.3-3.6"/></svg><span>Privacy</span></button><strong class="foot-c">&copy; 2026</strong> <strong class="foot-name">Ayan Sarkar</strong>, Lecturer, CSE, Green University of Bangladesh &middot; <a class="foot-link" href="https://ayan-1829.github.io/" target="_blank" rel="noopener">ayan-1829.github.io</a></footer>
+  <!-- one slim line: Privacy · credit · Feedback (feedback.js puts its button in the [data-fbk-slot]) -->
+  <footer class="foot"><button class="foot-priv" id="btn-privacy" type="button" aria-haspopup="dialog"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 4 5v4.5c0 3.7 2.6 6.8 6 8 3.4-1.2 6-4.3 6-8V5z"/><path d="m7.5 10 1.8 1.8 3.3-3.6"/></svg><span>Privacy</span></button><span class="foot-who"><strong class="foot-c">&copy; 2026</strong> <strong class="foot-name">Ayan Sarkar</strong>, Lecturer, CSE, Green University of Bangladesh &middot; <a class="foot-link" href="https://ayan-1829.github.io/" target="_blank" rel="noopener">ayan-1829.github.io</a></span><span class="foot-fbk" data-fbk-slot></span></footer>
 </div>
 
 <dialog id="overview" aria-labelledby="ov-title">
@@ -135,6 +145,7 @@
     <ul>
       <li>The parts you open, how long each one is on screen, and how long you actively use it. Time while the tab is hidden isn't counted.</li>
       <li>Links to other websites that you follow from here, such as the "Learn more" videos and articles.</li>
+      <li>Whether you use the guided tour (started, finished, or closed at which step), and the first time you reach each level.</li>
       <li>Your browser, operating system and type of device (computer, tablet or phone).</li>
       <li>Screen and window size, language, time zone, light or dark theme, and touch or mouse.</li>
       <li>The website that linked you here, if any, and how long the page took to load.</li>
@@ -150,12 +161,14 @@
       <li>No names, email addresses or accounts.</li>
       <li>No fingerprinting, no advertising, and no data is sold or shared.</li>
     </ul>
-    <p>The site does save a few settings in your browser: your light or dark theme, whether the side panel is shown, the animations' sound volume, and that you have already seen the start screen, so they are kept the next time. They never leave your device.</p>
+    <p>The site does save a few settings in your browser: your light or dark theme, whether the side panel is shown, the animations' sound volume, that you have already seen the start screen and the tour, which parts you have explored (for the "explored" count and the ticks in the Overview), and whether you have worked a logic gate (so the "Click me" hints stop), so they are kept the next time. They never leave your device.</p>
     <h3>Where the data goes</h3>
     <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button are kept separately, with the page and the type of device they were sent from.</p>
     <h3>Videos</h3>
     <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
-        <h3>Turning it off</h3>
+    <h3>Photos</h3>
+    <p>The real photos of the parts are from Wikimedia Commons, used under their free licences and credited under each one. They are stored on this site, so showing them contacts no one else.</p>
+    <h3>Turning it off</h3>
     <p>Turn on <b>Global Privacy Control</b> or <b>Do Not Track</b> in your browser and this site sends nothing. Ad and tracker blockers also stop it, and the site works the same either way.</p>
   </div>
   <p class="dlg-foot">Questions? Use the Feedback button, or visit <a href="https://ayan-1829.github.io/" target="_blank" rel="noopener">ayan-1829.github.io</a></p>
@@ -167,6 +180,19 @@
   </div>
   <div class="vd-frame" id="vd-frame"></div>
   <p class="dlg-foot vd-foot"><span>Plays from YouTube in its privacy-enhanced mode.</span> <a id="vd-yt" href="#" target="_blank" rel="noopener noreferrer">Watch on YouTube ↗</a></p>
+</dialog>
+<dialog id="photos" class="phv" aria-labelledby="phv-title">
+  <div class="dlg-head">
+    <div><h2 id="phv-title">Real photos</h2><p id="phv-n"></p></div>
+    <button class="btn icon" id="phv-close" type="button" aria-label="Close the photos"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button>
+  </div>
+  <div class="phv-stage">
+    <button class="phv-nav prev" type="button" aria-label="Previous photo"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
+    <img id="phv-img" alt="">
+    <button class="phv-nav next" type="button" aria-label="Next photo"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4.5 5.5 5.5L8 15.5"/></svg></button>
+  </div>
+  <p class="phv-cap" id="phv-cap"></p>
+  <div class="phv-thumbs" id="phv-thumbs"></div>
 </dialog>
 <dialog id="device-test" aria-labelledby="dt-title" class="dt">
   <div class="dlg-head">
@@ -199,6 +225,7 @@
 <script src="../js/data/alu.js"></script>
 <script src="../js/data/logic.js"></script>
 <script src="../js/data/chips.js"></script>
+<script src="../js/data/photos.js"></script>
 <script src="../js/panel.js"></script>
 <script src="../js/sim/i8086.js"></script>
 <script src="../js/scenes/common.js"></script>
@@ -215,6 +242,7 @@
 <script src="../js/scenes/i8086.js"></script>
 <script src="../js/sfx.js"></script>
 <script src="../js/engine.js"></script>
+<script src="../js/guide.js"></script>
 <script src="../js/analytics.js"
         data-endpoint="https://analytics-proxy.ayansarkar1829.workers.dev"
         data-project="inside-the-computer"></script>

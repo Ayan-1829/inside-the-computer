@@ -22,6 +22,9 @@
 .fbk-btn:hover,.fbk-btn:focus-visible{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 0 0 6px var(--accent-glow,rgba(15,107,79,.4)),0 14px 28px -8px rgba(0,0,0,.6)}
 :root[data-theme="dark"] .fbk-btn:hover,:root[data-theme="dark"] .fbk-btn:focus-visible{box-shadow:0 0 0 6px var(--accent-glow,rgba(77,195,156,.42)),0 0 30px 0 var(--accent-glow,rgba(77,195,156,.42))}
 .fbk-btn svg{width:19px;height:19px;flex:none}
+.fbk-btn.fbk-inline{position:static;height:26px;padding:0 13px;gap:6px;border-width:1px;font-size:13px;box-shadow:none;animation:none}
+.fbk-btn.fbk-inline svg{width:15px;height:15px}
+.fbk-btn.fbk-inline:hover,.fbk-btn.fbk-inline:focus-visible{box-shadow:0 0 0 3px var(--accent-soft,rgba(15,107,79,.12))}
 @keyframes fbk-pulse{0%{box-shadow:0 0 0 4px var(--accent-soft,rgba(15,107,79,.12)),0 0 0 0 var(--accent-glow,rgba(15,107,79,.4))}100%{box-shadow:0 0 0 4px var(--accent-soft,rgba(15,107,79,.12)),0 0 0 18px rgba(0,0,0,0)}}
 @media (prefers-reduced-motion:reduce){.fbk-btn{animation:none}}
 @media (max-width:980px){.fbk-btn{bottom:14px;height:46px;padding:0 22px;font-size:17px}.fbk-btn svg{width:21px;height:21px}}
@@ -122,6 +125,9 @@
     } finally { clearTimeout(timer); }
   });
 
-  document.body.appendChild(btn);
+  /* a page can give the button a place of its own (an element with data-fbk-slot, e.g. in its footer);
+     otherwise it floats in the bottom-right corner */
+  const slot = document.querySelector('[data-fbk-slot]');
+  if (slot){ btn.classList.add('fbk-inline'); slot.appendChild(btn); } else document.body.appendChild(btn);
   document.body.appendChild(dlg);
 })();
