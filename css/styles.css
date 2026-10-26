@@ -484,6 +484,10 @@ dialog.vd::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(8px);-webkit
 .sfx-pop input[type=range]{writing-mode:vertical-lr;direction:rtl;width:28px;height:130px;margin:0;accent-color:var(--accent);cursor:pointer}
 .sfx-pop output{font:600 12px var(--font-ui);color:var(--ink-2);text-align:center;min-width:40px}
 .dv-note{max-width:min(720px,calc(100% - 80px))}
+/* while a step note shows over the picture, the picture moves down below it (engine.js sets --note-h) */
+#layers{transition:top .35s ease}
+.stage.has-note #layers{top:var(--note-h,0px)}
+@media (prefers-reduced-motion: reduce){#layers{transition:none}}
 .dv-note .fn-txt{font-size:var(--fs-2);line-height:1.45}
 .dv-note .fn-step{font-size:var(--fs-1)}
 .dv-note .fn-txt > b{color:var(--ink)}

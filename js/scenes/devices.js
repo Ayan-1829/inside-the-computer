@@ -189,9 +189,10 @@ SCENES.webcam = () => {
 ['mic', 'speakers', 'monitor', 'keyboard', 'mouse', 'joystick', 'gamepad', 'printer', 'webcam'].forEach(k => {
   const draw = SCENES[k];
   /* At rest the drawing is big, with just a slim strip at the bottom for the "How it works" button. When the
-     animation starts, the view widens smoothly to vbPlay (engine.js), leaving room for the caption at the
-     top and the controls at the bottom. Phones and tablets put the caption below the diagram, so there the
-     view stays as it is, with a taller strip for the controls. */
+     animation starts, the caption appears above the picture and the picture moves down to make room for it
+     (engine.js's step note), and the view widens a little to vbPlay for the bigger controls at the bottom.
+     Phones and tablets put the caption below the diagram, so there the view stays as it is, with a taller
+     strip for the controls. */
   SCENES[k] = n => Object.assign({cls: 'devscene', vb: innerWidth <= 980 ? [0, 0, 1000, 850] : [0, 0, 1000, 770],
-    vbPlay: innerWidth <= 980 ? null : [0, -120, 1000, 900]}, draw(n));
+    vbPlay: innerWidth <= 980 ? null : [0, 0, 1000, 800]}, draw(n));
 });

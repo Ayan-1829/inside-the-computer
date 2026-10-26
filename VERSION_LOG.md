@@ -16,6 +16,8 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 8.2.3 | 2026-10-26 | — | Step notes never cover the picture: it moves down below the note while one shows; no note outlives its page (8086 after Step, reset or leaving; the AND gate's note after going home); leaving the 8086 for any other part stops its program |
+| 8.2.2 | 2026-10-17 | — | Fixes found while recording the promo video: ?intro and ?tour work again, campaign tags (?utm_…) reach the visit counter, and leaving the 8086 mid-play no longer leaves its note on the next page |
 | 8.2.1 | 2026-10-11 | — | Every part's photos start with the real thing as you'd see it, then opened up: 7 new photos (an opened microphone module and a microphone taken apart; outside photos of the keyboard, mouse, printer, game controller and hard drive), and the RAM and storage galleries reordered |
 | 8.2.0 | 2026-10-11 | — | A shorter tour (5 steps; its description step shows the part's own description); the "Click me" ring leads Computer → CPU → ALU → Logic unit → AND gate and has you flip its switches; level gauge removed and the instruction centred under the picture; darker page background in both themes; Privacy, credit and Feedback in one slim line at the bottom; after the gate the ring points back to the computer; a distinct natural man's voice at the microphone |
 | 8.1.1 | 2026-10-08 | — | Text back on the five sizes (13 px smallest) and the main new texts one size larger; the diagrams back to v7's size (the bar under the picture had shrunk them by up to 10 %) |
@@ -102,6 +104,42 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 ---
 
 ## Versions
+
+### 8.2.3: Notes that never cover the picture, and never outlive their page
+
+**Prompt** (2026-10-26, exact time not in the saved record):
+> for the i8086 simulation, a pop-up text description appears that hides the beneath simulation. Also, if I reset it, the text doesn't disapear rather stays on top. If I even go to another part, the pop-up doesn't stop. Don't cover any parts by the text over it.
+>
+> Most of the section where pop-up text appears, doesn't stop that if I go to another page (for example after the AND gate simulation inside ALU, if I go to the home page, the text stays). Solve inconsistencies for all the sections.
+
+**Changes**
+- **The step note never covers the picture.** The note used by the 8086's Play and Step and by the nine devices' "How it works" sat on top of the diagram. While a note shows, the picture now moves down below it, smoothly, and moves back up when the note goes. The stage gets `.has-note`, and `--note-h` is the note's height, kept up to date by a ResizeObserver. On phones the note was already under the picture, so nothing changes there. The devices' play view no longer adds empty room at the top for the caption (`vbPlay` 0,0,1000,800 instead of 0,−120,1000,900), so the drawings stay as big as before.
+- **No note outlives its page.** Problems found by testing every section, all fixed:
+  - **8086, Step then leaving:** the step's dot finished arriving after the page had changed, and showed its note over the next page. The note now refuses to appear for a page that has been left or is leaving (`stepNote.show(…, {owner})`), and the 8086 checks the same before every step.
+  - **8086, Home button while playing:** the same late note came back over the home page. Fixed by the same check.
+  - **8086 → one of its instruction groups:** the program kept playing and its notes kept coming. Going to any other part now stops it, and the button reads Play again.
+  - **Any part → another part of the same picture:** the note used to be cleared only when the picture changed. It is now cleared on every navigation (except the power button's own page, whose walkthrough keeps going).
+  - **AND gate → Home:** "You made the AND gate work" followed the visitor for up to 7 seconds, over the next pages. The guide's notes now go when the visitor moves on.
+- Checked in the browser after the fix: the 8086 (playing, paused then reset, Step then reset, Step then leaving, playing then the Home button, playing then an instruction group), the AND gate, the microphone's "How it works" (playing, then one of its own parts, then home) and the power-on walkthrough. No note is left over in any case, and while one shows it sits 10 px above the picture. All 143 8086 checks and 12 example programs pass.
+
+
+### 8.2.2: Fixes found while recording the promo video
+
+**Prompts** (2026-10-17, exact times not in the saved record):
+> For this website advertising, I want to make a short (1 mins video). Can you write me the script for this? Make it as atrractive as possible.
+
+> Great. now make me a video with these instructions
+
+> Use male voice that is less robotic. You can take help of google/eleven labs voices
+
+> use male voice (aman)
+
+**Changes**
+- **`?intro` and `?tour` work again.** The first navigation tidies the address bar, and that happened before the start screen and the tour read the address, so both options were lost. The address's options are now read first (`ITC.query` in `js/engine.js`), so `?intro` replays the start screen and `?tour` the tour.
+- **Campaign tags reach the visit counter.** For the same reason, `?utm_source=…`, `?utm_medium=…` and `?utm_campaign=…` were gone before `js/analytics.js` read them. It now uses `ITC.query` when the page has one, so links posted with tags (for example `?utm_source=youtube`) show where visitors came from. Pages without `ITC` (the other sites) are unchanged.
+- **The 8086 stops when its page is left.** Leaving the 8086 page while "Play" was running let the program keep stepping, and its short note appeared over the next page. It now stops as soon as its picture leaves. All 143 checks and 12 example programs still pass.
+- The promo video itself (60 seconds, 16:9 and 9:16, voiced by macOS's Aman) is in the `Promo video` folder next to `v8`. It is not part of the site.
+
 
 ### 8.2.1: Real photos: outside first, then inside
 

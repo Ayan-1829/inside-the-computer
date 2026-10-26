@@ -47,7 +47,8 @@
 
   /* Sent once, with the first page view of the load */
   function collectContext() {
-    const q = new URLSearchParams(location.search), c = { referrer: document.referrer.slice(0, 300) };
+    /* a page that tidies its address bar on load can keep the original ?query in window.ITC.query (Inside the Computer does) */
+    const q = (window.ITC && window.ITC.query) || new URLSearchParams(location.search), c = { referrer: document.referrer.slice(0, 300) };
     ['utm_source', 'utm_medium', 'utm_campaign'].forEach(k => { if (q.get(k)) c[k] = q.get(k).slice(0, 100); });
     try { c.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) {}
     c.lang = navigator.language || '';

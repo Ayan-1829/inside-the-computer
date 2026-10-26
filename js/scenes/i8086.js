@@ -915,7 +915,8 @@
       const shortNote = fade => {
         const st = S.story[S.idx];
         if (!st || !window.stepNote) return;
-        window.stepNote.show(`${S.idx + 1}/${S.story.length}`, st.title, firstSentence(st.desc), {center: true, fade});
+        if (gone()) return;
+        window.stepNote.show(`${S.idx + 1}/${S.story.length}`, st.title, firstSentence(st.desc), {center: true, fade, owner: el});
       };
       const noteFade = ms => { if (window.stepNote) window.stepNote.fade(ms); };
       const stop = () => { playing = false; clearTimeout(timer); if (raf) cancelAnimationFrame(raf); hideDot(); draw(); };
@@ -924,10 +925,13 @@
         if (animate) travel(S.story[S.idx], () => draw());
         else draw();
       };
+      /* the page was left while playing: stop, and show no more notes over the next page */
+      const gone = () => !el.isConnected || el.classList.contains('leaving') || (typeof ITC !== 'undefined' && ITC.cur() !== 'i8086');
       const advance = () => {
+        if (gone()){ playing = false; clearTimeout(timer); if (raf) cancelAnimationFrame(raf); hideDot(); if (el.isConnected) draw(); return; }   /* draw: the button says Play again */
         if (S.idx >= S.story.length - 1){ stop(); noteFade(5000); return; }
         S.idx++;
-        travel(S.story[S.idx], () => { draw(); if (playing) shortNote(0); if (playing) timer = setTimeout(advance, Math.max(110, speedMs(S.speed)*0.3) + ARRIVE_PAUSE); });
+        travel(S.story[S.idx], () => { if (gone()){ playing = false; return; } draw(); if (playing) shortNote(0); if (playing) timer = setTimeout(advance, Math.max(110, speedMs(S.speed)*0.3) + ARRIVE_PAUSE); });
       };
 
       /* ---------- the example picker, collapsed to the current pick ---------- */
@@ -1070,7 +1074,7 @@
       });
       onPress($('[data-a="step"]'), () => {
         if (playing) stop();
-        if (S.idx < S.story.length - 1){ S.idx++; travel(S.story[S.idx], () => { draw(); shortNote(6000); }); }
+        if (S.idx < S.story.length - 1){ S.idx++; travel(S.story[S.idx], () => { if (gone()) return; draw(); shortNote(6000); }); }
       });
       onPress($('[data-a="reset"]'), () => { stop(); show(0, false); if (window.stepNote) window.stepNote.hide(); });
       onPress($('[data-a="ops"]'), () => openOps(S.story[S.idx] && S.story[S.idx].ins ? OPKEY(S.story[S.idx].ins.bytes[0][0]) : 'B8'));

@@ -274,6 +274,7 @@ phv.addEventListener('keydown', e => {
 
 /* ---------- after every navigation ---------- */
 function onNav(id, changed, first){
+  if (!first) unsay();                                   /* a note about the last part (e.g. "You made the AND gate work") goes with it */
   visited.add(id);
   store.set('itc-visited', JSON.stringify([...visited]));
   drawProgress();
@@ -492,7 +493,7 @@ document.addEventListener('click', e => {
 
 /* ---------- the first visit ---------- */
 function firstVisit(){
-  const q = new URLSearchParams(location.search);
+  const q = ITC.query;                                   /* read before the address bar was tidied */
   if (!q.has('tour') && store.get('itc-tour') === 'seen') return;
   if (ITC.cur() === 'computer' || q.has('tour')){ setTimeout(() => startTour('auto'), 500); return; }
   /* opened straight on a part's page (from a search, say): offer the tour instead of starting it */

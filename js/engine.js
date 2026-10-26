@@ -20,6 +20,8 @@ const HTTP = /^https?:$/.test(location.protocol);
 const ROOT = new URL(html.dataset.root || './', location.href);
 const SITE = html.dataset.site || ROOT.href;
 let cur = null, curOwner = null, layer = null, sceneFocus = null;
+/* the address's ?options (?intro, ?tour), read before the first navigation tidies the address bar */
+const QUERY = new URLSearchParams(location.search);
 const LASTKEY = {}, LIVE = {};
 
 window.PHOTO_BASE = new URL('img/photos/', ROOT).href;   /* for the real photos in panel.js */
@@ -277,7 +279,7 @@ function go(id, opts = {}){
   if (!N[id]) id = 'computer';
   focusOrigin = opts.from || null;
   if (id === cur && layer) return;
-  if (id !== 'power-button') powerStop();
+  if (id !== 'power-button'){ powerStop(); stepNote.hide(); }   /* no note from one part carries over to another */
   devStop();
   cur = id;
   const own = ownerOf(id);
@@ -748,22 +750,32 @@ const stepNote = (() => {
     if (below && el.parentElement === stage){ stage.after(el); el.classList.add('below'); }
     else if (!below && el.parentElement !== stage){ stage.appendChild(el); el.classList.remove('below'); }
   }
-  addEventListener('resize', place);
-  document.addEventListener('fullscreenchange', place);
-  document.addEventListener('webkitfullscreenchange', place);
+  /* Over the picture, the note never covers it: the stage gets .has-note and the picture moves down by the
+     note's height (--note-h), smoothly, until the note goes. Under the picture (phones) nothing moves. */
+  function dock(){
+    const on = !el.hidden && el.parentElement === stage;
+    if (on) stage.style.setProperty('--note-h', Math.ceil(el.offsetTop + el.offsetHeight + 10) + 'px');
+    stage.classList.toggle('has-note', on);
+  }
+  if (window.ResizeObserver) new ResizeObserver(dock).observe(el);
+  addEventListener('resize', () => { place(); dock(); });
+  document.addEventListener('fullscreenchange', () => { place(); dock(); });
+  document.addEventListener('webkitfullscreenchange', () => { place(); dock(); });
   const api = {
+    /* o.owner: the scene element asking; a scene that has been left (or is leaving) can't show it again */
     show(step, title, text, o = {}){
+      if (o.owner && (!o.owner.isConnected || o.owner.classList.contains('leaving'))) return;
       clearTimeout(fadeTimer);
       el.querySelector('.fn-step').textContent = step;
       const b = el.querySelector('.fn-txt > b'); b.textContent = title ? title + (/[.!?:]$/.test(title) ? '' : '.') : ''; b.hidden = !title;
       el.querySelector('.fn-txt > span').innerHTML = fmt(text || '');
       el.classList.toggle('center', !!o.center);
-      el.hidden = false; place();
+      el.hidden = false; place(); dock();
       if (o.fade) api.fade(o.fade);
     },
     step(t){ el.querySelector('.fn-step').textContent = t; },
-    fade(ms){ clearTimeout(fadeTimer); fadeTimer = setTimeout(() => { el.hidden = true; }, ms); },
-    hide(){ clearTimeout(fadeTimer); el.hidden = true; }
+    fade(ms){ clearTimeout(fadeTimer); fadeTimer = setTimeout(() => { el.hidden = true; dock(); }, ms); },
+    hide(){ clearTimeout(fadeTimer); el.hidden = true; dock(); }
   };
   return api;
 })();
@@ -1708,7 +1720,7 @@ window.ITC = {
   cur: () => cur, owner: () => curOwner, layer: () => layer,
   busy: () => simRunning(),
   powerOn: () => { if (!simRunning() && layer && layer.querySelector('.hot[data-id="power-button"]')) powerToggle(); },
-  coarse, reduce,
+  coarse, reduce, query: QUERY,
   introPending: false,                                 /* true while the first-visit start screen is showing or playing */
 };
 const introDone = () => { ITC.introPending = false; dispatchEvent(new Event('itc:intro-done')); };
@@ -1722,7 +1734,7 @@ const introDone = () => { ITC.introPending = false; dispatchEvent(new Event('itc
    is remembered in this browser (localStorage 'itc-intro'); add ?intro to the
    address to see it again. */
 const introSeen = () => { try { return localStorage.getItem('itc-intro') === 'seen'; } catch(_){ return false; } };
-const introQ = new URLSearchParams(location.search);
+const introQ = QUERY;
 if (cur === 'computer' && (introQ.has('intro') || !introSeen())){
   ITC.introPending = true;
   const btnFor = () => layer && layer.querySelector('.hot[data-id="power-button"]');
