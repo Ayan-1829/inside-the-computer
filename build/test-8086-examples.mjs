@@ -44,4 +44,84 @@ for (const ex of FEATURED){
   } catch (e){ bad++; console.log(`FAIL "${ex.n}": ${e.message}`); continue; }
 }
 console.log(bad ? `${bad} of ${FEATURED.length} example programs failed.` : `All ${FEATURED.length} example programs passed.`);
-process.exit(bad ? 1 : 0);
+
+/* Programs in the textbook (MASM/TASM) style the "Write your own" editor also accepts: .MODEL, .STACK,
+   .DATA, .CODE, PROC/ENDP, MOV AX, @DATA and END <label>. */
+const TEXTBOOK = [
+  ['Hello, textbook style', `.model small        ; Allocates up to 64KB for code and 64KB for data
+.stack 100h         ; Reserves 256 bytes (100h) for the program stack
+
+.data               ; --- DATA SEGMENT: Declare variables here ---
+    msg db 'Hello from the textbook!$', 0Dh, 0Ah   ; '$' marks the end of string for DOS
+
+.code               ; --- CODE SEGMENT: Executable instructions go here ---
+main proc
+    mov ax, @data   ; Load the memory address of the data section into AX
+    mov ds, ax      ; Move it into DS (cannot move directly to DS)
+    mov dx, offset msg  ; Point DX to the memory address of our string
+    mov ah, 09h         ; DOS function 09h: Write string to standard output
+    int 21h             ; Trigger the interrupt to execute the print
+    mov ah, 4Ch     ; DOS function 4Ch: Terminate process
+    mov al, 00h     ; Return exit code 0 (success)
+    int 21h         ; Trigger the interrupt to exit
+main endp
+
+end main            ; Tells the compiler where the program ends and starts`,
+   c => c.out === 'Hello from the textbook!' && c.s.DS === 0x0100],
+  ['Add two variables, textbook style', `.model small
+.stack 100h
+.data
+    num1 db 15      ; Define first byte variable with a value of 15
+    num2 db 20      ; Define second byte variable with a value of 20
+    result db ?     ; '?' reserves 1 byte of uninitialized space for the answer
+.code
+main proc
+    mov ax, @data
+    mov ds, ax
+    mov al, num1     ; Move the value of num1 (15) into the AL register
+    add al, num2     ; Add the value of num2 (20) to AL (AL now equals 35)
+    mov result, al   ; Store the final answer into the 'result' memory variable
+    mov ah, 4Ch
+    int 21h
+main endp
+end main`,
+   c => c.mem[c.phys(c.s.DS, 2)] === 35 && c.reg('AL') === 35],
+  ['A start label after a subroutine, .STACK 200h, and ; inside quotes', `.model small
+.stack 200h
+.data
+    note db 'a;b$'
+.code
+helper proc
+    mov dl, '!'
+    mov ah, 02h
+    int 21h
+    ret
+helper endp
+main proc
+    mov ax, @data
+    mov ds, ax
+    mov dx, offset note
+    mov ah, 09h
+    int 21h
+    call helper
+    mov ah, 4Ch
+    int 21h
+main endp
+end main
+anything after END is not assembled`,
+   c => c.out === 'a;b!' && c.r.SP === 0x0200],
+];
+let tbad = 0;
+for (const [name, src, check] of TEXTBOOK){
+  const c = new I8086.CPU();
+  try {
+    c.assemble(src);
+    let n = 0; while (!c.halted && n < 2000){ if (!c.step()) break; n++; }
+    if (!c.halted || !/asked DOS to end/.test(c.note || '') || !check(c)){ tbad++; console.log(`FAIL "${name}": out=${JSON.stringify(c.out)} AX=${I8086.hex(c.r.AX,4)} SP=${I8086.hex(c.r.SP,4)} note: ${c.note}`); }
+  } catch (e){ tbad++; console.log(`FAIL "${name}": ${e.message}`); }
+}
+{ const c = new I8086.CPU(); let msg = '';
+  try { c.assemble('.code\nmain proc\n  mov ah, 4Ch\n  int 21h\nmain endp\nend mian'); } catch (e){ msg = e.message; }
+  if (!/Line 6: END names MIAN/.test(msg)){ tbad++; console.log(`FAIL "END with a misspelled label": expected an error on line 6, got: ${msg || 'none'}`); } }
+console.log(tbad ? `${tbad} textbook-style checks failed.` : `All ${TEXTBOOK.length + 1} textbook-style checks passed.`);
+process.exit(bad || tbad ? 1 : 0);

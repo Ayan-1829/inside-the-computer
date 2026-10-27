@@ -770,7 +770,12 @@ const stepNote = (() => {
       const b = el.querySelector('.fn-txt > b'); b.textContent = title ? title + (/[.!?:]$/.test(title) ? '' : '.') : ''; b.hidden = !title;
       el.querySelector('.fn-txt > span').innerHTML = fmt(text || '');
       el.classList.toggle('center', !!o.center);
-      el.hidden = false; place(); dock();
+      el.hidden = false; place();
+      /* over the picture the note is two lines tall (css): a text that needs more is set one size smaller */
+      const t = el.querySelector('.fn-txt');
+      el.classList.remove('small');
+      if (el.parentElement === stage && t.scrollHeight > t.clientHeight + 1) el.classList.add('small');
+      dock();
       if (o.fade) api.fade(o.fade);
     },
     step(t){ el.querySelector('.fn-step').textContent = t; },

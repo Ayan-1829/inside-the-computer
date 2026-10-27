@@ -16,6 +16,8 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 8.2.5 | 2026-10-28 | — | The 8086 accepts textbook-style (MASM/TASM) programs: .MODEL, .STACK, .DATA, .CODE, main PROC / ENDP, MOV AX, @DATA and END main; tested with the 8086 promo video's program and two textbook examples |
+| 8.2.4 | 2026-10-26 | — | The step note has one fixed size (the picture's full width, two lines tall), so the picture under it no longer changes size from step to step; all 2,192 notes fit in two lines |
 | 8.2.3 | 2026-10-26 | — | Step notes never cover the picture: it moves down below the note while one shows; no note outlives its page (8086 after Step, reset or leaving; the AND gate's note after going home); leaving the 8086 for any other part stops its program |
 | 8.2.2 | 2026-10-17 | — | Fixes found while recording the promo video: ?intro and ?tour work again, campaign tags (?utm_…) reach the visit counter, and leaving the 8086 mid-play no longer leaves its note on the next page |
 | 8.2.1 | 2026-10-11 | — | Every part's photos start with the real thing as you'd see it, then opened up: 7 new photos (an opened microphone module and a microphone taken apart; outside photos of the keyboard, mouse, printer, game controller and hard drive), and the RAM and storage galleries reordered |
@@ -104,6 +106,40 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 ---
 
 ## Versions
+
+### 8.2.5: Textbook-style 8086 programs
+
+**Prompt** (2026-10-27, exact time not in the saved record; the two example programs are summarised, not quoted in full):
+> make a promo video for i8086.
+>
+> [an example program: .model small / .stack 100h / .data with msg db 'Hello from the textbook!$', 0Dh, 0Ah / .code / main proc / mov ax, @data / mov ds, ax / mov dx, offset msg / mov ah, 09h / int 21h / mov ah, 4Ch / mov al, 00h / int 21h / main endp / end main, every line commented]
+>
+> follow this codiing style for custome codes. Another Example:
+>
+> [a second program in the same style: num1 db 15, num2 db 20, result db ?; mov al, num1 / add al, num2 / mov result, al; then exit with mov ah, 4Ch / int 21h]
+
+**Changes**
+- **The 8086's assembler accepts the textbook (MASM/TASM) style** as well as plain code, so a program written the way it is taught in class runs as written in "Write your own":
+  - `.MODEL`, `.DATA`, `.CODE` and other dot directives are accepted. `.STACK n` sets the stack size (SP starts at n).
+  - `main PROC` (with or without NEAR/FAR) is a label, and `main ENDP` is accepted.
+  - `END main` starts the program at `main`, wherever it is in the code, and nothing after `END` is assembled. A misspelled name gives a clear error (`END names MIAN, but there is no such label`).
+  - `MOV AX, @DATA` loads the data segment's address (0100h, where DS points), so `MOV DS, AX` works as in a real program. `ASSUME` lines are accepted.
+  - A `;` inside quotes is now text, not the start of a comment (`'a;b$'`).
+- Both example programs run as given. The first prints "Hello from the textbook!" with real machine code (`B8 00 01`, `8E D8`, `BA 00 00` …). The second stores 35 in `result`. They are now permanent tests in `build/test-8086-examples.mjs`, with a third program for a start label after a subroutine, `.STACK 200h` and `;` inside quotes, and a misspelled `END` label. All 12 example programs, the 4 new checks and the 143 instruction checks pass.
+- The "Write your own" window's hint mentions the textbook style.
+- The 60-second 8086 promo video (`Intel-8086-promo-16x9.mp4`, `Intel-8086-promo-9x16.mp4`) is in the `Promo video` folder next to `v8`. It types a program in this style and runs it, so this version must be live before the video is posted.
+
+
+### 8.2.4: A step note of one fixed size
+
+**Prompt** (2026-10-26, exact time not in the saved record):
+> The lower part is continuously changing shape on basis of the lines width of the description. It looks annoying. Try to complete the text in 2 lines. and keep the lower simulator width fixed adjusting with the uppder description width.
+
+**Changes**
+- **The note above the picture has one fixed size**: the full width of the picture (up to the full-screen button), and always two lines tall (62 px). Before, it was as wide as its text and one to three lines tall, so the picture under it (8.2.3) moved and resized at every step. Now the picture keeps one size and position for as long as the note shows.
+- A text that needed more than two lines would be set one size smaller (13 px), and cut short with "…" only if even that were not enough (`.small` in `js/engine.js`, a two-line clamp in `css/styles.css`). Neither was needed: every note was checked at 1280×720 and at 1024×700, the narrowest desktop layout. That is every step of all 101 8086 example programs and all 45 device steps, 2,192 notes in all, and every one fits in two lines at full size.
+- The 8086's note is now left-aligned like the devices' notes, instead of centred.
+
 
 ### 8.2.3: Notes that never cover the picture, and never outlive their page
 

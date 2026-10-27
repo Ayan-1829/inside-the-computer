@@ -516,6 +516,14 @@ dialog.vd::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(8px);-webkit
 .dv-note.below.center{transform:none}
 .dv-note.below{position:static;width:auto;max-width:none;margin:0;box-shadow:none;align-items:flex-start}
 .dv-note.below .fn-txt{font-size:var(--fs-2)}
+/* Over the picture the note has one fixed size, so the picture under it never changes shape from step to
+   step: the full width of the picture, and always two lines tall. A longer text is set one size smaller
+   (.small, by engine.js) to fit its two lines, and cut short with … only if even that is not enough. */
+.stage .dv-note:not(.below){left:16px;right:64px;width:auto;max-width:none;transform:none;align-items:center;height:calc(var(--fs-2) * 2.9 + 18px)}
+.stage .dv-note:not(.below) .fn-txt{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.stage .dv-note.small .fn-txt{font-size:var(--fs-1)}
+.stage:fullscreen .dv-note:not(.below),.stage:-webkit-full-screen .dv-note:not(.below){left:108px}
+.stage-tools.show ~ .dv-note:not(.below){right:210px}
 /* what is always powered / what a press changes: lit lines over the cables and the PWR_SW# wire */
 .pw-glow{fill:none;stroke:var(--signal);stroke-linecap:round;opacity:0;pointer-events:none;transition:opacity .35s,stroke-width .35s;filter:drop-shadow(0 0 3px var(--signal))}
 .pw-glow.pw-sb,.pw-glow.pw-sb-mb,.pw-glow.pw-main{stroke:var(--power);stroke-dasharray:2 11;filter:drop-shadow(0 0 4px var(--power))}

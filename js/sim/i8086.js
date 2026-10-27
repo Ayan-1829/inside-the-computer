@@ -2,7 +2,9 @@
    sim/i8086.js
    A teaching emulator for the Intel 8086 instruction set.
    - Assembles a small program (labels, DB/DW data, all 8086
-     addressing modes, BYTE/WORD PTR, segment overrides, OFFSET).
+     addressing modes, BYTE/WORD PTR, segment overrides, OFFSET), in plain
+     form or in the textbook (MASM/TASM) style: .MODEL, .STACK, .DATA and
+     .CODE, "main PROC" / "main ENDP", "MOV AX, @DATA" and "END main".
    - Executes every documented 8086 instruction with 8086 flag rules.
    Code is assembled to real 8086 machine code (encodeIns below) and
    placed in memory at CS:0000, so IP counts bytes exactly as on the
@@ -135,10 +137,11 @@ var I8086 = (function(){
   }
 
   function CPU(){ this.reset(); }
+  const DATA_SEG = 0x0100;                  /* where DS points: what "MOV AX, @DATA" loads */
   CPU.prototype.reset = function(){
-    this.r = {AX:0,BX:0,CX:0,DX:0,SP:0x0100,BP:0,SI:0,DI:0};
-    this.s = {CS:0x0000, DS:0x0100, ES:0x0100, SS:0x0200};
-    this.ip = 0; this.flags = 0x0002; this.mem = new Uint8Array(0x100000); this.ports = new Uint8Array(0x10000);
+    this.r = {AX:0,BX:0,CX:0,DX:0,SP:(this.prog && this.prog.sp) || 0x0100,BP:0,SI:0,DI:0};
+    this.s = {CS:0x0000, DS:DATA_SEG, ES:DATA_SEG, SS:0x0200};
+    this.ip = (this.prog && this.prog.start) || 0; this.flags = 0x0002; this.mem = new Uint8Array(0x100000); this.ports = new Uint8Array(0x10000);
     this.out = ''; this.halted = false; this.steps = 0; this.written = new Set(); this.reads = new Set(); this.oldvals = new Map(); this.note = '';
     if (this.prog){ this.loadData(); this.loadCode(); }
   };
@@ -187,13 +190,28 @@ var I8086 = (function(){
     this.prog = null;
     const lines = src.replace(/\r/g,'').split('\n');
     const prog = {ins:[], code:{}, data:{}, bytes:[], src:lines};
-    let dp = 0;
+    let dp = 0, ended = false, entry = null;
     const pending = [];
+    /* the comment starts at the first ; that is not inside quotes */
+    const noComment = t => { let q = null; for (let k = 0; k < t.length; k++){ const c = t[k];
+      if (q){ if (c === q) q = null; } else if (c === "'" || c === '"') q = c; else if (c === ';') return t.slice(0, k); } return t; };
     lines.forEach((raw, i) => {
       const ln = i + 1;
-      let s = raw.replace(/;.*$/, '').trim();
+      if (ended) return;                        /* nothing after END is assembled */
+      let s = noComment(raw).trim();
       if (!s) return;
       let m;
+      /* textbook directives: .MODEL, .DATA, .CODE (and other dot directives) set nothing up here, except .STACK's size */
+      if ((m = s.match(/^\.([A-Za-z0-9]+)\b\s*(.*)$/))){
+        if (m[1].toUpperCase() === 'STACK' && m[2]){ const n = num(m[2].trim()); if (n === null || n < 2 || n > 0xFFFE) throw new AsmError(ln, `cannot read the stack size “${m[2]}”`); prog.sp = n & 0xFFFE; }
+        return;
+      }
+      if (/^ASSUME\b/i.test(s)) return;
+      if ((m = s.match(/^END(?:\s+([A-Za-z_]\w*))?$/i))){ ended = true; if (m[1]) entry = {name: m[1].toUpperCase(), line: ln}; return; }
+      if ((m = s.match(/^([A-Za-z_]\w*)\s+PROC(?:\s+(?:NEAR|FAR))?$/i))){ const L = m[1].toUpperCase();
+        if (prog.code[L] !== undefined || prog.data[L]) throw new AsmError(ln, `label ${m[1]} is defined twice`);
+        prog.code[L] = prog.ins.length; return; }
+      if (/^[A-Za-z_]\w*\s+ENDP$/i.test(s)) return;
       while ((m = s.match(/^([A-Za-z_][\w]*)\s*:\s*/))){ const L = m[1].toUpperCase();
         if (prog.code[L] !== undefined || prog.data[L]) throw new AsmError(ln, `label ${m[1]} is defined twice`);
         prog.code[L] = prog.ins.length; s = s.slice(m[0].length); }
@@ -224,9 +242,11 @@ var I8086 = (function(){
       prog.ins.push(null);
     });
     this.prog = prog;
-    try { pending.forEach((p, k) => { prog.ins[k] = this.compile(p); prog.ins[k].index = k; }); layout(prog); }
+    try { pending.forEach((p, k) => { prog.ins[k] = this.compile(p); prog.ins[k].index = k; }); layout(prog);
+      if (entry){ const k = prog.code[entry.name]; if (k === undefined) throw new AsmError(entry.line, `END names ${entry.name}, but there is no such label`); prog.start = prog.addr[k]; } }
     catch (e){ this.prog = null; throw e; }
     this.loadData(); this.loadCode();
+    this.r.SP = prog.sp || 0x0100; this.ip = prog.start || 0;   /* a program assembled into a fresh CPU starts as reset() would */
     return prog;
   };
   CPU.prototype.loadData = function(){ for (const [off, v] of this.prog.bytes) this.mem[this.phys(this.s.DS, off)] = v; };
@@ -239,6 +259,7 @@ var I8086 = (function(){
     if (R16.includes(U)) return {t:'r', name:U, size:16};
     if (R8[U]) return {t:'r', name:U, size:8};
     if (SEGS.includes(U)) return {t:'s', name:U, size:16};
+    if (U === '@DATA') return {t:'i', v:DATA_SEG};
     if ((m = t.match(/^OFFSET\s+([A-Za-z_]\w*)$/i))){ const d = this.prog.data[m[1].toUpperCase()]; if (!d) throw new AsmError(ln, `unknown data label ${m[1]}`); return {t:'i', v:d.off}; }
     const n = num(t); if (n !== null) return {t:'i', v:n};
     if (this.prog.code[U] !== undefined && !/[\[\]]/.test(t)) return {t:'l', v:this.prog.code[U], name:U};

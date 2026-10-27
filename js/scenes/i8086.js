@@ -1009,7 +1009,7 @@
         ovb.innerHTML = `<div class="ovh"><h3>Write your own program</h3>${CLOSE_BTN}</div>` +
           `<textarea class="x86-ta" spellcheck="false" aria-label="Assembly program">${esc(S.src)}</textarea>` +
           '<div class="ovf"><button type="button" class="prim" data-ovrun>Assemble and load</button>' +
-          '<span>8086 assembly: DB and DW data, labels, and every documented instruction.</span></div>';
+          '<span>8086 assembly: DB and DW data, labels, and every documented instruction. The textbook style works too: .MODEL, .STACK, .DATA, .CODE, main PROC / ENDP, MOV AX, @DATA and END main.</span></div>';
         onPress(ovb.querySelector('[data-ovx]'), closeOv);
         onPress(ovb.querySelector('[data-ovrun]'), () => {
           const v = ovb.querySelector('.x86-ta').value;
