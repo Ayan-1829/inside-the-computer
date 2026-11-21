@@ -146,6 +146,7 @@
       <li>The parts you open, how long each one is on screen, and how long you actively use it. Time while the tab is hidden isn't counted.</li>
       <li>Links to other websites that you follow from here, such as the "Learn more" videos and articles.</li>
       <li>Whether you use the guided tour (started, finished, or closed at which step), and the first time you reach each level.</li>
+    <li>Whether the rating question was shown, and whether it was answered or closed.</li>
       <li>Your browser, operating system and type of device (computer, tablet or phone).</li>
       <li>Screen and window size, language, time zone, light or dark theme, and touch or mouse.</li>
       <li>The website that linked you here, if any, and how long the page took to load.</li>
@@ -161,15 +162,15 @@
       <li>No names, email addresses or accounts.</li>
       <li>No fingerprinting, no advertising, and no data is sold or shared.</li>
     </ul>
-    <p>The site does save a few settings in your browser: your light or dark theme, whether the side panel is shown, the animations' sound volume, that you have already seen the start screen and the tour, which parts you have explored (for the "explored" count and the ticks in the Overview), and whether you have worked a logic gate (so the "Click me" hints stop), so they are kept the next time. They never leave your device.</p>
+    <p>The site does save a few settings in your browser: your light or dark theme, whether the side panel is shown, the animations' sound volume, that you have already seen the start screen and the tour, which parts you have explored (for the "explored" count and the ticks in the Overview), whether you have worked a logic gate (so the "Click me" hints stop), how many pages you have opened and for how long during this visit (so a short rating question can appear after 15 pages or 5 minutes), and whether you have answered or closed that question (so it isn't asked again), so they are kept the next time. They never leave your device.</p>
     <h3>Where the data goes</h3>
-    <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button are kept separately, with the page and the type of device they were sent from.</p>
+    <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button, and ratings you choose to give in the rating question, are kept separately, with the page and the type of device they were sent from.</p>
     <h3>Videos</h3>
     <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
     <h3>Photos</h3>
     <p>The real photos of the parts are from Wikimedia Commons, used under their free licences and credited under each one. They are stored on this site, so showing them contacts no one else.</p>
     <h3>Turning it off</h3>
-    <p>Turn on <b>Global Privacy Control</b> or <b>Do Not Track</b> in your browser and this site sends nothing. Ad and tracker blockers also stop it, and the site works the same either way.</p>
+    <p>Turn on <b>Global Privacy Control</b> or <b>Do Not Track</b> in your browser and this site sends nothing, except a message or rating you choose to send. Ad and tracker blockers also stop it, and the site works the same either way.</p>
   </div>
   <p class="dlg-foot">Questions? Use the Feedback button, or visit <a href="https://ayan-1829.github.io/" target="_blank" rel="noopener">ayan-1829.github.io</a></p>
 </dialog>
@@ -246,8 +247,11 @@
 <script src="{{ROOT}}js/analytics.js"
         data-endpoint="https://analytics-proxy.ayansarkar1829.workers.dev"
         data-project="inside-the-computer"></script>
+<!-- data-rate-…: a rating question (1 to 5 stars) once a visit passes 15 pages or 5 minutes, never over the tour, the intro or an animation -->
 <script src="{{ROOT}}js/feedback.js"
         data-endpoint="https://analytics-proxy.ayansarkar1829.workers.dev"
-        data-project="inside-the-computer"></script>
+        data-project="inside-the-computer"
+        data-rate-pages="15" data-rate-minutes="5" data-rate-name="Inside the Computer"
+        data-rate-wait=".touring, .intro-cinema, .intro-reveal, .g-busy"></script>
 </body>
 </html>

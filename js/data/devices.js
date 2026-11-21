@@ -78,7 +78,7 @@ def('gamepad',{name:'Game controller',parent:'computer',level:2,scene:'gamepad',
  fact:'Because a controller also receives data to drive its vibration motors and lights, it is technically both an input and an output device.',
  rel:[['usb','Connects by USB or Bluetooth'],['joystick','A single-stick alternative']]});
 
-def('power-button',{name:'Power button',parent:'computer',level:2,device:'input',tip:'Input device: tells the computer to switch on or off',
+def('power-button',{name:'Power button',parent:'computer',level:2,scene:'power-button',device:'input',tip:'Input device: tells the computer to switch on or off',
  short:'A small push switch on the case that sends a signal to the motherboard to switch the computer on or off.',
  what:'The power button is a momentary push switch, wired by a thin two-wire cable to the front-panel header on the motherboard (the pins labelled PWR_SW). It does not carry the computer’s power; it only sends a signal.',
  does:'Pressing it briefly connects the PWR_SW# signal to ground. The motherboard, which stays awake on the power supply’s +5VSB standby power, notices this and tells the power supply to turn on its main outputs. Later presses ask the operating system to shut down or sleep, and holding the button for several seconds forces the power off.',

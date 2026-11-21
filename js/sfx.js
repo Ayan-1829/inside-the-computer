@@ -207,15 +207,35 @@ var SFX = (function(){
      While it speaks, the sound effects are turned down so the words stay clear. done() runs when it has
      finished, or at once when there is no natural voice or the sound is muted; a time limit covers
      browsers that never report the end. */
+  /* Written forms a voice gets wrong, in the order they are applied. Decimal numbers are left as they are
+     ("3.3" is read "three point three"); pieces() below never takes their point for the end of a sentence. */
   const SPEAK = [
     [/\*\*/g, ''], [/\s*→\s*/g, ' to '], [/PWR_SW#/g, 'power switch'], [/PS_ON#/g, 'P S on'], [/PWR_OK/g, 'power OK'],
-    [/\+5\s?VSB/g, '5 volt standby'], [/\+?(\d+(?:\.\d+)?)\s?V\b/g, '$1 volts'], [/\b0x([0-9A-F]+)\b/gi, 'hex $1'],
+    [/\+5\s?VSB(?:\s+standby)?/g, '5 volt standby'], [/\+?(\d+(?:\.\d+)?)\s?V\b/g, (m, n) => n + (n === '1' ? ' volt' : ' volts')],
+    [/\b0x([0-9A-F]+)\b/gi, 'hex $1'],
+    /* names a voice says as a word (DRAM like the drink), or not at all */
+    [/\bM\.2\b/g, 'M dot 2'], [/\bPCIe\b/g, 'P C I Express'], [/\bI\/O\b/g, 'I O'], [/\bUEFI\b/g, 'U E F I'], [/\bLED\b/g, 'L E D'],
+    [/\bDRAM\b/g, 'D RAM'], [/\bSRAM\b/g, 'S RAM'], [/\bVRAM\b/g, 'V RAM'], [/\bdx\b/g, 'D X'], [/\bdy\b/g, 'D Y'], [/\b80(8[68])\b/g, '80 $1'], [/\b0s and 1s\b/g, 'zeros and ones'],
     [/(\d)\s?mV\b/g, '$1 millivolts'], [/(\d)\s?fF\b/g, '$1 femtofarads'], [/(\d)\s?µs\b/g, '$1 microseconds'], [/(\d)\s?ms\b/g, '$1 milliseconds'],
     [/(\d)\s?GHz\b/g, '$1 gigahertz'], [/(\d)\s?MHz\b/g, '$1 megahertz'], [/(\d)\s?kHz\b/g, '$1 kilohertz'], [/(\d)\s?Hz\b/g, '$1 hertz'],
-    [/(\d)\s?GB\/s\b/g, '$1 gigabytes per second'], [/(\d)\s?Gbit\/s\b/g, '$1 gigabits per second'], [/(\d)\s?MB\b/g, '$1 megabytes'], [/(\d)\s?KB\b/g, '$1 kilobytes'],
+    [/(\d)\s?GB\/s\b/g, '$1 gigabytes per second'], [/(\d)\s?MB\/s\b/g, '$1 megabytes per second'], [/(\d)\s?Gbit\/s\b/g, '$1 gigabits per second'],
+    [/(\d)\s?MB\b/g, '$1 megabytes'], [/(\d)\s?KB\b/g, '$1 kilobytes'], [/\bGB\b/g, 'gigabytes'], [/(\d)\s?mm\b/g, '$1 millimetres'],
     [/(\d)\s?°C\b/g, '$1 degrees'], [/\bmV\b/g, 'millivolts'], [/×/g, ' times '], [/~/g, 'about '], [/#/g, ''], [/_/g, ' '], [/\s+/g, ' ']
   ];
   const speakable = t => SPEAK.reduce((s, [re, to]) => s.replace(re, to), String(t || '')).trim();
+  /* What is spoken in one go: the speakable words, cut into sentences and grouped into pieces of up to about
+     220 characters (fewer pauses between them, and each still well under the ~15 seconds after which Chrome's
+     Google voices stop). A sentence ends at . ! or ? followed by a space or the end, so the point in a decimal
+     number ("3.3 volts", "0.1 milliseconds") or a name ("M.2") never cuts it. */
+  function pieces(text){
+    const parts = [];
+    (speakable(text).match(/(?:[^.!?]|[.!?](?=\S))+[.!?]*/g) || []).forEach(s => {
+      s = s.trim(); if (!s) return;
+      const last = parts.length - 1;
+      if (last >= 0 && parts[last].length + s.length < PIECE_CHARS) parts[last] += ' ' + s; else parts.push(s);
+    });
+    return parts;
+  }
   let narrToken = 0;
   function duck(down){ if (master && ctx) master.gain.setTargetAtTime(gainFor(vol) * (down ? .3 : 1), ctx.currentTime, .15); }
   function narrate(text, done){
@@ -223,13 +243,7 @@ var SFX = (function(){
     if (!on() || !window.speechSynthesis || !window.SpeechSynthesisUtterance){ setTimeout(finish, 0); return; }
     if (!voice) pickVoice();
     if (!voice){ setTimeout(finish, 0); return; }         /* no natural-sounding voice here: silent, not robotic */
-    /* sentences grouped into pieces of up to about 220 characters: fewer pauses between them, and each
-       piece still well under the ~15 seconds after which Chrome's Google voices stop */
-    const words = speakable(text), parts = [];
-    (words.match(/[^.!?]+[.!?]*/g) || []).forEach(s => {
-      const last = parts.length - 1;
-      if (last >= 0 && parts[last].length + s.length <= PIECE_CHARS) parts[last] += ' ' + s.trim(); else parts.push(s.trim());
-    });
+    const words = speakable(text), parts = pieces(text);
     if (!parts.length){ setTimeout(finish, 0); return; }
     speechSynthesis.resume();
     talking = true; duck(true);
@@ -353,5 +367,5 @@ var SFX = (function(){
   addEventListener('resize', closePop);
   addEventListener('scroll', () => { if (pop && !pop.hidden && popFor) placePop(popFor); }, true);
 
-  return { cue, stop, pause, resume, pauseFx, narrate, speakable, toggle, setVolume, setBoost, syncButtons, warm, isOn: on, volume: () => vol };
+  return { cue, stop, pause, resume, pauseFx, narrate, speakable, pieces, toggle, setVolume, setBoost, syncButtons, warm, isOn: on, volume: () => vol };
 })();

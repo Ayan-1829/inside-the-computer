@@ -376,15 +376,6 @@ dialog.dt{width:min(420px,calc(100vw - 32px))}
 .mon-spin{transform-box:fill-box;transform-origin:center;animation:mon-rot 1s linear infinite}
 @keyframes mon-rot{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.mon-spin{animation:none}}
-.flow-pop .fp-head{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.flow-pop.dragging .fp-head{cursor:grabbing}
-.flow-pop{max-width:calc(100% - 16px);max-height:calc(100% - 16px)}   /* never larger than the stage, even after it shrinks */
-.flow-pop .fp-rs{position:absolute;z-index:2;touch-action:none}
-.flow-pop .fp-rs-e{top:0;right:0;bottom:18px;width:8px;cursor:ew-resize}
-.flow-pop .fp-rs-s{left:0;bottom:0;right:18px;height:8px;cursor:ns-resize}
-.flow-pop .fp-rs-se{right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;
-  background:linear-gradient(135deg,transparent 0 46%,var(--accent) 46% 54%,transparent 54% 68%,var(--accent) 68% 76%,transparent 76%)}
-.flow-pop.dragging{user-select:none;-webkit-user-select:none}
 /* "Learn more" links at the bottom of a part's description */
 .learn{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .lk{position:relative;display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-decoration:none;color:var(--ink);transition:border-color .15s,box-shadow .15s}
@@ -507,6 +498,9 @@ dialog.vd::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(8px);-webkit
 .devscene .t-sm{font-size:var(--ts-3)}
 .devscene .dfx-tag text{font-size:var(--ts-1)}
 .devscene .dfx-bits{font-size:var(--ts-1)}
+/* the hardware diagrams with a "How it works" (motherboard, RAM, graphics card, SSD, hard drive, power supply): its notes at the same size */
+.animscene .dfx-tag text{font-size:var(--ts-1)}
+.animscene .dfx-bits{font-size:var(--ts-1)}
 @media (max-width: 760px){
   .dv-bar{right:10px;bottom:10px;padding:5px}
   .dv-bar .dv-run{font-size:var(--fs-1);padding:0 11px}
@@ -543,20 +537,6 @@ dialog.vd::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(8px);-webkit
 .pw-log p{margin:2px 0 0;font-size:var(--fs-1);line-height:1.45;color:var(--ink-2)}
 .pw-log p b{display:inline;font-size:inherit;color:var(--ink)}
 .pw-log li:last-child .pw-n{background:var(--signal);color:var(--accent-ink)}
-/* bottom-left, over the keyboard/printer area, so it doesn't hide the tower where the flow happens */
-.flow-pop{position:absolute;left:16px;bottom:16px;z-index:5;width:min(420px,calc(100% - 32px));height:min(46%,380px);display:flex;flex-direction:column;
-  border-radius:14px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
-.flow-pop[hidden]{display:none}
-/* stands out from the diagram: accent border and header, a dark shadow in light mode, a light glow in dark mode */
-.flow-pop{border:2px solid var(--accent);box-shadow:0 0 0 4px var(--accent-soft),0 24px 50px -14px rgba(0,0,0,.6),0 6px 14px -6px rgba(0,0,0,.35)}
-[data-theme="dark"] .flow-pop{box-shadow:0 0 0 4px var(--accent-soft),0 0 28px -2px var(--accent-glow),0 18px 44px -14px rgba(255,255,255,.22)}
-.flow-pop .fp-head{background:var(--accent-soft);border-bottom-color:var(--accent-glow)}
-.flow-pop .fp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-2);color:var(--ink)}
-.flow-pop .fp-tools{display:flex;align-items:center;gap:8px}
-.flow-pop .fp-close{flex:none;width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink-2);font-size:var(--fs-3);line-height:1;cursor:pointer}
-.flow-pop .fp-close:hover,.flow-pop .fp-close:focus-visible{border-color:var(--accent);color:var(--ink)}
-.flow-pop .pw-log{flex:1;min-height:0;overflow:auto;padding:12px 14px 14px}
-@media (max-width: 700px){.flow-pop{height:min(40%,300px)}}
 @keyframes device-pulse{0%,100%{filter:none}50%{filter:drop-shadow(0 0 10px var(--signal))}}
 .tree ul{list-style:none;margin:0;padding-left:18px;border-left:1px solid var(--line-2)}
 .tree>ul{padding-left:0;border:0}
@@ -1112,7 +1092,7 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 
 /* the first-visit intro's fast boot: only the diagram shows, the rest fades in afterwards */
 .intro-cinema .topbar,.intro-cinema .toolbar,.intro-cinema .panel,.intro-cinema .strip,.intro-cinema .foot,.intro-cinema .fbk-btn,
-.intro-cinema .hint,.intro-cinema .fs-btn,.intro-cinema .zoom-btn,.intro-cinema .flow-pop,.intro-cinema .dv-note,.intro-cinema .stage-tools{
+.intro-cinema .hint,.intro-cinema .fs-btn,.intro-cinema .zoom-btn,.intro-cinema .pw-bar,.intro-cinema .dv-note,.intro-cinema .stage-tools{
   opacity:0 !important;visibility:hidden !important;pointer-events:none !important}
 .intro-reveal .topbar,.intro-reveal .toolbar,.intro-reveal .panel,.intro-reveal .strip,.intro-reveal .foot,.intro-reveal .fbk-btn,.intro-reveal .hint,.intro-reveal .fs-btn{
   animation:intro-in .9s ease both}

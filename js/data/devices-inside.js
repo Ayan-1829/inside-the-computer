@@ -396,3 +396,44 @@ inside('webcam','webcam-usb','USB and LED','Sends the video to the computer and 
  [['Standard','USB Video Class (no driver needed)'],['Power','5 V from the USB port'],['Cable','carries video, audio and power']],
  'Some webcams wire the LED to the sensor’s power supply, so that software cannot switch the camera on without the light coming on.',
  [['usb','The port it plugs into'],['webcam-isp','Supplies the video'],['io','Where the cable ends up in the computer']]);
+
+/* ---------------- Inside the power button (a case button wired to the motherboard) ---------------- */
+inside('power-button','pb-switch','Push switch','A spring-loaded switch that is on only while pressed',
+ 'A small momentary switch behind the button: pressing it joins two contacts, and a spring pushes it back.',
+ 'Behind the button cap sits a momentary (push-to-make) switch, the same kind as a mouse button. Inside, a plunger rests on a spring, a short distance from two metal contacts.',
+ 'Pressing the cap pushes the plunger until it joins the two contacts and closes the circuit. Let go, and the spring opens it again. So the switch never stays on: it only makes a short pulse, which the motherboard reads as “the button was pressed”.',
+ 'Because it only sends a pulse and carries almost no current, the switch can be small and last for many thousands of presses. The motherboard, not the switch, decides what each press means.',
+ [['Tactile switch','A small clicky switch on a circuit board'],['Anti-vandal switch','A sturdy metal button, often with a ring of light'],['Laptop power key','A key read by the laptop’s embedded controller']],
+ [['Type','momentary, normally open'],['Current','a few milliamps'],['Life','tens of thousands of presses or more']],
+ 'The button carries so little current that briefly touching the two power-switch pins on the motherboard together, with a screwdriver tip, starts the computer just the same.',
+ [['pb-header','Where its two wires connect'],['mouse-buttons','The same kind of momentary switch']]);
+
+inside('power-button','pb-header','Front-panel header','Pins on the motherboard where the case’s buttons and lights plug in',
+ 'A block of pins on the motherboard (often labelled F_PANEL) where the power button, the reset button and the case’s lights connect.',
+ 'The front-panel header is a small block of pins, usually two rows along the bottom edge of the motherboard. Thin two-wire cables from the case plug onto it: PWR_SW for the power button, RESET_SW for the reset button, and PLED and HDD_LED for the lights.',
+ 'It carries the button’s signal to the board. One PWR_SW pin is held at a small voltage and the other is ground, so pressing the button pulls the signal down to 0 V. The same header powers the case’s power light and drive activity light.',
+ 'Case makers and motherboard makers use the same kind of header, so any case’s buttons work with any board, as long as each small plug goes on the right pins (the motherboard’s manual shows which).',
+ [['2 × 5 F_PANEL header','The common pin layout'],['Q-Connector','A block that holds the small plugs, so they go on all at once'],['Reset and HDD LED pins','On the same header as the power button']],
+ [['Pins','usually 2 rows, 9 or 10 pins'],['Power button','PWR_SW, two pins (signal and ground)'],['Lights','PLED and HDD_LED, each with + and −']],
+ 'The power button’s two pins can be plugged either way round, because a switch has no polarity. The light’s plug has a + and a − side, and only lights up one way.',
+ [['pb-switch','The button wired to it'],['pb-controller','Reads the PWR_SW# signal'],['motherboard','Where the header is']]);
+
+inside('power-button','pb-controller','Power controller','Circuits on the motherboard that decide when to switch the power on',
+ 'A small part of the chipset (or a separate controller chip) that stays awake on standby power and switches the power supply on and off.',
+ 'On a desktop, the power control logic is part of the chipset or of a small Super I/O chip; on a laptop it is the embedded controller (EC). It runs on the power supply’s standby voltage, +5VSB, which stays on as long as the computer is plugged in.',
+ 'It watches the PWR_SW# signal. When the button is pressed, it pulls PS_ON# low, which tells the power supply to switch on its main outputs, and waits for the supply’s “power good” signal before letting the CPU start. Later presses go to the operating system as a request to sleep or shut down, and a 4-second hold makes it cut the power itself.',
+ 'Putting a small, always-awake controller in charge lets the computer start from other things besides the button: a key press, the network (Wake-on-LAN), a timer, or the mains coming back after a power cut.',
+ [['Chipset power management','In the chipset on Intel and AMD desktop boards'],['Super I/O chip','Nuvoton or ITE chips on many boards'],['Embedded controller','Runs the power button, battery and keyboard of a laptop']],
+ [['Runs on','+5VSB standby power'],['Input','PWR_SW# from the button'],['Outputs','PS_ON# to the power supply, and the power light']],
+ 'A switched-off desktop still uses a little power, often less than half a watt, to keep this controller awake. That is how it can start from the keyboard or the network.',
+ [['chipset','Where the power logic usually lives'],['psu','Switched on by PS_ON#'],['pb-header','Brings in the button’s signal']]);
+
+inside('power-button','pb-led','Power LED','The light on the case that shows the computer is on',
+ 'A small light on the front of the case, lit by the motherboard while the computer is on (and on many boards blinking while it sleeps).',
+ 'A light-emitting diode (LED) in the case’s front panel, near the power button. Its two wires go to the PLED pins of the front-panel header, marked + and −.',
+ 'The motherboard switches it on once the main power is up, and off when the computer shuts down. On many boards it blinks or glows dimly while the computer is asleep, to show it is not fully off.',
+ 'It is the simplest status display a computer has: one glance tells you whether it is on, asleep or off, even when the monitor is dark.',
+ [['Single-colour LED','Usually blue, white or green'],['Two-colour LED','One colour for on, another for sleep'],['Lit button','The LED is built into the button itself']],
+ [['Voltage','about 2 to 3 V across the LED'],['Current','a few milliamps, limited by a resistor'],['Wiring','PLED + and − on the front-panel header']],
+ 'An LED lets current through only one way, so when the power light stays dark on a newly built computer, the usual fix is simply to turn its small plug round.',
+ [['pb-header','Where its plug goes'],['pb-controller','Switches it on and off']]);

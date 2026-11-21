@@ -279,7 +279,7 @@ function go(id, opts = {}){
   if (!N[id]) id = 'computer';
   focusOrigin = opts.from || null;
   if (id === cur && layer) return;
-  if (id !== 'power-button'){ powerStop(); stepNote.hide(); }   /* no note from one part carries over to another */
+  powerStop(); stepNote.hide();   /* no note from one part carries over to another (the power-on walkthrough plays on the Computer page only) */
   devStop();
   cur = id;
   const own = ownerOf(id);
@@ -729,6 +729,23 @@ pv.addEventListener('click', e => { if (e.target === pv) pv.close(); });
    captured is written to storage, uploaded, or kept past the short animation that
    plays it back on screen -- it lives in memory for a few seconds and is then
    discarded (object URLs revoked, canvases cleared, variables set to null). */
+/* The view of a diagram, changed smoothly: big at rest, and a little smaller while an animation ("How it
+   works", the power-on walkthrough) plays, to make room for its controls at the bottom (a scene's vbPlay;
+   see scenes/devices.js). Its caption sits above the picture (the step note below). */
+function viewTo(lay, to, ms){
+  const parse = v => String(v).trim().split(/[\s,]+/).map(Number);
+  const from = parse(lay.getAttribute('viewBox')), end = parse(to);
+  if (reduce.matches || !ms){ lay.setAttribute('viewBox', end.join(' ')); return; }
+  cancelAnimationFrame(lay._vbRaf);
+  const t0 = performance.now(), ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  const frame = now => {
+    const k = Math.min(1, (now - t0) / ms), e = ease(k);
+    lay.setAttribute('viewBox', from.map((f, i) => (f + (end[i] - f) * e).toFixed(2)).join(' '));
+    if (k < 1) lay._vbRaf = requestAnimationFrame(frame);
+  };
+  lay._vbRaf = requestAnimationFrame(frame);
+}
+
 /* ---------- the short step note ----------
    One line or two at the top of the diagram while an animation plays: the step
    number, a bold title and a short sentence. Used by the power-on walkthrough,
@@ -1026,11 +1043,13 @@ var devStop = () => {}, devSync = () => {};                                /* se
     }
 
     /* ---- the power-on walkthrough ----
-       Pressing the tower's power button (or "Power on" in its panel / card, or Step)
-       plays these steps. Each step shows a one-line `note` at the top of the diagram
-       and adds its full text `x` to a log that keeps every earlier step: in the
-       details panel normally, or in a pop-up beside the tower when the panel isn't
-       visible (full screen, or "Hide details"). `**bold**` marks signal names.
+       Pressing the tower's power button (or "Power on" in the Computer page's panel, in the
+       power button's card, or "Watch it boot") plays these steps, like a device's "How it works":
+       each step's caption `say` shows in the note above the picture (below it on phones) and is
+       read aloud, the picture moves down to make room, and the controls sit on the diagram. The
+       next step starts once the step's dots have arrived and its caption has been read. The
+       fuller text `x` is added to the "Power-on steps" list in the Computer page's panel, which
+       keeps every earlier step. `**bold**` marks signal names.
        A step's `routes` are several paths played at the same time, one dot each, so
        a signal that reaches many parts (the PSU's power, the I/O port's signals to
        every device) fans out from a shared start. Route entries are ids of parts,
@@ -1044,33 +1063,33 @@ var devStop = () => {}, devSync = () => {};                                /* se
     const T_FW = ['bios', 'chipset', 'cpu'];                         /* firmware chip to the CPU, through the chipset */
     const T_OS = ['ram', 'cpu'];                                     /* the running OS: RAM to the CPU */
     const POWER_STEPS = [
-      {t: 'AC Power → PSU → +5VSB → Motherboard', note: 'Standby power is always on, even when the PC is “off”.',
+      {t: 'AC Power → PSU → +5VSB → Motherboard', say: 'Even when the PC is “off”, the **power supply** sends **+5VSB** standby power, so the motherboard can notice the button.',
        x: 'The PSU receives AC power from the wall and converts it into DC power. Even when the PC is off, it provides **+5VSB standby power**. The motherboard receives it, so its power-management circuitry stays active and can detect the power button.',
        routes: [], lit: ['ac', 'psu', 'atx-power', 'chipset'], kind: 'power'},
-      {t: 'Power Button → PWR_SW# → Power Logic', note: 'Pressing the button pulls PWR_SW# LOW; the board’s power logic sees it.',
+      {t: 'Power Button → PWR_SW# → Power Logic', say: 'Pressing the **power button** pulls **PWR_SW#** low. The motherboard’s power logic, in the **chipset**, notices.',
        x: 'When you press the power button, the switch momentarily connects the **PWR_SW# signal to ground**. The motherboard’s power-control circuitry recognizes the change and decides to start the system.',
        routes: [['power-button', 'via-w1', 'via-w2', 'via-w3', 'chipset']]},
-      {t: 'Motherboard → PS_ON# → PSU', note: 'The board pulls PS_ON# LOW: “turn on”.',
+      {t: 'Motherboard → PS_ON# → PSU', say: 'The board pulls **PS_ON#** low, the signal that tells the **power supply** to switch on its main outputs.',
        x: 'The motherboard pulls the **PS_ON# signal LOW**, telling the PSU to turn on its main power outputs.',
        routes: [['chipset', 'atx-power', 'via-cable2', 'via-cable', 'psu']]},
-      {t: 'PSU → Main Power Rails', note: '+12 V, +5 V and +3.3 V go out to every part.',
+      {t: 'PSU → Main Power Rails', say: 'The power supply sends **+12 V, +5 V and +3.3 V** to the board, and on to the CPU, RAM, drives and USB devices.',
        x: 'The PSU starts supplying **+12V, +5V, and +3.3V** to the motherboard and other components. The CPU gets its power through the motherboard’s voltage regulators (VRM), and the RAM and fans through the board too; the graphics card and drives also have their own cables, and USB devices such as the keyboard and mouse get 5 V through the I/O ports. The monitor, printer and most speakers have their own wall plugs, so the PC does not power them.',
        routes: [...['motherboard', 'cpu', 'ram', 'chipset', 'bios', 'cooling', 'io'].map(id => [...T_PSU, id]),
                 ...['keyboard', 'mouse', 'webcam', 'mic', 'joystick', 'gamepad'].map(id => [...T_PSU, 'io', id]),
                 ['psu', 'via-gpu1', 'via-gpu2', 'via-gpu3', 'gpu'], ['psu', 'via-sto', 'storage']], kind: 'power'},
-      {t: 'PSU → PWR_OK → CPU Reset Release', note: '“Power OK”: the board releases the CPU from reset.',
+      {t: 'PSU → PWR_OK → CPU Reset Release', say: 'Once the voltages are steady, the PSU sends **PWR_OK**, and the board lets the **CPU** out of reset.',
        x: 'After the power rails become stable, the PSU sends **PWR_OK** to tell the motherboard that the power is within the required range. The motherboard’s reset circuitry then completes the startup sequence and releases the CPU from **RESET**.',
        routes: [[...T_PSU, 'chipset', 'cpu']]},
-      {t: 'CPU → Firmware (UEFI)', note: 'The CPU starts running the UEFI firmware.',
+      {t: 'CPU → Firmware (UEFI)', say: 'The **CPU** starts running its first instructions: the **UEFI** firmware, stored in the **BIOS chip**.',
        x: 'The CPU starts executing instructions from the system firmware. Modern PCs generally use **UEFI**, although it is commonly still called “BIOS.”',
        routes: [['cpu', 'chipset', 'bios']]},
-      {t: 'UEFI → Hardware Initialization & POST', note: 'It sets up RAM, GPU, drives and USB; the first picture appears.',
+      {t: 'UEFI → Hardware Initialization & POST', say: 'The firmware sets up the RAM, graphics, drives and USB, and runs a self-test, **POST**. The first picture appears.',
        x: 'UEFI initializes and trains the RAM, then sets up essential hardware such as the GPU, storage controllers, USB controllers, and other devices. The **Power-On Self-Test (POST)** checks that they work well enough to continue booting. Once the graphics card is ready, the first picture (usually the maker’s logo) appears on the monitor.',
        routes: [...['ram', 'storage', 'io'].map(id => [...T_FW, id]), [...T_FW, 'gpu', 'io', 'monitor']]},
-      {t: 'Boot Device → Bootloader → OS Kernel', note: 'It finds the boot drive and loads the OS into RAM.',
+      {t: 'Boot Device → Bootloader → OS Kernel', say: 'It finds the boot drive and loads the **bootloader**, then the operating system’s **kernel**, into **RAM**.',
        x: 'UEFI checks the configured boot order and finds a bootable device, such as an NVMe SSD or SATA drive. The firmware loads the bootloader into memory and hands control to it, and the bootloader loads the operating-system kernel and required initial components into RAM.',
        routes: [[...T_FW, 'storage', 'ram']]},
-      {t: 'CPU → Operating System → Drivers → Desktop', note: 'The OS starts, loads drivers, and every device gets its signal.',
+      {t: 'CPU → Operating System → Drivers → Desktop', say: 'The **operating system** starts, loads its drivers so that every device works, and shows the **desktop**.',
        x: 'The CPU begins executing the OS kernel, which initializes memory management, processes, drivers, and other system services. The operating system loads device drivers so it can communicate with the GPU, keyboard, mouse, storage, network hardware, and other devices. Finally, the OS starts the graphical environment and presents the **login screen or desktop** to the user.',
        routes: [[...T_OS, 'gpu', 'io', 'monitor'], [...T_OS, 'storage'],
                 ...['keyboard', 'mouse', 'webcam', 'mic', 'joystick', 'gamepad', 'printer', 'speakers'].map(id => [...T_OS, 'io', id])]},
@@ -1087,81 +1106,20 @@ var devStop = () => {}, devSync = () => {};                                /* se
     const FX_CLASSES = ['pw-standby', 'pw-low', 'pw-rails', 'pw-kind-power', 'pw-screen', 'pw-boot', 'pw-spin'];
     const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-    const isFs = () => (document.fullscreenElement || document.webkitFullscreenElement) === stage;
-    const usePop = () => isFs() || html.classList.contains('panel-hidden');
 
-    /* the short step note (shared, above): only in the one-column layout, where it sits below the diagram and
-       the panel with the full steps is far down the page; elsewhere the pop-up or the side panel already
-       tells the details, and the dots carry their own labels (POWER_TAGS) */
-    const noteWanted = () => innerWidth <= 980 && pop.hidden;
-    const showFlowNote = (text, i, paused) => {
-      if (noteWanted()) stepNote.show(`${i + 1}/${POWER_STEPS.length}${paused ? ' · paused' : ''}`, POWER_STEPS[i].t, text);
-      else stepNote.hide();
-    };
+    /* the step's caption, in the shared step note above the picture (below it on phones), as in "How it works" */
+    const showFlowNote = (i, paused) => stepNote.show(`${i + 1}/${POWER_STEPS.length}${paused ? ' · paused' : ''}`, '', POWER_STEPS[i].say);
     const hideFlowNote = () => stepNote.hide();
 
-    /* the pop-up step log, for when the details panel isn't visible */
-    const pop = document.createElement('aside');
-    pop.className = 'flow-pop'; pop.hidden = true; pop.setAttribute('aria-label', 'Power-on steps');
-    pop.innerHTML = '<div class="fp-head"><b>Power-on steps</b><div class="fp-tools">' + pwControls(false) +
-      '<button type="button" class="fp-close" aria-label="Close the steps">×</button></div></div><ol class="pw-log" aria-live="polite"></ol>' +
-      '<span class="fp-rs fp-rs-e" data-rs="e" aria-hidden="true"></span><span class="fp-rs fp-rs-s" data-rs="s" aria-hidden="true"></span><span class="fp-rs fp-rs-se" data-rs="se" title="Drag to resize" aria-hidden="true"></span>';
-    stage.appendChild(pop);
+    /* its controls on the diagram while it plays, like "How it works": Stop, Back, Pause, Next step and the sound */
+    const bar = document.createElement('div');
+    bar.className = 'dv-bar pw-bar running'; bar.hidden = true;
+    bar.innerHTML = '<button type="button" class="pw-btn pw-run dv-run is-stop" data-pw="run">Stop</button>' + pwControls(false);
+    stage.appendChild(bar);
     if (typeof SFX !== 'undefined') SFX.syncButtons();
-    const popList = pop.querySelector('.pw-log');
-    /* keep the pop-up just left of the tower (not far off at the stage's edge) without covering it */
-    const stagePad = () => { const r = stage.getBoundingClientRect(); return {left: r.left + stage.clientLeft, top: r.top + stage.clientTop, width: stage.clientWidth, height: stage.clientHeight}; };
-    let popMoved = false;                       /* the visitor dragged the pop-up: leave it where they put it */
-    function placePop(){
-      if (pop.hidden) return;
-      const sr = stagePad();
-      if (popMoved){                            /* only keep it inside the stage (it may have been resized) */
-        const pr = pop.getBoundingClientRect();
-        pop.style.left = Math.min(Math.max(pr.left - sr.left, 0), Math.max(0, sr.width - pr.width)) + 'px';
-        pop.style.top = Math.min(Math.max(pr.top - sr.top, 0), Math.max(0, sr.height - pr.height)) + 'px';
-        return;
-      }
-      const t = layer && layer.querySelector('[data-flow="tower"]');
-      if (!t) return;
-      const tr = t.getBoundingClientRect(), w = pop.offsetWidth || Math.min(420, sr.width - 32);
-      pop.style.left = Math.max(16, Math.min(tr.left - sr.left - w - 12, sr.width - w - 16)) + 'px';
-    }
 
-    const popHead = pop.querySelector('.fp-head');
-    popHead.title = 'Drag to move';
-    popHead.addEventListener('pointerdown', e => {
-      if (e.button !== 0 || e.target.closest('button')) return;
-      const sr = stagePad(), pr = pop.getBoundingClientRect(), dx = e.clientX - pr.left, dy = e.clientY - pr.top;
-      popHead.setPointerCapture(e.pointerId); pop.classList.add('dragging');
-      const move = ev => {
-        pop.style.left = Math.min(Math.max(ev.clientX - dx - sr.left, 0), Math.max(0, sr.width - pr.width)) + 'px';
-        pop.style.top = Math.min(Math.max(ev.clientY - dy - sr.top, 0), Math.max(0, sr.height - pr.height)) + 'px';
-        pop.style.bottom = 'auto'; popMoved = true;
-      };
-      const up = () => { pop.classList.remove('dragging'); popHead.removeEventListener('pointermove', move); popHead.removeEventListener('pointerup', up); popHead.removeEventListener('pointercancel', up); };
-      popHead.addEventListener('pointermove', move); popHead.addEventListener('pointerup', up); popHead.addEventListener('pointercancel', up);
-      e.preventDefault();
-    });
-
-    /* resize from the corner (both), the right edge (width) or the bottom edge (height); the top-left corner stays put */
-    const POP_MIN_W = 260, POP_MIN_H = 170;
-    pop.querySelectorAll('.fp-rs').forEach(h => h.addEventListener('pointerdown', e => {
-      if (e.button !== 0) return;
-      const dir = h.dataset.rs, sr = stagePad(), pr = pop.getBoundingClientRect();
-      const left = pr.left - sr.left, top = pr.top - sr.top, w0 = pr.width, h0 = pr.height, x0 = e.clientX, y0 = e.clientY;
-      pop.style.left = left + 'px'; pop.style.top = top + 'px'; pop.style.bottom = 'auto'; popMoved = true;
-      h.setPointerCapture(e.pointerId); pop.classList.add('dragging');
-      const move = ev => {
-        if (dir.includes('e')) pop.style.width = Math.min(Math.max(w0 + ev.clientX - x0, POP_MIN_W), sr.width - left) + 'px';
-        if (dir.includes('s')) pop.style.height = Math.min(Math.max(h0 + ev.clientY - y0, POP_MIN_H), sr.height - top) + 'px';
-      };
-      const up = () => { pop.classList.remove('dragging'); h.removeEventListener('pointermove', move); h.removeEventListener('pointerup', up); h.removeEventListener('pointercancel', up); };
-      h.addEventListener('pointermove', move); h.addEventListener('pointerup', up); h.addEventListener('pointercancel', up);
-      e.preventDefault(); e.stopPropagation();
-    }));
-
-    /* pw: the running walkthrough {lay, dots, sel, i, timer, raf, paused, holding, animating}; pwDone: steps shown so far */
-    let pw = null, pwDone = 0, popClosed = false;
+    /* pw: the running walkthrough {lay, dots, sel, i, timer, raf, paused, animating, animDone, narrDone}; pwDone: steps shown so far */
+    let pw = null, pwDone = 0;
     simRunning = () => !!pw || flowBusy > 0;
     const stepLi = i => {
       const st = POWER_STEPS[i], li = document.createElement('li');
@@ -1185,14 +1143,12 @@ var devStop = () => {}, devSync = () => {};                                /* se
       });
     };
     powerSync = () => {
-      fillList(inner.querySelector('[data-pw-log]')); fillList(popList);
-      pop.hidden = !(pwDone > 0 && !popClosed && usePop());
-      if (!pop.hidden) placePop();
-      syncControls(inner); syncControls(pop);
-      if (pw && POWER_STEPS[pw.i]) showFlowNote(POWER_STEPS[pw.i].note, pw.i, pw.paused);   /* no step yet while it starts */
+      fillList(pw && pw.fast ? null : inner.querySelector('[data-pw-log]'));   /* the intro's quick run isn't logged in the panel */
+      bar.hidden = !pw || pw.fast;                                          /* the intro has no captions or controls */
+      syncControls(inner); syncControls(bar);
+      if (pw && !pw.fast && POWER_STEPS[pw.i]) showFlowNote(pw.i, pw.paused);   /* no step yet while it starts */
     };
     const revealLatest = () => {
-      popList.scrollTop = popList.scrollHeight;
       const l = inner.querySelector('[data-pw-log]');
       /* only where the panel scrolls on its own; on a phone it sits below the diagram and scrolling would pull the page away from it */
       if (l && l.lastChild && innerWidth > 980) l.lastChild.scrollIntoView({block: 'nearest', behavior: reduce.matches ? 'auto' : 'smooth'});
@@ -1238,12 +1194,14 @@ var devStop = () => {}, devSync = () => {};                                /* se
     }
     function powerCleanup(){
       if (!pw) return;
-      clearTimeout(pw.timer); cancelAnimationFrame(pw.raf);
+      clearTimeout(pw.timer); clearTimeout(pw.readTimer); clearTimeout(pw.minTimer); cancelAnimationFrame(pw.raf);
       pw.g.remove();
       clearLight();
       pw.lay.classList.remove(...FX_CLASSES);
+      if (pw.vbRest && pw.lay === layer) viewTo(pw.lay, pw.vbRest, 550);   /* back to the big view */
       if (layer === pw.lay) setSelected(null);
       const onEnd = pw.onEnd;
+      if (pw.fast) pwDone = 0;          /* after the intro, the steps start empty and the button reads "Power on" */
       pw = null; hideFlowNote();
       if (typeof SFX !== 'undefined') SFX.stop();
       if (onEnd) onEnd();
@@ -1342,20 +1300,36 @@ var devStop = () => {}, devSync = () => {};                                /* se
       out.push(routePos(r, to));
       return out;
     }
-    const stepDwell = st => 700 + st.x.split(/\s+/).length * 75;      /* time to read the step */
+    const STEP_GAP_MS = 500;                                             /* after the caption has been read, a moment to see the dots arrive */
+    const readTime = st => Math.min(9000, Math.max(4500, 1800 + st.say.length * 38));   /* without a voice: time to read the caption */
+    const MIN_STEP_MS = 2500;                                            /* every step stays at least this long, as in "How it works" */
+    /* the caption read aloud; without a natural voice, or with the sound off, the time it takes to read it */
+    function narrateStep(st){
+      const me = pw, tok = pw.tok = (pw.tok || 0) + 1, began = Date.now();
+      const done = () => { if (pw === me && pw.tok === tok){ pw.narrDone = true; powerAdvance(); } };
+      pw.narrDone = false; pw.minDone = false;
+      pw.minTimer = setTimeout(() => { if (pw === me && pw.tok === tok){ pw.minDone = true; powerAdvance(); } }, MIN_STEP_MS);
+      if (typeof SFX === 'undefined' || !SFX.narrate){ pw.readTimer = setTimeout(done, readTime(st)); return; }
+      SFX.narrate(st.say, () => {
+        if (pw !== me || pw.tok !== tok) return;
+        if (Date.now() - began < 400) pw.readTimer = setTimeout(done, readTime(st));   /* nothing was spoken */
+        else done();
+      });
+    }
     function powerStep(i){
       if (!pw) return;
       if (layer !== pw.lay){ powerCleanup(); powerSync(); return; }   /* the visitor left the computer's diagram */
-      clearTimeout(pw.timer); cancelAnimationFrame(pw.raf);
-      pw.holding = false;
+      clearTimeout(pw.timer); clearTimeout(pw.readTimer); clearTimeout(pw.minTimer); cancelAnimationFrame(pw.raf);
       if (i >= POWER_STEPS.length){ powerCleanup(); powerSync(); return; }
       i = Math.max(0, i);
       if (pw.only && pw.only.indexOf(i) < 0){ powerStep(i + 1); return; }   /* the intro's short version skips some steps */
       if (pw.onStep) pw.onStep(i);
-      pw.i = i; pwDone = i + 1; pw.animating = true;
+      pw.i = i; pwDone = i + 1; pw.animating = true; pw.animDone = false;
       const st = POWER_STEPS[i];
       if (typeof SFX !== 'undefined') SFX.cue(POWER_SFX[i]);
-      powerFx(i); showFlowNote(st.note, i, pw.paused); powerSync(); revealLatest();
+      powerFx(i); powerSync();
+      if (pw.fast) pw.narrDone = pw.minDone = true;                     /* the first-visit intro: no captions, and the panel stays where it is */
+      else { revealLatest(); narrateStep(st); }
       const routes = buildRoutes(st);
       pw.dots.forEach(d => { d.style.visibility = 'hidden'; });
       (pw.tags || []).forEach(t => { t.style.visibility = 'hidden'; });
@@ -1415,23 +1389,31 @@ var devStop = () => {}, devSync = () => {};                                /* se
       };
       pw.raf = requestAnimationFrame(frame);
     }
-    /* a step's animation is over: wait to be read and go on, or hold here if paused */
+    /* a step's dots have arrived */
     function powerStepDone(){
       if (!pw) return;
+      pw.animating = false; pw.animDone = true;
+      powerAdvance();
+    }
+    /* go on to the next step once its dots have arrived and its caption has been read, unless paused
+       (the first-visit intro holds each shot a moment instead) */
+    function powerAdvance(){
+      if (!pw || pw.paused || !pw.animDone || !pw.narrDone || !pw.minDone) return;
+      clearTimeout(pw.timer);
       const i = pw.i;
-      pw.animating = false;
-      if (pw.paused){ pw.holding = true; powerSync(); return; }
-      pw.timer = setTimeout(() => powerStep(i + 1), pw.fast ? (pw.hold || 1400) : stepDwell(POWER_STEPS[i]));   /* the intro holds each shot a moment */
+      pw.timer = setTimeout(() => powerStep(i + 1), pw.fast ? (pw.hold || 1400) : STEP_GAP_MS);
     }
     function powerStart(paused, o = {}){
+      /* it plays on the whole computer's diagram (the Computer page), and its steps collect in that page's panel */
       if (pw || !layer || !layer.querySelector('.hot[data-id="power-button"]')) return;
-      if (!o.fast && cur !== 'power-button') go('power-button');   /* so the panel shows the button's page, where the steps collect */
       const g = document.createElementNS(SVGNS, 'g'), tg = document.createElementNS(SVGNS, 'g'), dg = document.createElementNS(SVGNS, 'g');
       const defs = document.createElementNS(SVGNS, 'defs');
       g.setAttribute('class', 'pw-flow'); g.append(defs, tg, dg); layer.appendChild(g);       /* trails first, so the dots sit on top */
-      pw = {lay: layer, g, defs, tg, dg, dots: [], trails: [], sel: [], i: -1, timer: null, raf: 0, paused: !!paused, holding: false, animating: false,
-            fast: !!o.fast, onEnd: o.onEnd || null, onStep: o.onStep || null, only: o.only || null, speed: o.speed || 0, hold: o.hold || 0};
-      pwDone = 0; popClosed = false; popMoved = false; pop.style.top = ''; pop.style.bottom = '';
+      pw = {lay: layer, g, defs, tg, dg, dots: [], trails: [], sel: [], i: -1, timer: null, readTimer: null, raf: 0, paused: !!paused, animating: false,
+            animDone: false, narrDone: false, minDone: false, fast: !!o.fast, onEnd: o.onEnd || null, onStep: o.onStep || null, only: o.only || null, speed: o.speed || 0, hold: o.hold || 0};
+      pwDone = 0;
+      /* a little more room at the bottom for the controls, as for "How it works" (not in the intro, which films the diagram) */
+      if (!pw.fast && layer.dataset.vbPlay){ pw.vbRest = layer.getAttribute('viewBox'); viewTo(layer, layer.dataset.vbPlay, 550); }
       setHover(null); clearTimeout(tipTimer); powerSync();
       powerStep(0);
     }
@@ -1439,18 +1421,14 @@ var devStop = () => {}, devSync = () => {};                                /* se
     /* fast, staying on the home page: o.only lists the steps to play, o.onStep(i) runs as each starts,
        o.onEnd when it finishes or is stopped */
     powerIntro = o => powerStart(false, Object.assign({fast: true}, o));
-    powerStop = () => { powerCleanup(); popClosed = true; powerSync(); };
+    powerStop = () => { powerCleanup(); powerSync(); };
     const powerPause = () => {
       if (!pw) return;
       pw.paused = !pw.paused;
-      if (typeof SFX !== 'undefined'){ if (pw.paused) SFX.pause(); else SFX.resume(); }
-      if (pw.paused){
-        if (!pw.animating && !pw.holding){ clearTimeout(pw.timer); pw.holding = true; }   /* stop waiting; hold here */
-      } else if (pw.holding){
-        pw.holding = false;
-        pw.timer = setTimeout(() => powerStep(pw.i + 1), 400);
-      }
-      showFlowNote(POWER_STEPS[pw.i].note, pw.i, pw.paused); powerSync();
+      if (typeof SFX !== 'undefined'){ if (pw.paused) SFX.pause(); else SFX.resume(); }   /* the voice too */
+      if (pw.paused) clearTimeout(pw.timer);        /* stay on this step */
+      else powerAdvance();                          /* go on once its dots have arrived and its caption has been read */
+      powerSync();
     };
     const powerStepBy = d => {
       if (!pw){ if (d > 0) powerStart(true); return; }          /* Step from rest starts a paused walkthrough */
@@ -1465,12 +1443,7 @@ var devStop = () => {}, devSync = () => {};                                /* se
       else if (a === 'step') powerStepBy(1); else if (a === 'back') powerStepBy(-1);
     };
     inner.addEventListener('click', powerControl);
-    pop.addEventListener('click', powerControl);
-    pop.querySelector('.fp-close').addEventListener('click', () => { powerCleanup(); popClosed = true; powerSync(); });
-    document.addEventListener('fullscreenchange', () => { powerSync(); setTimeout(placePop, 250); });
-    document.addEventListener('webkitfullscreenchange', () => { powerSync(); setTimeout(placePop, 250); });
-    addEventListener('resize', () => { if (!pop.hidden) placePop(); powerSync(); });
-    if (panelBtn) panelBtn.addEventListener('click', () => setTimeout(powerSync, 0));
+    bar.addEventListener('click', powerControl);
     /* Reads an element's actual rectangle in the diagram's own coordinate
        space (again via getBBox + getCTM), so overlays line up with a part
        even after it has been dragged somewhere else. */
@@ -1530,8 +1503,9 @@ var devStop = () => {}, devSync = () => {};                                /* se
 
 /* ---------- "How it works": the step-by-step animations of the I/O devices ----------
    The inside views of the monitor, keyboard, mouse, joystick, game controller,
-   printer, webcam, microphone and speakers have a "How it works" button on the
-   diagram. It plays that device's steps (data in scenes/device-anims.js): the
+   printer, webcam, microphone, speakers and power button, and the diagrams of the
+   motherboard, RAM, graphics card, SSD, hard drive and power supply, have a "How it works"
+   button on the diagram. It plays that device's steps (data in scenes/device-anims.js): the
    parts a step is about stay lit while the rest fades, a note at the top says
    what is happening, and the step's effects (SVG animations) are drawn over the
    diagram. Each step waits long enough to be read, then the next one starts;
@@ -1546,22 +1520,6 @@ var devStop = () => {}, devSync = () => {};                                /* se
   const S = typeof SFX !== 'undefined' ? SFX : {cue(){}, stop(){}, pause(){}, resume(){}, syncButtons(){}};
   S.syncButtons();
   const animFor = () => (typeof DEVICE_ANIMS !== 'undefined' && curOwner && N[curOwner] && DEVICE_ANIMS[N[curOwner].scene]) || null;
-
-  /* The view of the diagram, changed smoothly: big at rest, and smaller while the animation plays, to make
-     room for its caption at the top and its controls at the bottom (a scene's vbPlay; see scenes/devices.js) */
-  function viewTo(lay, to, ms){
-    const parse = v => String(v).trim().split(/[\s,]+/).map(Number);
-    const from = parse(lay.getAttribute('viewBox')), end = parse(to);
-    if (reduce.matches || !ms){ lay.setAttribute('viewBox', end.join(' ')); return; }
-    cancelAnimationFrame(lay._vbRaf);
-    const t0 = performance.now(), ease = t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const frame = now => {
-      const k = Math.min(1, (now - t0) / ms), e = ease(k);
-      lay.setAttribute('viewBox', from.map((f, i) => (f + (end[i] - f) * e).toFixed(2)).join(' '));
-      if (k < 1) lay._vbRaf = requestAnimationFrame(frame);
-    };
-    lay._vbRaf = requestAnimationFrame(frame);
-  }
 
   /* dv: the animation playing {anim, lay, i, timer, paused, fx, lit} */
   let dv = null;
@@ -1625,6 +1583,11 @@ var devStop = () => {}, devSync = () => {};                                /* se
     const anim = animFor();
     if (!anim || !layer || dv) return;
     powerStop();
+    /* the effects are drawn where the parts are drawn, so parts that were dragged (the motherboard's) go back first */
+    if (hasOffsets(curOwner)){
+      layer.querySelectorAll('.dragwrap').forEach(w => setOffset(w, 0, 0, true));
+      SIM['drag:' + curOwner] = {}; tools.classList.remove('show');
+    }
     tipPinned = false; hideTip(); setSelected(null); setHover(null); clearTimeout(tipTimer);
     dv = {anim, lay: layer, i: 0, timer: null, paused: false, fx: null, lit: []};
     if (layer.dataset.vbPlay){ dv.vbRest = layer.getAttribute('viewBox'); viewTo(layer, layer.dataset.vbPlay, 550); }

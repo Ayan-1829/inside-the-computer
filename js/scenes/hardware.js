@@ -145,7 +145,8 @@ SCENES.pc = () => {
     <circle class="k-pow" cx="696" cy="127" r="6"/><text x="708" y="127">Power</text>
     <circle class="k-sig" cx="772" cy="127" r="6"/><text x="784" y="127">Signals and data</text></g>`;
   L += `<g class="legend" transform="translate(100 0)"><circle class="lbl-dot in" cx="604" cy="666" r="6"/>${T(616,672,'Input device','')}<circle class="lbl-dot out" cx="760" cy="666" r="6"/>${T(772,672,'Output device','')}</g>`;
-  return {svg: s + LAYER(L), vb: [1012, 700], drag: true, init: el => {
+  /* while the power-on walkthrough plays (engine.js), a strip at the bottom for its controls, as on the device diagrams */
+  return {svg: s + LAYER(L), vb: [1012, 700], vbPlay: innerWidth <= 980 ? [0, 0, 1012, 840] : [0, 0, 1012, 790], drag: true, init: el => {
     const link = el.querySelector('.dev-link');
     if (!link) return;
     const open = () => window.open('https://ayan-1829.github.io/', '_blank', 'noopener');
@@ -356,3 +357,12 @@ SCENES.io = () => {
   s += hot('audio',[688,186,176,52], jack(712,212,'#3BA55C')+jack(762,212,'#E46C9E')+jack(812,212,'#3E7FD6')+T(762,410,'Audio jacks','t t-mid')+T(762,432,'3.5 mm','t t-xs t-mut t-mid'));
   return {svg:s};
 };
+
+/* Room for "How it works" (scenes/device-anims.js) on the motherboard, RAM, graphics card, SSD, hard drive, power supply and
+   cooling (the CPU's: scenes/cpu.js), as on the device diagrams (scenes/devices.js): a slim strip at the bottom for its button at rest,
+   and a little more room (vbPlay) for its controls while it plays. Phones and tablets keep a taller strip. */
+['board', 'ram', 'gpu', 'ssd', 'hdd', 'psu', 'cooling'].forEach(k => {
+  const draw = SCENES[k];
+  SCENES[k] = n => Object.assign({cls: 'animscene', vb: innerWidth <= 980 ? [0, 0, 1000, 850] : [0, 0, 1000, 770],
+    vbPlay: innerWidth <= 980 ? null : [0, 0, 1000, 800]}, draw(n));
+});

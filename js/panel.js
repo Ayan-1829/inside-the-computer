@@ -231,8 +231,12 @@ function panelHTML(id, href){
   h += sec('What is it?', '<p>' + n.what + '</p>');
   h += sec('What does it do?', '<p>' + n.does + '</p>');
   h += sec('Why it matters', '<p>' + n.why + '</p>');
-  if (n.id === 'power-button') h += '<section class="p-sec pw-sec"><div class="pw-head"><h3>Power-on steps</h3>' + pwControls(true) + '</div>' +
+  /* the power-on walkthrough plays on the whole computer's diagram, so its steps collect on the Computer page;
+     the power button's own page (its inside view, with its own "How it works") links to it */
+  if (n.id === 'computer') h += '<section class="p-sec pw-sec"><div class="pw-head"><h3>Power-on steps</h3>' + pwControls(true) + '</div>' +
     '<p class="pw-hint">Press the power button in the diagram, or use these controls.</p>' + pwKey() + '<ol class="pw-log" data-pw-log aria-live="polite"></ol></section>';
+  else if (n.id === 'power-button') h += sec('The whole start-up', '<p>The button only starts things off. Watch every step that follows, from standby power to the desktop, on the whole computer.</p>' +
+    '<p><button type="button" class="btn" data-guide="power">Watch the computer start up</button></p>');
 
   /* interactive "Try it" sections */
   if (n.gate) h += sec('Try it', '<p class="expr">' + n.expr + '</p><p class="hintline">' + TT + '</p>' + truthTable(n));

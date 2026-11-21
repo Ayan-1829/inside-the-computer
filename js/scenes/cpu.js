@@ -30,6 +30,14 @@ SCENES.cpu = () => {
   return {svg:s};
 };
 
+/* Room for "How it works" (scenes/device-anims.js), as on the other hardware diagrams (scenes/hardware.js):
+   a slim strip at the bottom for its button, and a little more while it plays */
+{
+  const draw = SCENES.cpu;
+  SCENES.cpu = n => Object.assign({cls: 'animscene', vb: innerWidth <= 980 ? [0, 0, 1000, 850] : [0, 0, 1000, 770],
+    vbPlay: innerWidth <= 980 ? null : [0, 0, 1000, 800]}, draw(n));
+}
+
 /* ---------------- 4-bit register, interactive ---------------- */
 SCENES.registers = (n) => {
   let s = `<g class="bg"><polyline class="wire" data-s="clk" points="170,420 856,420"/></g>`;

@@ -21,6 +21,8 @@ const DLB = (x, y, text, o = {}) => {
   }).join('');
   return s.replace(/<\/g>$/, ptr + '</g>');
 };
+/* a thin leader line from a part to its name (the DRAM chip's drawing in scenes/memory-deep.js uses it) */
+const ld = (x1,y1,x2,y2) => `<g class="bg"><path class="ln-thin" d="M${x1} ${y1}L${x2} ${y2}"/></g>`;
 const TITLE = t => `<g class="bg scene-title">${T(90,70,t,'t t-sm t-mut')}</g>`;   /* hidden while "How it works" plays: its note says more */
 const NOTE = t => `<g class="bg">${T(90,655,t,'t t-sm t-mut')}</g>`;
 /* the same note for the device diagrams, whose text is bigger: split into two lines when long */
@@ -184,9 +186,39 @@ SCENES.webcam = () => {
   return {svg: s + LAYER(DLB(226,160,'LED',{for:'webcam-usb',to:[226,220]}) + DLB(315,160,'Lens',{for:'webcam-lens',to:[315,238]}) + DLB(425,160,'Sensor',{for:'webcam-sensor',to:[435,268]}) + DLB(562,160,'Image processor',{for:'webcam-isp',to:[560,278]}) + DLB(712,160,'USB chip',{for:'webcam-usb',to:[690,288]}))};
 };
 
+/* ---------------- Inside the power button ----------------
+   The button and its light on the case's front panel (a cutaway), the two thin cables to the
+   motherboard's front-panel header, the power controller, and the power supply's 24-pin cable.
+   The switch's plunger, its return spring and the contact bar are drawn at rest; "How it works"
+   (scenes/device-anims.js) presses them. */
+SCENES['power-button'] = () => {
+  let s = TITLE('Power button and the circuit it starts, cutaway (simplified)');
+  s += `<g class="bg">${R(150,140,30,392,6,'m-case')}${T(165,128,'Case front','t t-xs t-mut t-mid')}
+    ${R(400,170,520,350,10,'m-board')}${T(905,505,'Motherboard','t t-xs t-inv t-end')}
+    <polyline class="ln-trace" points="548,396 580,396 580,340 600,340"/><polyline class="ln-trace" points="720,300 850,300"/><polyline class="ln-trace" points="720,340 850,340"/>
+    ${R(850,250,44,120,4,'m-slot')}${[0,1,2,3,4,5].map(i => C(864,262+i*19,3.5,'m-gold') + C(880,262+i*19,3.5,'m-gold')).join('')}${T(872,392,'24-pin','t t-xs t-inv t-mid')}
+    ${R(760,96,170,58,8,'m-metal')}${C(796,125,20,'m-metal-lt')}${T(870,131,'PSU','t t-xs t-mid')}${T(845,86,'Power supply','t t-xs t-mut t-mid')}
+    <path class="m-cable" d="M872 154V250" style="stroke-width:9"/>
+    <path class="m-cable" d="M309 300C372 300 390 386 448 386" style="stroke-width:5"/>
+    <path class="m-cable" d="M190 426C300 428 390 406 448 406" style="stroke-width:5"/></g>`;
+  /* the switch: button cap (outside the case), plunger, return spring, contact bar and the two contacts */
+  s += hot('pb-switch',[96,244,216,112],
+    R(100,262,50,76,12,'m-panel') + `<path d="M125 287V300M116.5 291.5A12 12 0 1 0 133.5 291.5" style="fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round"/>` +
+    R(205,250,104,100,8,'m-chip') + R(150,288,70,24,4,'m-metal') +
+    `<path d="M220 300h6l5-13 8 26 8-26 8 26 5-13h6" style="fill:none;stroke:var(--i-text-inv);stroke-width:2.5;stroke-linejoin:round"/>` +
+    R(266,268,8,64,2,'m-metal') + R(286,266,10,26,2,'m-gold') + R(286,308,10,26,2,'m-gold'));
+  s += hot('pb-led',[104,404,90,44], C(124,426,14,'m-metal-lt') + R(138,419,52,14,3,'m-metal'));
+  let pins = ''; for (let i = 0; i < 5; i++) pins += C(456+i*20,386,4,'m-gold') + C(456+i*20,406,4,'m-gold');
+  s += hot('pb-header',[436,368,116,82], R(440,374,108,44,4,'m-slot') + pins + R(444,378,42,16,3,'m-plastic') + R(444,398,42,16,3,'m-plastic') + T(494,440,'F_PANEL','t t-xs t-inv t-mid'));
+  s += hot('pb-controller',[600,270,120,110], R(600,272,120,106,8,'m-chip') + T(660,320,'Power','t t-xs t-inv t-mid') + T(660,342,'control','t t-xs t-inv t-mid'));
+  s += FLOW(560, [[125,'Press'],[290,'Switch closes'],[470,'Signal to the board'],[665,'Controller'],[860,'Power on']]);
+  return {svg: s + LAYER(DLB(255,205,'Push switch',{for:'pb-switch',to:[255,248]}) + DLB(150,488,'Power LED',{for:'pb-led',to:[124,442]}) +
+    DLB(494,482,'Front-panel header',{for:'pb-header',to:[494,452],tone:'inv'}) + DLB(660,240,'Power controller',{for:'pb-controller',to:[660,270],tone:'inv'}))};
+};
+
 /* Room for "How it works": its step note sits along the top of these diagrams while it plays, and its
    controls at the bottom right. */
-['mic', 'speakers', 'monitor', 'keyboard', 'mouse', 'joystick', 'gamepad', 'printer', 'webcam'].forEach(k => {
+['mic', 'speakers', 'monitor', 'keyboard', 'mouse', 'joystick', 'gamepad', 'printer', 'webcam', 'power-button'].forEach(k => {
   const draw = SCENES[k];
   /* At rest the drawing is big, with just a slim strip at the bottom for the "How it works" button. When the
      animation starts, the caption appears above the picture and the picture moves down to make room for it

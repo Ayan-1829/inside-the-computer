@@ -16,6 +16,11 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 8.6.0 | 2026-11-21 | — | "How it works" for cooling (6 steps: heat, thermal paste, heat pipes, fins, fan, speed control) and the CPU (7 steps, one per part: clock, bus interface and cache, control unit, decoder, registers, ALU, and the 8086); “8086” is read “eighty eighty-six” |
+| 8.5.1 | 2026-11-21 | — | The narrator reads decimal numbers properly (“3.3 volts”, “0.1 milliseconds”, “M dot 2”) instead of stopping at the point; dx and dy, “1 volt”, the doubled “standby”, and abbreviations a voice says wrongly (DRAM, LED, PCIe, UEFI, I/O, GB) fixed; a permanent speech test |
+| 8.5.0 | 2026-11-21 | — | The power-on walkthrough works like "How it works": each step's caption in the box above the picture (which moves down and shrinks to make room), read aloud, with the controls on the diagram; the pop-up step window and all its code removed |
+| 8.4.0 | 2026-11-21 | — | "How it works" animations for the power button (a new inside view with 4 parts), power supply, motherboard, RAM, graphics card, SSD and hard drive (39 narrated steps); the power-on walkthrough's steps now collect on the Computer page; the rating question opens in the middle of the screen with the page behind it blurred |
+| 8.3.0 | 2026-11-21 | — | The DRAM chip and its six parts draw again (blank since v7); real photos for 124 more parts (143 in all, 158 new photos from Wikimedia Commons, each checked by eye and credited), including motherboard parts, drive internals, silicon dies and 29 of the 34 chips; a rating question (1 to 5 stars) after 15 pages or 5 minutes in a visit, shown once; ratings stored in the Feedback tab and analysed in the Summary and a Ratings section of each report |
 | 8.2.5 | 2026-10-28 | — | The 8086 accepts textbook-style (MASM/TASM) programs: .MODEL, .STACK, .DATA, .CODE, main PROC / ENDP, MOV AX, @DATA and END main; tested with the 8086 promo video's program and two textbook examples |
 | 8.2.4 | 2026-10-26 | — | The step note has one fixed size (the picture's full width, two lines tall), so the picture under it no longer changes size from step to step; all 2,192 notes fit in two lines |
 | 8.2.3 | 2026-10-26 | — | Step notes never cover the picture: it moves down below the note while one shows; no note outlives its page (8086 after Step, reset or leaving; the AND gate's note after going home); leaving the 8086 for any other part stops its program |
@@ -106,6 +111,168 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 ---
 
 ## Versions
+
+### 8.6.0: "How it works" for cooling and the CPU
+
+**Prompt** (2026-11-21 16:43:18 (22:43:18)):
+> Add description 'how it works' button for cooling, brief description of CPU (describe the parts)
+
+**Changes**
+- **Cooling** (*Carrying heat away from the CPU*), 6 steps:
+  1. The CPU turns its power into heat (it glows, and heat rises from it).
+  2. Thermal paste fills the air gaps, so the heat crosses into the copper base.
+  3. In the heat pipes, vapour rises (red) up the outer pipes and liquid comes back (blue).
+  4. The heatsink fins warm from the bottom up, spreading the heat over a large surface.
+  5. The fan pushes cool air in (blue) and warm air leaves (red).
+  6. The motherboard speeds the fan up as the CPU warms and slows it down to stay quiet.
+- **CPU** (*How the CPU runs an instruction*), 7 steps, one for each part of the core:
+  1. The clock ticks, shown by a dot running along its wave.
+  2. The bus interface brings data in from RAM into the L1 and L2 cache, where a row of cells fills.
+  3. The control unit moves the instruction through fetch, decode and execute, lit in turn.
+  4. The instruction decoder reads the instruction's bits into control signals.
+  5. The registers send the two numbers to the ALU.
+  6. The ALU works on them, and the result goes back into a register.
+  7. The Intel 8086 is pointed out, to watch this with real code.
+- Both are narrated and work like the other "How it works" animations: each step lights its parts and shows a two-line caption, and the controls sit on the diagram. Both diagrams gained the same slim strip at the bottom for the controls, so at rest they are slightly smaller (about 9 % less height), like the other diagrams with "How it works". The site now has "How it works" on 18 diagrams.
+- **“8086” and “8088” are read “eighty eighty-six” and “eighty eighty-eight”**, instead of “eight thousand and eighty-six”. The speech test checks this, and now covers 106 narrated captions.
+- The README lists the new animations.
+- Checked:
+  - All 13 steps play with no error, light the right parts and stop cleanly. Each step was looked at in a screenshot, and every caption fits two lines at 1280×720 and 1024×700.
+  - All nine of the recent "How it works" animations, the power-on walkthrough checks, the speech test, all 224 pages and the 8086 checks pass.
+
+
+### 8.5.1: The narrator reads numbers and names properly
+
+**Prompt** (2026-11-21 16:34:23 (22:34:23)):
+> for 3.3 the voice treats . as full stop. It should be floating point number pronounced (three point three) fix this and this type of voices. Another I noticed was for small movement (dx, dy)
+
+**Changes**
+- **Decimal numbers are read as numbers.** Before speaking, the narrator cut its text into sentences at every “.”, so “3.3 V” became “3.” and “3 volts”: a full stop in the middle of the number. A sentence now ends only at a “.”, “!” or “?” followed by a space or the end of the text (`pieces()` in `js/sfx.js`, which `narrate()` now uses). So “3.3 volts” is read “three point three volts”, and “0.1 milliseconds” and “M.2” are no longer cut either. This affected the power supply (steps 4 and 5), the power button (step 5), the power-on walkthrough (step 4), the SSD (steps 1 and 5) and the motherboard (step 3).
+- **The mouse’s “dx and dy”** (step 3, how far the mouse moved) is read “D X and D Y”, instead of being said as words.
+- **Other words a voice says wrongly**, found by reading what every one of the 93 narrated captions sends to the voice:
+  - “about 1 volts” is now “about 1 volt” (motherboard and graphics card, step 1).
+  - “+5VSB standby power” no longer says “standby” twice (power-on walkthrough, step 1).
+  - Abbreviations a voice tends to say as a word, or not at all, are spelled out: DRAM, SRAM, VRAM (“D RAM”, not the drink), LED (“L E D”), PCIe (“P C I Express”), UEFI (“U E F I”), I/O (“I O”) and M.2 (“M dot 2”).
+  - “GB” and “MB/s” are said in words, and “0s and 1s” as “zeros and ones”. Millimetres were added for later captions.
+  - The text shown on screen is unchanged; only what the voice hears.
+- **A new test, `build/test-speech.mjs`** (run: `node build/test-speech.mjs`). It loads `js/sfx.js` and checks exactly what the voice gets:
+  - the cases above, and others like them (“PCIe 4.0”, “USB 3.0”, “Version 1.2?”);
+  - that long texts are still cut at sentence ends;
+  - that no narrated caption on the site has a decimal cut in two, “1 volts”, a word said twice, a leftover symbol, “dx” or “dy”, one of the abbreviations above, or a unit not in words.
+  - Run it before publishing, with the 8086 tests.
+- Checked: the speech test passes for all 93 captions, and the browser’s own `sfx.js` gives the same result. All seven “How it works” animations, the power-on walkthrough checks, all 224 pages and the 8086 checks pass.
+
+
+### 8.5.0: The power-on walkthrough is narrated, like "How it works"; no more pop-up
+
+**Prompt** (2026-11-21 16:09:33 (22:09:33)):
+> Like the others parts description, make the power-start description with voice. Instead of pop-up window for description, make similar to other parts (Reduce the space of the components and add details box on top and voice describing each step). Clean the previous pop-up related codes.
+
+**Changes**
+- **Each step of the power-on walkthrough is described in the box at the top and read aloud**, as in the devices' "How it works".
+  - The nine steps have new captions of one or two lines, written to be spoken. For example: "Pressing the **power button** pulls **PWR_SW#** low. The motherboard’s power logic, in the **chipset**, notices." Signal names are spoken plainly ("power switch", "P S on", "power OK", "5 volt standby").
+  - The box sits above the picture, and the picture moves down and becomes smaller to make room. On phones and tablets the box is below the picture, as for the devices. In full screen it stays inside the full-screen view.
+- **The next step waits for the voice.** A step moves on once its dots have arrived and its caption has been read, and it stays at least 2.5 seconds. With the sound off, or without a natural voice, the step stays for the time it takes to read its caption (4.5 to 9 seconds).
+  - Pause also pauses the voice. Next step and Back stop on that step and read it in full, as in "How it works".
+- **The controls are on the diagram** while it plays, in the same bar as "How it works": Stop, Back, Pause, Next step and the sound. The view widens a little at the bottom to make room for them, so they never cover the picture, the wall plug or the legend. This was checked on a computer, a phone and a tablet.
+- **The pop-up step window is gone**, with all its code. It was the window that appeared over the picture when the details panel was hidden or in full screen, which could be dragged and resized and had its own close button and controls.
+  - Removed from `js/engine.js`: the pop-up and its list, its placing beside the tower, dragging, resizing, the `usePop`, `isFs`, `popClosed`, `popMoved` and `placePop` code, and the resize, full-screen and panel-button listeners that only kept it in place.
+  - Removed from `css/styles.css`: every `.flow-pop` and `.fp-…` rule.
+  - The timing by word count (`stepDwell`), the old one-line `note` texts and the "holding" state were replaced by the narration-based timing above.
+- **The "Power-on steps" list in the Computer page's side panel stays**, with the fuller explanation of each step, as a record of the steps so far.
+- The first-visit intro is unchanged: it plays the steps quickly with no captions, voice or controls, and leaves the panel alone.
+- The smooth change of view that "How it works" uses (`viewTo`) is now shared by both animations.
+- Checked:
+  - Every step's caption reaches the narrator, and a step does not move on while its voice is still speaking (tested with a stand-in voice of 6 seconds).
+  - Pause holds even after the voice ends, and Play goes on. Next step runs to the end, and Stop removes the box, the controls and the wider view.
+  - All nine captions fit the two-line box.
+  - With the panel hidden (where the pop-up used to appear) and in full screen, the box and controls show and no pop-up appears. On a phone the box is below the picture, with no sideways scroll.
+  - The walkthrough and intro checks, all seven "How it works" animations, the rating checks, all 224 pages, and the 8086 checks (143 instructions, 12 example programs, 4 textbook checks) pass.
+
+
+### 8.4.0: "How it works" for the power button, power supply, motherboard, RAM, graphics card, SSD and hard drive; a centred rating question
+
+**Prompts**
+
+- 2026-11-21 15:33:06 (21:33:06):
+  > Like all input and output devices, add how it works button explaining each part in short with animation (power button, power supply, storage, motherboard, ram, gpu)
+- 2026-11-21, about 15:54 (21:54), sent while the first prompt was being worked on:
+  > Instead of showing the steps on SSD and HDD at storage level (how these indiviually works) at storage, take 'How it works' to the those indivisual parts section.
+  >
+  > For the rating part, place it to the middle and blur all others when poped up
+
+**Changes**
+- **"How it works" on seven more diagrams**, built like the devices' ones. Each has 5 or 6 steps, one or two lines each, read aloud. Each step lights the part it is about and animates what happens there (data and power moving, glows, a spinning platter, a swinging arm, cells lighting row by row), with sounds. Pause, Back, Next step and Stop work as on the devices.
+  - **Power button** (*Switching the computer on*): standby power keeps the power controller awake; the press closes the switch; PWR_SW# is pulled to 0 V through the front-panel header; the controller pulls PS_ON# low and the power supply switches on; main power flows and the power LED lights; pressing again asks for sleep or shut-down, and holding for 4 seconds forces it off.
+  - **Power supply** (*Turning mains power into steady DC*): the rectifier, the capacitors (about 325 V DC), switching at about 100,000 times a second and the transformer, regulation, and the 12 V, 5 V and 3.3 V outputs.
+  - **Motherboard** (*Connecting every part*): the 24-pin connector and the VRM; the CPU socket and the RAM slots; the PCIe and M.2 slots; the chipset with SATA, USB and the rear I/O; the BIOS chip and CMOS battery; the fan header (a fan appears beside it and speeds up).
+  - **RAM** (*Storing and reading bits*): the SPD chip; the address reaching every DRAM chip; a row opening on its word line; cells read through the bit lines; refresh every 64 ms; SRAM's two inverters that need no refresh.
+  - **Graphics card** (*Drawing a frame*): the power stages; commands over PCIe; the memory controllers and VRAM; the L2 cache; the compute units all lighting up together; the display engine sending the frame out.
+  - **SSD** (*Saving a file on an SSD*): the M.2 connector; the controller splitting the file into pages; the DRAM cache's map; writing into NAND flash; reading back in about 0.1 ms, with wear levelling.
+  - **Hard drive** (*Saving and finding data on a hard drive*): the controller board; the spindle motor and platters; the actuator arm swinging; the head writing and reading; about 10 ms to find data.
+  - **SSD and hard drive have their own animations**, on their inside views, as the second prompt asked; the Storage overview has none.
+- **The power button has an inside view, like the other devices.** It is a cutaway of the button and its circuit, with four new parts, each with its own page: Push switch, Front-panel header, Power controller and Power LED. The site now has 224 parts.
+  - Clicking the power button on the desk still starts the power-on walkthrough.
+  - Its card's new "Inside" button, the part list and the Overview open the inside view.
+  - The power button's page has a "Watch the computer start up" button.
+- **The power-on walkthrough's steps collect on the Computer page.** It always played on the whole computer's picture, but it used to switch to the power button's page so the side panel could list the steps. That page now shows the inside view, so the walkthrough stays on the Computer page, whose panel has the "Power-on steps" section. Nothing else about it changed.
+  - The first-visit intro (which plays the walkthrough quickly) no longer writes to that list or scrolls the panel. After it, the panel still starts at the "start here" card, and the button reads "Power on".
+- **The diagrams with "How it works" have a slim strip at the bottom** for its controls (motherboard, RAM, graphics card, SSD, hard drive, power supply), as on the devices, so the controls never cover the drawing. At rest these diagrams are slightly smaller (about 9 % less height). Parts moved by dragging on the motherboard go back into place when its animation starts, because the effects follow the drawing's own positions.
+- **The rating question opens in the middle of the screen, with everything behind it dimmed and blurred.** It is now a true dialog: the keyboard focus moves to its first star, and Escape, "Not now", ✕ or a click outside it closes it. It still waits for the tour, the intro and animations to finish.
+- The README describes the animations, the walkthrough and the centred rating question.
+- Checked:
+  - All 39 steps of the seven new animations play with no error, light the right parts, draw their effects, and stop cleanly. Each step was looked at in a screenshot, and every caption fits the two-line note at 1280×720 and at 1024×700.
+  - The power-on walkthrough plays on the Computer page and logs its steps in its panel. The card's "Inside" and "Power on" work, and the power button page's "Watch the computer start up" goes back and plays. Leaving stops it, and the first-visit intro leaves the panel untouched.
+  - The power button's inside view and its animation work on a phone, with no sideways scroll. A dragged motherboard part goes back when the animation starts.
+  - The rating question opens exactly centred, as a modal with the page blurred, on desktop and on a phone in the dark theme; all five rating cases pass.
+  - All 224 pages open with no error, no failed request and no empty picture. All 143 8086 checks, 12 example programs and 4 textbook checks pass.
+
+
+### 8.3.0: The DRAM pages fixed, real photos for 124 more parts, and a rating question
+
+**Prompts**
+
+- 2026-11-21 13:44:20 (19:44:20):
+  > Give me suggestions how I can improve this application.
+- 2026-11-21 14:09:07 (20:09:07), with part of the suggestions pasted in first:
+  > Fix first: the DRAM pages are blank on the live site
+  > The DRAM chip page and its 6 inner parts (banks, row decoder, sense amps, control, column I/O, I/O) show an empty picture, with the error ld is not defined.
+  >
+  > Cause: memory-deep.js:25 calls a helper called ld, which draws a thin line from a part to its name. That helper was in v6's scenes/devices.js but was removed in v7, probably when the device names got arrows in 7.3.1.
+  > Fix: put the one line back. It has been broken for about 7 weeks.
+  >
+  > Also, add more related pictures of each components from the internet that matches each components.
+  >
+  > If any person visits more than 15 pages or stays more than 5 minutes on the website show a feedback pop-up with ratings. Adjust the rating in the google sheet analysis.
+
+**Changes**
+- **The DRAM chip's pages draw again.** The DRAM chip and its six parts (memory banks, row decoder, sense amplifiers, column I/O, control, data I/O) showed an empty picture on the live site, with the error `ld is not defined`. The DRAM drawing (`js/scenes/memory-deep.js`) still called `ld`, a thin leader line from a part to its name, which v6 defined in `js/scenes/devices.js` and v7 removed. It is back in `js/scenes/devices.js`.
+- **Real photos for 124 more parts: 143 in all, up from 19.** There are 158 new photos (16 MB) from Wikimedia Commons, all under free licences (CC0, public domain, CC BY, CC BY-SA), each credited under the photo like the earlier ones. Together with photos reused from the earlier galleries, there are 253 photo entries.
+  - **What has photos now:** the computer itself and the power button; every motherboard part except the fan header; the DRAM, SRAM and SPD chips and the DRAM die's banks; the GPU's compute units (die shots), its memory (GDDR5 and HBM), outputs, PCIe connector and power delivery; the M.2 slot, the SSD's controller, DRAM cache and NAND flash (and a NAND die); all five hard-drive parts; the power supply's rectifier, capacitors, transformer and regulation; the heatsink, fan, heat pipes and thermal paste; the USB, video, Ethernet and audio ports; and most of the devices' inner parts (microphone, speakers, monitor, keyboard, mouse, joystick, game controller, printer and webcam).
+  - **Chips and gates:** 29 of the 34 real chips have photos, often of that exact part number on a real board (several from a Commodore Amiga 1000's main board), and several have a die shot as well, such as the 7400's die with its pins labelled, the 74LS08's die, and the 8086's die. Six of the seven logic gates show the chip that holds them ("The AND gate as a real part: a 74LS08 chip holds four of them"). So do the ALU (74LS181), the multiplexer, the D flip-flop, the registers (74LS273), the decoder (74LS138) and the bus interface (74LS245). The CPU's cache shows a Pentium II die, whose on-chip L2 cache is easy to see.
+  - **No photo yet:** Commons has no usable photo of the 74283, 7485, 74194, 74266 and 62256 chips (so the XNOR gate has none either), the fan header, or a joystick's gimbal. Parts that are only ideas (the 8086's instruction groups, the GPU's schedulers, the floating-point adder's stages, the memory controller's parts) keep their drawings only.
+  - Every photo was looked at before it was chosen, and the ones whose captions depend on detail were checked at full size. One candidate, the back of a graphics card's board, was dropped because it shows no memory chips. The captions say what is in each photo and how it relates to the part, for example the SSD board's DRAM cache, controller and flash chip from left to right.
+  - The photos are at most 900 px, like the earlier ones, at about 100 KB each.
+- **A rating question.** Once a visit passes 15 pages, or 5 minutes with the site on screen, a small card asks "How would you rate Inside the Computer?" with 1 to 5 stars. After a star is chosen, a box opens for an optional comment, then "Send rating".
+  - It waits while the tour, the start screen or an animation is running, and while a dialog or the full-screen view is open. It doesn't take the focus away from the visitor; screen readers are told it has appeared. On phones it is a sheet along the bottom of the screen.
+  - **It is shown at most once.** After a rating it never comes back; after "Not now", the ✕ or Escape, it waits 30 days. A visit ends after 30 minutes away, and a page counts the way the visit counter counts it.
+  - **It only appears once the Worker says it can store ratings**, so nothing changes on the site until the new Worker is deployed.
+  - The count and the answer are kept in the visitor's browser only.
+  - The visit counter records "rating_prompt" events (shown after 16 pages or 5 minutes, not now, closed, sent and the stars), so the share of people who answer can be worked out.
+  - Built into the shared `js/feedback.js`, and turned on by attributes on its script tag (`data-rate-pages`, `data-rate-minutes`, `data-rate-name`, `data-rate-wait`), so the other sites' copies stay as they are unless they turn it on. The Feedback button works as before; its messages now include the part that was open (`#/…`).
+- **Ratings in the Google Sheet** (in `analytics-backend`, outside this repo; the previous versions are kept there as `worker.before-ratings.js` and `apps-script.before-ratings.gs`):
+  - **Worker:** it accepts a rating of 1 to 5 with an optional message and "asked after", and its status answer now says `ratings: true`.
+  - **Feedback tab:** it gains the columns Rating and Asked after, in front of Message. The existing tab is rearranged by itself on the first new message or report refresh, and the old messages stay under Message.
+  - **Summary:** it gains the columns Ratings (all time), Average rating (of 5) and Rating question shown.
+  - **Each report:** a project with ratings gets two gold sections at the top. **Ratings** has a row for all time and one per month, each with the number of ratings, the average, how often the question was shown, the share answered, the count of each star level, and how many came with a message. **Latest ratings** lists the newest 50 ratings, with stars, page, device and comment.
+  - **To use it:** paste `apps-script.gs` into the Sheet's Apps Script and deploy a new version, then paste `worker.js` into the Cloudflare Worker and deploy it. Do it in that order, so no rating reaches the old script.
+- The Privacy notes say what the rating question keeps in the browser and sends, and that a message or rating can still be sent with tracking turned off. The README describes the photos and the rating question.
+- Checked:
+  - All 143 8086 checks, 12 example programs and 4 textbook checks pass.
+  - All 220 pages open with no error, no failed request and no empty picture, and every photo they show loads.
+  - The rating question was tested in the browser with a simulated Worker, in five cases: after 5 minutes and sent (never asked again); after the 16th page and "Not now"; waiting for the tour to end; not shown by a Worker without ratings; and on a phone in the dark theme, with Escape and the Feedback button.
+  - The Apps Script was run against a mock Sheet: the old Feedback tab is rearranged, ratings are saved, bad ones are refused, and the Summary and Ratings figures come out right. The Worker was tested with sample requests.
+
 
 ### 8.2.5: Textbook-style 8086 programs
 
