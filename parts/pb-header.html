@@ -114,9 +114,9 @@
       <div class="stage-tools" id="stage-tools"><button class="btn" id="btn-reset-layout" type="button"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3.5V6h2.5"/></svg><span>Reset positions</span></button></div>
       <div class="tip" id="tip" role="tooltip"></div>
     </section>
-    </div>
-    <!-- below the picture, never over it: the depth gauge, real photos, the instruction and short notes (js/guide.js) -->
+    <!-- below the picture and inside its border, never over the drawing: real photos, the instruction and short notes (js/guide.js), 3D view (js/model3d.js) -->
     <div class="stage-bar" id="stage-bar"><div class="hint" id="hint" aria-hidden="true">Click a part to zoom in</div></div>
+    </div>
     <nav class="strip" id="strip" aria-label="Parts in this view"><span class="strip-label">In this view</span><a class="chip" href="pb-switch.html" data-go="pb-switch"><i></i>Push switch</a><a class="chip cur" href="pb-header.html" data-go="pb-header"><i></i>Front-panel header</a><a class="chip" href="pb-controller.html" data-go="pb-controller"><i></i>Power controller</a><a class="chip" href="pb-led.html" data-go="pb-led"><i></i>Power LED</a></nav>
     <aside class="panel" id="panel" aria-label="Component information">
       <article class="panel-inner" id="panel-inner"><p class="p-level">Level 3: Internal components</p><h1 class="p-title">Front-panel header</h1><p class="p-short">A block of pins on the motherboard (often labelled F_PANEL) where the power button, the reset button and the case’s lights connect.</p><section class="p-sec"><h3>What is it?</h3><p>The front-panel header is a small block of pins, usually two rows along the bottom edge of the motherboard. Thin two-wire cables from the case plug onto it: PWR_SW for the power button, RESET_SW for the reset button, and PLED and HDD_LED for the lights.</p></section><section class="p-sec"><h3>What does it do?</h3><p>It carries the button’s signal to the board. One PWR_SW pin is held at a small voltage and the other is ground, so pressing the button pulls the signal down to 0 V. The same header powers the case’s power light and drive activity light.</p></section><section class="p-sec"><h3>Why it matters</h3><p>Case makers and motherboard makers use the same kind of header, so any case’s buttons work with any board, as long as each small plug goes on the right pins (the motherboard’s manual shows which).</p></section><section class="p-sec"><h3>Real-life examples</h3><ul class="ex"><li><b>2 × 5 F_PANEL header</b><span>The common pin layout</span></li><li><b>Q-Connector</b><span>A block that holds the small plugs, so they go on all at once</span></li><li><b>Reset and HDD LED pins</b><span>On the same header as the power button</span></li></ul></section><section class="p-sec"><h3>Key specifications</h3><dl class="specs"><dt>Pins</dt><dd>usually 2 rows, 9 or 10 pins</dd><dt>Power button</dt><dd>PWR_SW, two pins (signal and ground)</dd><dt>Lights</dt><dd>PLED and HDD_LED, each with + and −</dd></dl></section><section class="p-sec"><h3>How it connects</h3><ul class="rel"><li><a class="" href="pb-switch.html" data-go="pb-switch"><b>Push switch</b><span>The button wired to it</span></a></li><li><a class="" href="pb-controller.html" data-go="pb-controller"><b>Power controller</b><span>Reads the PWR_SW# signal</span></a></li><li><a class="" href="motherboard.html" data-go="motherboard"><b>Motherboard</b><span>Where the header is</span></a></li></ul></section><div class="fact"><h3>Fun fact</h3><p>The power button’s two pins can be plugged either way round, because a switch has no polarity. The light’s plug has a + and a − side, and only lights up one way.</p></div></article>
@@ -147,6 +147,7 @@
       <li>Links to other websites that you follow from here, such as the "Learn more" videos and articles.</li>
       <li>Whether you use the guided tour (started, finished, or closed at which step), and the first time you reach each level.</li>
     <li>Whether the rating question was shown, and whether it was answered or closed.</li>
+      <li>Which 3D views and real photos you open.</li>
       <li>Your browser, operating system and type of device (computer, tablet or phone).</li>
       <li>Screen and window size, language, time zone, light or dark theme, and touch or mouse.</li>
       <li>The website that linked you here, if any, and how long the page took to load.</li>
@@ -166,7 +167,7 @@
     <h3>Where the data goes</h3>
     <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button, and ratings you choose to give in the rating question, are kept separately, with the page and the type of device they were sent from.</p>
     <h3>Videos</h3>
-    <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
+    <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list, or the video box on a part's picture, is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
     <h3>Photos</h3>
     <p>The real photos of the parts are from Wikimedia Commons, used under their free licences and credited under each one. They are stored on this site, so showing them contacts no one else.</p>
     <h3>Turning it off</h3>
@@ -244,6 +245,7 @@
 <script src="../js/sfx.js"></script>
 <script src="../js/engine.js"></script>
 <script src="../js/guide.js"></script>
+<script src="../js/model3d.js"></script>
 <script src="../js/analytics.js"
         data-endpoint="https://analytics-proxy.ayansarkar1829.workers.dev"
         data-project="inside-the-computer"></script>

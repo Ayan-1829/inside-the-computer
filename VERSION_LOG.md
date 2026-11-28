@@ -16,6 +16,13 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 
 | Version | Date (UTC) | Delivered | Main change |
 |---|---|---|---|
+| 8.8.3 | 2026-11-28 | — | A video box (the part's YouTube video) under the real photos box; the boxes spread evenly down the left side, sized from the picture so they grow in full screen |
+| 8.8.2 | 2026-11-28 | — | In full screen the bar (Real photos, the instruction, 3D view and the "How it works" controls) shows along the picture's bottom; a new photo of a desktop computer for the home page |
+| 8.8.1 | 2026-11-28 | — | The "How it works" (and power-on) controls sit in the bar under the picture, at its right end, level with the instruction; on a component's page the instruction moves to the left |
+| 8.8.0 | 2026-11-28 | — | On each component's page, small boxes at the top left of the picture: a still of its 3D model (opens the 3D view) and its real photos; they hide while "How it works" plays. The picture's border now also holds the bar under it, with the instruction inside |
+| 8.7.2 | 2026-11-28 | — | The game controller's 3D model is laid out like its 2D drawing (D-pad left, buttons right, both thumbsticks in the middle; board, battery and rumble motors inside), with the same labels |
+| 8.7.1 | 2026-11-28 | — | The game controller's 3D model has its sticks and buttons where a real one does, all on the body, with the A B X Y letters upright |
+| 8.7.0 | 2026-11-28 | — | A "3D view" button on the home page's 18 components (and the SSD and hard drive), and on the home page itself, opens a 3D model to turn, zoom, label and open up; labels lead to each part's page |
 | 8.6.0 | 2026-11-21 | — | "How it works" for cooling (6 steps: heat, thermal paste, heat pipes, fins, fan, speed control) and the CPU (7 steps, one per part: clock, bus interface and cache, control unit, decoder, registers, ALU, and the 8086); “8086” is read “eighty eighty-six” |
 | 8.5.1 | 2026-11-21 | — | The narrator reads decimal numbers properly (“3.3 volts”, “0.1 milliseconds”, “M dot 2”) instead of stopping at the point; dx and dy, “1 volt”, the doubled “standby”, and abbreviations a voice says wrongly (DRAM, LED, PCIe, UEFI, I/O, GB) fixed; a permanent speech test |
 | 8.5.0 | 2026-11-21 | — | The power-on walkthrough works like "How it works": each step's caption in the box above the picture (which moves down and shrinks to make room), read aloud, with the controls on the diagram; the pop-up step window and all its code removed |
@@ -111,6 +118,109 @@ From 8.0.0 on, work is done in the `v8` folder. The `v7` folder keeps the site a
 ---
 
 ## Versions
+
+### 8.8.3: A video box; the boxes evenly spaced and larger in full screen
+
+**Prompt** (2026-11-28 03:05:50 (09:05:50)):
+> Also add the youtube video link at the bottom of the real image. Make the 3d box evenly spaced at left (top-bottom). Also enlarge the boxes in full screen mode proportionally.
+
+**Changes**
+- **A third box, "Video"**, under the real photos box on a component's picture, of the same shape. It shows the YouTube preview of the part's first "Learn more" video (or that of the part whose picture it is), with a play button and the video's length. A click plays it in the site's video window, in YouTube's privacy-enhanced mode, like the "Learn more" list. The privacy notes say that the preview picture now also loads with this box.
+- **Evenly spaced**: the boxes are spread down the left side of the picture from top to bottom, with equal space above, between and below them.
+- **Sized from the picture**: a box is about a sixth of the picture's width (148 px on a 1400 px screen, 114 px at 1100), and never bigger than three can fit in its height. The drawing's left margin follows. In full screen they grow with the picture (228 px wide on a 1400 × 900 screen) and stay evenly spaced between the Back and Home buttons and the bar. The drawing stays to their right there too, which before it did not.
+- Checked: box sizes and gaps measured at 1400 × 900, at 1100 × 760 and in full screen; the video box plays the mouse's video; no errors.
+
+### 8.8.2: The bar in full screen; a new desktop photo
+
+**Prompt** (2026-11-28 03:00:58 (09:00:58)):
+> In the full screen mode for the main components at the homepage, there are no buttons for 3D view, Real photo or label. Add them in full screen mode.
+>
+> Change the real photo of the desktop of the home page. The photo is very old, burnt out with flash light.
+
+**Changes**
+- **Full screen**: the bar under the picture now moves onto the picture, along its bottom, while it is in full screen. That brings in the real photos, the instruction ("Click any part to go inside it"), 3D view and the "How it works" or power-on controls. The drawing sits above the bar, and everything goes back under the picture when full screen ends. The 3D view and the photo viewer open over the full-screen picture. On a component's page the 3D and photo boxes were already on the picture, and now the instruction and controls are too.
+- **The home page's first photo** is a new one: a desktop computer on an office desk, with its monitor, keyboard and mouse, evenly lit (Mnicolois, 2026, CC BY 4.0, from Wikimedia Commons, `img/photos/computer-3.jpg`, 45 KB). It replaces the old flash-lit photo (Terraflorin, `computer-1.jpg`, removed). It is credited under the photo, and its caption is updated. A brighter photo of a whole gaming setup was also considered, but its screen shows a large occult symbol.
+- Checked: the home page and the mouse page in full screen, with the 3D view and the photos opened from it, then leaving full screen. All 224 pages build, there are no errors, and the speech test passes.
+
+### 8.8.1: "How it works" level with the instruction
+
+**Prompt** (2026-11-28 02:55:53 (08:55:53)):
+> Take the how it works button level to the 'Click any part to go inside it' label (bottom right). Take 'Click any part to go inside it' label to the left for the components (except homepage)
+
+**Changes**
+- The **"How it works" controls** (and the power-on walkthrough's controls on the home page) moved from the picture's bottom right corner into the bar under it, at its right end, on the same line as the instruction. While an animation plays, its Stop, Back, Pause, Next step and sound buttons stay there. On the home page the "3D view" button steps aside while the walkthrough's controls show.
+- In full screen, where the picture shows alone, and on phones, whose bar is already full, the controls stay at the picture's bottom right as before.
+- On a **component's page**, the instruction ("Click any part to go inside it") is now at the left end of the bar. The home page keeps it in the middle.
+- Checked: the mouse page idle, playing and in full screen; the home page during the power-on walkthrough; the phone layout; no errors. The speech test and the 8086 checks pass.
+
+### 8.8.0: 3D and photo boxes on the picture; the instruction inside the border
+
+**Prompt** (2026-11-28 02:47:06 (08:47:06)):
+> For the 3D views make a small box at the top left of the component box and show the 3D model in small view. Clicking that box should pop-up the full 3D mode. When 'How it works' button is pressed, the box should disapear.
+>
+> Similarly at the bottom of the 3D box show Real photos block with similar shape. This will open the real photos for the components.
+>
+> This changes should be done except the home page where every components are shown.
+
+**Prompt** (2026-11-28 02:51:40 (08:51:40)):
+> 'Click any part to go inside it' take this label inside the booundary and enlarge the boundary in bottom.
+
+**Changes**
+- **Two small boxes at the top left of the picture** on every page with a 3D model except the home page: the 18 components, the SSD and hard drive, and the parts drawn inside their pictures (the mouse's sensor shows the mouse).
+  - The top box shows a still of the part's 3D model, labelled "3D view". A click opens the full 3D view.
+  - Under it, a box of the same shape shows the first real photo, labelled "Real photos" with the count. A click opens the photo viewer.
+  - The drawing moves right to make room for them, so they cover nothing.
+  - When "How it works" (or the power-on walkthrough) starts, the boxes fade away and the drawing takes the full width back. They return when it stops.
+  - On these pages the "3D view" and "Real photos" buttons in the bar are no longer shown, since the boxes do the same.
+  - The home page, the pages without a 3D model (they keep the "Real photos" button in the bar) and phones (too narrow for the boxes) are as before.
+- **The stills** are pictures of the real models, about 4 to 19 KB each, in `img/3d/`. They are made by the new `build/render-3d-thumbs.mjs`, which needs to be run again after a model changes. The 3D view has a new `snapshot()` for it. Using stills means a part's page doesn't load the 3D code until the 3D view is opened.
+- **The instruction ("Click any part to go inside it") is inside the picture's border**: the border now goes round the picture and the bar under it, so it reaches further down. The real photos, the short notes and the home page's 3D button sit in that bar too. The drawing itself keeps its size. In full screen the picture still shows alone.
+- Checked: on 15 pages at 1400×900 and on narrower screens (1100 wide), the boxes cover no part of the drawing. Pressing "How it works" hides them and widens the drawing. The home page, the ALU page and the phone layout are right, all 224 pages build, and no page shows an error.
+
+### 8.7.2: The game controller's 3D view matches its 2D drawing
+
+**Prompt** (2026-11-28 02:41:30 (08:41:30)):
+> This is the 2D view. Make the 3D view similar to this
+
+(with a screenshot of the game controller's 2D drawing)
+
+**Changes**
+- The game controller's 3D model now follows its 2D drawing: the **D-pad** at the far left and the **four buttons** at the far right, level with each other, and the **two thumbsticks side by side in the middle**, lower down. Y is at the top, A at the bottom, X on the left and B on the right, with the letters upright. (8.7.1's layout, with the left stick at the top left, is replaced.)
+- **Inside**, as in the drawing: the board with the controller chip at the top and the **battery** under it, traces from the chip out to the D-pad and the buttons, the USB port on the top edge, and a **rumble motor lying across each grip**. The thumbsticks sit on modules on the board, so they stay with the board when the model is opened up, as in the drawing with its top shell removed.
+- **Open it up** lifts the top shell up and back, so the board, battery and motors show from above.
+- **The labels are the drawing's own**: D-pad, Buttons, Thumbstick (on each), Rumble motor (on each) and Controller and battery. Each still opens its part's page. Labels in a 3D model can now carry their own text instead of the part's name.
+- Checked: the model loads with no error, closed and opened up, looked at in screenshots from above.
+
+### 8.7.1: The game controller's buttons
+
+**Prompt** (2026-11-28 02:36:08 (08:36:08)):
+> The position of the buttons is not right for the game controller. Fix this.
+
+**Changes**
+- The game controller's 3D model now has the usual layout: the left stick and the A B X Y diamond level with each other over the grips, and the D-pad and right stick lower and nearer the middle. The right stick and the D-pad used to hang over the curved edge between the grips. Now everything sits on the body.
+- Seen from the player, Y is at the top, A at the bottom, X on the left and B on the right, and the letters read upright (they were turned a quarter).
+- The sticks are a little smaller, as on a real controller, and the home button is dark with a light ring instead of plain white.
+- The "Buttons and D-pad" label is pinned to the Y button, so it no longer covers A.
+- Checked: the model loads with no error, closed and opened up, looked at in a screenshot from the player's side.
+
+### 8.7.0: 3D models of the components
+
+**Prompt** (2026-11-28 00:53:53 (06:53:53)):
+> Can you make 3D models for components? At first make 3D models for the home page components. Inside each components like (moust, keyboard, monitor, etc) add a button for 3D view that shows the 3D model of that component.
+
+**Prompt** (2026-11-28 02:17:26 (08:17:26)):
+> Continue from where you left off.
+
+**Changes**
+- **A "3D view" button** at the right end of the bar under the picture (the real photos are at the left), on every component on the home page: the monitor, keyboard, mouse, joystick, game controller, printer, webcam, microphone, speakers and power button, and the CPU, motherboard, RAM, graphics card, storage, power supply, cooling and I/O ports. The SSD and hard drive have their own models, and the home page shows the whole computer on a desk. The parts drawn inside a component's picture (such as the mouse's optical sensor) show that component's model. On phones the button is a small round icon.
+- **The 3D window**: drag to turn the model, scroll or pinch to zoom, right-drag (or two fingers) to move it; arrow keys, + and − and 0 work too. Buttons: **Open it up** (the parts move apart to show what is inside, and back with **Put it together**), **Labels**, **Turn** (a slow turn, off for visitors who prefer reduced motion), **Reset view** and zoom. Fans spin, a hard drive's arm swings over its spinning platters and a printer's carriage runs along its rod.
+- **Labels** name the parts in each model, using the same names as the site, and each one opens that part's page. Labels of parts inside show once the model is opened up, and fade when the part is hidden behind the model. Opened from one of a component's parts, the window highlights that part and opens the model up if the part is inside.
+- The models are built in code from simple shapes, with their markings, circuit boards and screens drawn on a canvas, so there are no model files to download. They are drawn to show the parts, not to scale with each other. The CPU is drawn 4 times life size and the SSD twice, and the CPU's die shows its cores (ALU, registers, control unit), cache and bus interface.
+- The 3D code uses three.js r187 (MIT licence, in `js/vendor/three/`, copied from the npm package, not minified). It and the models (`js/3d/`) load only when a 3D view is first opened, so other pages load as before. The button itself is `js/model3d.js`.
+- Opening a 3D view, and following a label from it, is counted like opening the real photos. The privacy notes say so.
+- Checked:
+  - All 21 models load with no error, closed and opened up, each looked at in a screenshot in a headless browser, in the light and dark themes, and at phone size.
+  - All 224 pages build. The 8086 checks, the 12 example programs, the 4 textbook-style checks and the speech test pass.
 
 ### 8.6.0: "How it works" for cooling and the CPU
 

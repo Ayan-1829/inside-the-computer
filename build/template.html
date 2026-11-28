@@ -114,9 +114,9 @@
       <div class="stage-tools" id="stage-tools"><button class="btn" id="btn-reset-layout" type="button"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3.5V6h2.5"/></svg><span>Reset positions</span></button></div>
       <div class="tip" id="tip" role="tooltip"></div>
     </section>
-    </div>
-    <!-- below the picture, never over it: the depth gauge, real photos, the instruction and short notes (js/guide.js) -->
+    <!-- below the picture and inside its border, never over the drawing: real photos, the instruction and short notes (js/guide.js), 3D view (js/model3d.js) -->
     <div class="stage-bar" id="stage-bar"><div class="hint" id="hint" aria-hidden="true">Click a part to zoom in</div></div>
+    </div>
     <nav class="strip" id="strip" aria-label="Parts in this view">{{STRIP}}</nav>
     <aside class="panel" id="panel" aria-label="Component information">
       <article class="panel-inner" id="panel-inner">{{PANEL}}</article>
@@ -147,6 +147,7 @@
       <li>Links to other websites that you follow from here, such as the "Learn more" videos and articles.</li>
       <li>Whether you use the guided tour (started, finished, or closed at which step), and the first time you reach each level.</li>
     <li>Whether the rating question was shown, and whether it was answered or closed.</li>
+      <li>Which 3D views and real photos you open.</li>
       <li>Your browser, operating system and type of device (computer, tablet or phone).</li>
       <li>Screen and window size, language, time zone, light or dark theme, and touch or mouse.</li>
       <li>The website that linked you here, if any, and how long the page took to load.</li>
@@ -166,7 +167,7 @@
     <h3>Where the data goes</h3>
     <p>It passes through a small Cloudflare service to a private Google Sheet that only the site's author can see, and is used only to improve this site. Messages sent with the Feedback button, and ratings you choose to give in the rating question, are kept separately, with the page and the type of device they were sent from.</p>
     <h3>Videos</h3>
-    <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
+    <p>The "Learn more" videos play on this page from YouTube, in its privacy-enhanced mode (youtube-nocookie.com). Their small preview pictures are loaded from YouTube's image server (i.ytimg.com) when the list, or the video box on a part's picture, is shown; the video itself loads only when you press it. While one plays, YouTube's own privacy policy applies to it.</p>
     <h3>Photos</h3>
     <p>The real photos of the parts are from Wikimedia Commons, used under their free licences and credited under each one. They are stored on this site, so showing them contacts no one else.</p>
     <h3>Turning it off</h3>
@@ -244,6 +245,7 @@
 <script src="{{ROOT}}js/sfx.js"></script>
 <script src="{{ROOT}}js/engine.js"></script>
 <script src="{{ROOT}}js/guide.js"></script>
+<script src="{{ROOT}}js/model3d.js"></script>
 <script src="{{ROOT}}js/analytics.js"
         data-endpoint="https://analytics-proxy.ayansarkar1829.workers.dev"
         data-project="inside-the-computer"></script>

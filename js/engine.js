@@ -25,6 +25,33 @@ const QUERY = new URLSearchParams(location.search);
 const LASTKEY = {}, LIVE = {};
 
 window.PHOTO_BASE = new URL('img/photos/', ROOT).href;   /* for the real photos in panel.js */
+/* The "How it works" and power-on controls sit in the bar under the picture, at its right end, level with the
+   instruction. On phones (a narrow bar, already full) they stay on the picture, at its bottom right. */
+const narrowQ = matchMedia('(max-width: 700px)');
+function dockBar(bar){
+  const put = () => {
+    const sb = document.getElementById('stage-bar');
+    const inBar = !!sb && !narrowQ.matches;
+    if (bar.parentNode !== (inBar ? sb : stage)) (inBar ? sb : stage).appendChild(bar);
+    bar.classList.toggle('in-bar', inBar);
+  };
+  put();
+  document.addEventListener('fullscreenchange', put); document.addEventListener('webkitfullscreenchange', put);
+  narrowQ.addEventListener('change', put);
+}
+/* In full screen only the picture shows, so the bar (real photos, the instruction, 3D view and the controls)
+   moves onto it, along its bottom, and goes back under it afterwards. */
+{
+  const sb = document.getElementById('stage-bar'), home = sb && sb.parentNode;
+  const syncBar = () => {
+    if (!sb) return;
+    const fs = (document.fullscreenElement || document.webkitFullscreenElement) === stage;
+    if (fs && sb.parentNode !== stage) stage.appendChild(sb);
+    else if (!fs && sb.parentNode !== home) home.appendChild(sb);
+    sb.classList.toggle('fs-bar', fs);
+  };
+  document.addEventListener('fullscreenchange', syncBar); document.addEventListener('webkitfullscreenchange', syncBar);
+}
 const urlFor = id => new URL(id === 'computer' ? (HTTP ? './' : 'index.html') : `parts/${id}.html`, ROOT).href;
 const canonicalFor = id => SITE + (id === 'computer' ? '' : `parts/${id}.html`);
 
@@ -1115,7 +1142,7 @@ var devStop = () => {}, devSync = () => {};                                /* se
     const bar = document.createElement('div');
     bar.className = 'dv-bar pw-bar running'; bar.hidden = true;
     bar.innerHTML = '<button type="button" class="pw-btn pw-run dv-run is-stop" data-pw="run">Stop</button>' + pwControls(false);
-    stage.appendChild(bar);
+    dockBar(bar);
     if (typeof SFX !== 'undefined') SFX.syncButtons();
 
     /* pw: the running walkthrough {lay, dots, sel, i, timer, raf, paused, animating, animDone, narrDone}; pwDone: steps shown so far */
@@ -1516,7 +1543,7 @@ var devStop = () => {}, devSync = () => {};                                /* se
   bar.className = 'dv-bar'; bar.hidden = true;
   bar.innerHTML = '<button type="button" class="pw-btn pw-run dv-run" data-dv="run"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 3l9 5-9 5z"/></svg><span>How it works</span></button>' +
     pwControls(false).replace(/data-pw=/g, 'data-dv=');
-  stage.appendChild(bar);
+  dockBar(bar);
   const S = typeof SFX !== 'undefined' ? SFX : {cue(){}, stop(){}, pause(){}, resume(){}, syncButtons(){}};
   S.syncButtons();
   const animFor = () => (typeof DEVICE_ANIMS !== 'undefined' && curOwner && N[curOwner] && DEVICE_ANIMS[N[curOwner].scene]) || null;

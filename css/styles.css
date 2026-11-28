@@ -175,17 +175,21 @@ button{font:inherit;color:inherit}
 /* ---------- Main grid ---------- */
 .main{display:grid;grid-template-columns:minmax(0,68fr) minmax(330px,32fr);gap:16px;padding:0 24px 24px;min-height:0}
 
-.stage-col{display:flex;flex-direction:column;min-width:0;min-height:0}
-.stage-col>.stage{flex:1 1 auto}
+/* the picture and the bar under it share one border: the instruction sits inside it, at the bottom */
+.stage-col{display:flex;flex-direction:column;min-width:0;min-height:0;border-radius:20px;border:1px solid var(--line);overflow:hidden;background-color:var(--surface);
+  background-image:radial-gradient(var(--grid-dot) 1px, transparent 1.2px), linear-gradient(155deg, var(--g-stage-a) 0%, var(--g-stage-b) 58%, var(--g-stage-c) 100%);
+  background-size:22px 22px, 100% 100%;background-position:11px 11px, 0 0}
+.stage-col>.stage{flex:1 1 auto;border:0;border-radius:20px 20px 0 0;background:none}
+.stage-col>.stage-bar{flex:none;padding:2px 12px 10px}
 .stage-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;min-height:44px;min-width:0}
 .stage-bar>.g-photo{grid-column:1;justify-self:start}
 .stage-bar>.hint,.stage-bar>.g-toast{grid-column:2;grid-row:1;justify-self:center;max-width:100%}
 @media (min-width: 981px){
-  /* wide screens: the picture and the panel share the first row; the bar is the second row, under the picture */
-  .main{grid-template-rows:minmax(0,1fr) auto;row-gap:6px;padding-bottom:6px}
+  /* wide screens: the picture (with its bar) and the panel side by side */
+  .main{padding-bottom:6px}
   .stage-col{grid-column:1;grid-row:1}
-  .stage-bar{grid-column:1;grid-row:2;min-height:40px}
-  .panel{grid-column:2;grid-row:1 / span 2}
+  .stage-bar{min-height:40px}
+  .panel{grid-column:2;grid-row:1}
 }
 .intro-cinema .stage-bar{opacity:0!important;visibility:hidden!important}
 .intro-reveal .stage-bar{animation:intro-in .9s ease both}
@@ -194,7 +198,12 @@ button{font:inherit;color:inherit}
   background-size:22px 22px, 100% 100%;background-position:11px 11px, 0 0;
   overflow:hidden;touch-action:manipulation}
 .stage:fullscreen,.stage:-webkit-full-screen{width:100vw;height:100vh;border-radius:0;border:0;box-shadow:none}
+/* in full screen the picture shows alone, so it needs its own background (normally its column's) */
+.stage:fullscreen,.stage:-webkit-full-screen{background-color:var(--surface);background-image:radial-gradient(var(--grid-dot) 1px, transparent 1.2px), linear-gradient(155deg, var(--g-stage-a) 0%, var(--g-stage-b) 58%, var(--g-stage-c) 100%);background-size:22px 22px, 100% 100%;background-position:11px 11px, 0 0}
 .stage:fullscreen #layers,.stage:-webkit-full-screen #layers{inset:0}
+/* full screen: the bar along the picture's bottom (engine.js moves it in), with the drawing above it */
+.stage>.stage-bar.fs-bar{position:absolute;left:16px;right:16px;bottom:12px;z-index:7;padding:0}
+.stage:fullscreen:has(>.fs-bar) #layers,.stage:-webkit-full-screen:has(>.fs-bar) #layers{bottom:64px}
 #layers{position:absolute;inset:0}
 .scroller{position:absolute;inset:0;overflow:hidden}
 .zoom-btn{display:none}
@@ -1109,7 +1118,7 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .cine-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.42) 100%);opacity:0;transition:opacity .8s ease}
 .cine.on .cine-vignette{opacity:1}
 .cinema-skip{z-index:2100;bottom:calc(4.5vh - 18px)}
-.intro-cinema .stage{box-shadow:none;border:0}
+.intro-cinema .stage,.intro-cinema .stage-col{box-shadow:none;border:0}
 .intro-cinema .stage .layer{will-change:transform}
 
 /* ==========================================================
@@ -1338,3 +1347,100 @@ table.instr code{font-family:var(--font-mono);font-weight:700;color:var(--ink);f
 .phv-thumbs button{flex:none;width:84px;height:58px;padding:0;border-radius:10px;border:2px solid transparent;overflow:hidden;background:var(--surface-2);cursor:pointer;opacity:.7}
 .phv-thumbs button.on{border-color:var(--accent);opacity:1}
 .phv-thumbs img{display:block;width:100%;height:100%;object-fit:cover}
+
+/* ---------- 3D view (js/model3d.js, js/3d/) ----------
+   The button sits at the right end of the bar under the picture (the real photos are at the left);
+   the window shows the model on a soft backdrop in the theme's colours, with labels pinned to its parts. */
+.stage-bar>.g-3d{grid-column:3;grid-row:1;justify-self:end}
+.g-3d{flex:none;display:inline-flex;align-items:center;gap:9px;height:44px;padding:3px 14px 3px 3px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer;font:inherit;transition:border-color .15s,box-shadow .15s}
+.g-3d[hidden]{display:none}
+.g3d-ic{width:36px;height:36px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent)}
+.g3d-ic svg{width:20px;height:20px}
+.g-3d span:not(.g3d-ic){display:flex;flex-direction:column;line-height:1.1;text-align:left}
+.g-3d b{font-size:var(--fs-3)}
+.g-3d small{font-size:var(--fs-1);color:var(--ink-3)}
+.g-3d:hover,.g-3d:focus-visible{border-color:var(--accent);box-shadow:0 6px 16px -10px var(--accent-glow)}
+@media (max-width: 1340px){.g-3d small{display:none}}
+@media (max-width: 600px){.g-3d{padding:3px;gap:0}.g-3d span:not(.g3d-ic){display:none}.g3d-ic{width:34px;height:34px}}
+
+dialog.m3d{width:min(1120px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:hidden}
+.m3d-stage{position:relative;margin:0 18px;height:min(64vh,640px);min-height:260px;border-radius:14px;overflow:hidden;outline:none;
+  background:radial-gradient(ellipse at 50% 32%, var(--surface) 0%, var(--surface-2) 48%, var(--bg) 100%);border:1px solid var(--line-2)}
+.m3d-stage:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
+.m3d-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+.m3d-canvas:active{cursor:grabbing}
+.m3d-labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.m3d-lab{position:absolute;left:0;top:0;margin:-6px 0 0 -6px;display:flex;align-items:center;gap:6px;padding:0;border:0;background:none;color:var(--lbl-ink);
+  font:600 var(--fs-1)/1 var(--font-ui);pointer-events:auto;cursor:pointer;transition:opacity .25s;will-change:transform}
+.m3d-lab i{width:12px;height:12px;flex:none;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--lbl-bg),0 1px 4px rgba(0,0,0,.4)}
+.m3d-lab span{padding:5px 9px;border-radius:999px;background:var(--lbl-bg);border:1px solid var(--lbl-edge);white-space:nowrap;box-shadow:0 4px 12px -6px rgba(0,0,0,.45)}
+.m3d-lab:hover span,.m3d-lab:focus-visible span{border-color:var(--accent);color:var(--accent)}
+.m3d-lab.cur i{background:var(--signal)}
+.m3d-lab.cur span{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.m3d-lab.behind{opacity:.42}
+.m3d-lab.off{opacity:0;visibility:hidden;pointer-events:none}
+.m3d-msg{position:absolute;inset:0;display:grid;place-items:center;margin:0;padding:20px;text-align:center;color:var(--ink-3);font-size:var(--fs-2);pointer-events:none}
+.m3d-msg:empty{display:none}
+.m3d-note{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);margin:0;padding:6px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--line);
+  font-size:var(--fs-1);color:var(--ink-2);white-space:nowrap;pointer-events:none}
+.m3d-note[hidden]{display:none}
+.m3d-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 18px 16px}
+.m3d-bar .btn[hidden]{display:none}
+.m3d-bar .btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.m3d-zoom{display:inline-flex;gap:6px}
+.m3d-hint{margin-left:auto;font-size:var(--fs-1);color:var(--ink-3)}
+@media (max-width: 700px){
+  .m3d-stage{margin:0 10px;height:min(58vh,520px)}
+  .m3d-bar{padding:10px 10px 12px;gap:6px}
+  .m3d-bar .btn{padding:0 10px}
+  .m3d-hint{display:none}
+}
+@media (prefers-reduced-motion: reduce){.m3d-lab{transition:none}}
+
+/* the small boxes at the top left of a part's picture: a still of its 3D model and its first real photo
+   (js/model3d.js). Not on the home page or phones, where the buttons in the bar under the picture do this;
+   hidden while an animation plays, and below the Back and Home buttons in full screen. */
+/* evenly spaced from top to bottom; their width (--cw, on #stage) is set by js/model3d.js from the picture's size */
+.stage-cards{position:absolute;left:14px;top:14px;bottom:14px;z-index:5;display:none;flex-direction:column;justify-content:space-evenly;
+  width:var(--cw,148px);transition:opacity .25s,visibility .25s}
+.has-cards .stage-cards{display:flex}
+.g-busy .stage-cards,.touring .stage-cards,.intro-cinema .stage-cards{opacity:0;visibility:hidden;pointer-events:none}
+.stage-nav.show ~ .stage-cards{top:66px}
+.stage:has(>.fs-bar) .stage-cards{bottom:72px}
+.s-card{position:relative;display:block;flex:none;width:100%;text-decoration:none;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;color:var(--ink);font:inherit;text-align:left;
+  background:radial-gradient(ellipse at 50% 35%, var(--surface) 0%, var(--surface-2) 55%, var(--bg) 100%);box-shadow:var(--shadow);
+  transition:transform .15s,border-color .15s,box-shadow .15s}
+.s-card[hidden]{display:none}
+.s-card img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain}
+.s-ph img{object-fit:cover}
+.s-card-l{display:flex;align-items:center;gap:6px;padding:calc(var(--cw,148px) * .04) calc(var(--cw,148px) * .068);border-top:1px solid var(--line-2);background:var(--surface);
+  font-size:clamp(12px, calc(var(--cw,148px) * .088), 22px);font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-card-l>span{overflow:hidden;text-overflow:ellipsis}
+.s-card-l svg{width:1.15em;height:1.15em;flex:none;color:var(--accent)}
+.s-vd img{object-fit:cover}
+.s-vd .s-card-l svg{color:#E62117}
+.s-play{position:absolute;left:50%;top:calc(var(--cw,148px) * .375);width:calc(var(--cw,148px) * .26);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;
+  display:grid;place-items:center;background:rgba(0,0,0,.6);color:#fff;transition:background .15s}
+.s-play svg{width:46%;height:46%;margin-left:6%}
+.s-vd:hover .s-play,.s-vd:focus-visible .s-play{background:#E62117}
+.s-card:hover,.s-card:focus-visible{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 10px 22px -12px var(--accent-glow)}
+@media (min-width: 701px){
+  .has-cards .stage-bar>.g-3d,.has-cards .stage-bar>.g-photo{display:none}
+  /* the drawing starts to the right of the boxes, and takes the full width back while they are hidden */
+  #layers{transition:top .35s ease,left .35s ease}
+  .has-cards #layers{left:calc(var(--cw,148px) + 28px)}
+  .has-cards.g-busy #layers,.has-cards.touring #layers{left:0}
+}
+@media (max-width: 700px){.stage-cards{display:none!important}}
+/* the "How it works" (or power-on) controls in the bar under the picture, at its right end (engine.js, dockBar) */
+.stage-bar>.dv-bar.in-bar{position:static;grid-column:3;grid-row:1;justify-self:end;align-self:center}
+.stage-bar:has(>.dv-bar.in-bar:not([hidden]))>.g-3d{display:none}
+/* on a component's page the instruction moves to the left end of the bar (the home page keeps it in the middle) */
+@media (min-width: 701px){.has-cards .stage-bar>.hint,.has-cards .stage-bar>.g-toast{grid-column:1;justify-self:start}}
+@media (prefers-reduced-motion: reduce){.s-card,.stage-cards,#layers{transition:none}}
+/* full screen: the drawing also starts to the right of the boxes (and above the bar), unless an animation hides them */
+@media (min-width: 701px){
+  .has-cards .stage:fullscreen #layers,.has-cards .stage:-webkit-full-screen #layers{left:calc(var(--cw,148px) + 28px)}
+  .has-cards.g-busy .stage:fullscreen #layers,.has-cards.g-busy .stage:-webkit-full-screen #layers{left:0}
+}
